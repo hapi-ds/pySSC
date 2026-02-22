@@ -17,25 +17,25 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
   - Set up uv.lock for hash-based dependency locking
   - _Requirements: 31.1, 31.2, 37.1_
 
-- [ ] 2. Core data models (Pydantic)
-  - [ ] 2.1 Create models.py with enums and base models
+- [x] 2. Core data models (Pydantic)
+  - [x] 2.1 Create models.py with enums and base models
     - Define SpecificationType, TransformationMethod, AnalysisMethod enums
     - Create AttributeInputs model with validation (confidence, reliability, allowable_failures)
     - Create AttributeResults and SensitivityAnalysisResults models
     - _Requirements: 1.1, 1.2, 1.3, 37.4, 37.5_
 
-  - [ ] 2.2 Create Module V data models
+  - [x] 2.2 Create Module V data models
     - Create SpecificationLimits model with validation for one-sided/two-sided specs
     - Create PilotDataInput model with dataset and statistics input methods
     - Create OutlierInfo model with exclusion tracking
     - Create Phase1Results, Phase2Results, Phase3Results, Phase4Results models
     - _Requirements: 5.2, 5.3, 6.3, 6.4, 6.8, 8.2_
 
-  - [ ]* 2.3 Write property tests for data model validation
+  - [x] 2.3 Write property tests for data model validation
     - **Property 1: Input Validation Completeness**
     - **Validates: Requirements 1.1, 1.2, 1.3, 1.4**
 
-  - [ ] 2.4 Create report data models
+  - [x] 2.4 Create report data models
     - Create CalculationReport model for user reports
     - Create ValidationCertificate model for IQ/OQ/PQ reports
     - _Requirements: 27.2, 27.3, 27.4, 30.2, 30.3, 30.4_
