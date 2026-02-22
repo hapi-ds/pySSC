@@ -74,43 +74,43 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - **Property 19: Non-Parametric Formula Consistency**
     - **Validates: Requirements 17.4**
 
-- [ ] 4. Transformation and statistical components
-  - [ ] 4.1 Create transformations.py with forward transformations
+- [x] 4. Transformation and statistical components
+  - [x] 4.1 Create transformations.py with forward transformations
     - Implement log_transform(data) with positive value validation
     - Implement box_cox_transform(data) with lambda optimization
     - Implement yeo_johnson_transform(data) for all value ranges
     - _Requirements: 10.1, 10.2, 11.1, 11.2, 12.1, 12.2_
 
-  - [ ] 4.2 Implement inverse transformations
+  - [x] 4.2 Implement inverse transformations
     - Implement inverse_log_transform(data)
     - Implement inverse_box_cox_transform(data, lambda_param)
     - Implement inverse_yeo_johnson_transform(data, lambda_param)
     - _Requirements: 22.1, 22.2, 22.3_
 
-  - [ ]* 4.3 Write property tests for transformation round-trip
+  - [x] 4.3 Write property tests for transformation round-trip
     - **Property 24: Back-Transformation Round-Trip**
     - **Validates: Requirements 22.1, 22.2, 22.3, 22.5**
 
-  - [ ] 4.4 Implement transformation cascade logic
+  - [x] 4.4 Implement transformation cascade logic
     - Implement transformation_cascade(data, manual_method) with Shapiro-Wilk testing
     - Test original data, then Log → Box-Cox → Yeo-Johnson cascade
     - Lock first method achieving p-value > 0.05 or fallback to Non-Parametric
     - Support manual override for user-selected transformation
     - _Requirements: 9.3, 9.4, 10.3, 10.4, 11.3, 11.4, 12.3, 12.4, 13.1, 13.2_
 
-  - [ ]* 4.5 Write property tests for transformation cascade
+  - [x] 4.5 Write property tests for transformation cascade
     - **Property 14: Transformation Cascade Logic**
     - **Validates: Requirements 10.1-10.5, 11.1-11.6, 12.1-12.4, 13.1**
     - **Property 15: Manual Override Functionality**
     - **Validates: Requirements 10.6, 10.7, 11.7, 11.8, 12.6, 13.5**
 
-  - [ ] 4.6 Create outliers.py for IQR-based detection
+  - [x] 4.6 Create outliers.py for IQR-based detection
     - Implement detect_outliers(data) calculating Q1, Q3, IQR
     - Flag values < Q1 - 1.5*IQR or > Q3 + 1.5*IQR
     - Implement apply_exclusions(phase1_results, exclusions) with rationale validation
     - _Requirements: 7.1, 7.2, 7.3, 8.1, 8.2, 8.3, 8.5_
 
-  - [ ]* 4.7 Write property tests for outlier detection
+  - [x] 4.7 Write property tests for outlier detection
     - **Property 9: IQR Outlier Detection Correctness**
     - **Validates: Requirements 7.1, 7.2, 7.3**
     - **Property 10: Outlier Detection Idempotence**
@@ -118,24 +118,24 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - **Property 11: Outlier Exclusion Validation**
     - **Validates: Requirements 8.2, 8.3**
 
-  - [ ] 4.8 Create normality.py for Shapiro-Wilk testing
+  - [x] 4.8 Create normality.py for Shapiro-Wilk testing
     - Implement shapiro_wilk_test(data) returning p-value
     - Implement is_normal(p_value, alpha=0.05) classification
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
 
-  - [ ]* 4.9 Write property tests for normality testing
+  - [x] 4.9 Write property tests for normality testing
     - **Property 13: Normality Testing and Classification**
     - **Validates: Requirements 9.1, 9.2, 9.3, 9.4**
 
-- [ ] 5. Tolerance calculator (tolerance.py)
-  - [ ] 5.1 Implement capability margin calculation
+- [-] 5. Tolerance calculator (tolerance.py)
+  - [-] 5.1 Implement capability margin calculation
     - Implement calculate_capability_margin(data, spec_limits, transformation_method, lambda_param)
     - Forward-transform specification limits based on transformation method
     - Calculate (mean_t - LSL_t)/std_t and (USL_t - mean_t)/std_t
     - Return minimum margin, raise ValueError if k_margin <= 0
     - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5_
 
-  - [ ]* 5.2 Write property tests for capability margin
+  - [ ] 5.2 Write property tests for capability margin
     - **Property 16: Capability Margin Calculation Correctness**
     - **Validates: Requirements 14.1, 14.2, 14.3, 14.4**
 
@@ -154,7 +154,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Back-transform parametric limits to original space
     - _Requirements: 19.3, 20.1, 20.2, 20.3, 21.1, 21.2, 21.3_
 
-  - [ ]* 5.5 Write property tests for tolerance calculations
+  - [ ] 5.5 Write property tests for tolerance calculations
     - **Property 20: Final Dataset Size Validation**
     - **Validates: Requirements 19.2**
     - **Property 21: Transformation Consistency**
@@ -171,7 +171,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Return Phase4Results with limits, pass_fail, ppk
     - _Requirements: 23.1, 23.2, 23.3, 23.4, 23.5_
 
-  - [ ]* 5.7 Write property tests for Pass/Fail and Ppk
+  - [ ] 5.7 Write property tests for Pass/Fail and Ppk
     - **Property 25: Pass/Fail Determination Correctness**
     - **Validates: Requirements 23.1, 23.2, 23.3**
     - **Property 26: Ppk Calculation Formula**
