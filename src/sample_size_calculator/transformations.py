@@ -12,7 +12,7 @@ References:
 """
 
 import numpy as np
-from scipy import stats
+from scipy import special, stats
 
 
 def log_transform(data: list[float]) -> list[float] | None:
@@ -208,19 +208,12 @@ def inverse_box_cox_transform(data: list[float], lambda_param: float) -> list[fl
 
     Validates: Requirement 22.2
     """
+    # Use scipy.special.inv_boxcox for improved numerical precision
+    # This is a compiled C function optimized for Box-Cox inverse transformation
+    # Formula: x = (lambda * y + 1)^(1/lambda) for lambda != 0, exp(y) for lambda = 0
     data_array = np.array(data)
-
-    if np.abs(lambda_param) < 1e-10:  # lambda ≈ 0
-        # For lambda = 0, inverse is exponential
-        return np.exp(data_array).tolist()
-    else:
-        # For lambda ≠ 0, use inverse formula: x = (lambda * y + 1)^(1/lambda)
-        base = lambda_param * data_array + 1
-        # Suppress divide by zero warning for valid Box-Cox inverse operations
-        with np.errstate(divide='ignore', invalid='ignore'):
-            result = np.power(base, 1.0 / lambda_param)
-        return result.tolist()
-
+    result = special.inv_boxcox(data_array, lambda_param)
+    return result.tolist()
 
 def inverse_yeo_johnson_transform(
     data: list[float], lambda_param: float

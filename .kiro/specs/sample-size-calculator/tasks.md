@@ -127,26 +127,26 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - **Property 13: Normality Testing and Classification**
     - **Validates: Requirements 9.1, 9.2, 9.3, 9.4**
 
-- [-] 5. Tolerance calculator (tolerance.py)
-  - [-] 5.1 Implement capability margin calculation
+- [x] 5. Tolerance calculator (tolerance.py)
+  - [x] 5.1 Implement capability margin calculation
     - Implement calculate_capability_margin(data, spec_limits, transformation_method, lambda_param)
     - Forward-transform specification limits based on transformation method
     - Calculate (mean_t - LSL_t)/std_t and (USL_t - mean_t)/std_t
     - Return minimum margin, raise ValueError if k_margin <= 0
     - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5_
 
-  - [ ] 5.2 Write property tests for capability margin
+  - [x] 5.2 Write property tests for capability margin
     - **Property 16: Capability Margin Calculation Correctness**
     - **Validates: Requirements 14.1, 14.2, 14.3, 14.4**
 
-  - [ ] 5.3 Implement sample size iteration
+  - [x] 5.3 Implement sample size iteration
     - Implement calculate_required_sample_size(k_margin, confidence, reliability, spec_type, analysis_method)
     - Iterate N upward until k_factor(N) <= k_margin for parametric methods
     - Use direct formulas for non-parametric methods
     - Return Phase3Results with N, k_margin, k_factor, spec_type
     - _Requirements: 15.3, 15.4, 16.3, 16.4, 17.1, 17.2, 18.1, 18.2_
 
-  - [ ] 5.4 Implement tolerance limit calculation
+  - [x] 5.4 Implement tolerance limit calculation
     - Implement calculate_tolerance_limits(final_data, phase2_results, phase3_results, spec_limits)
     - Apply locked transformation to final data
     - Calculate parametric limits: mean_t ± k*std_t
@@ -154,7 +154,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Back-transform parametric limits to original space
     - _Requirements: 19.3, 20.1, 20.2, 20.3, 21.1, 21.2, 21.3_
 
-  - [ ] 5.5 Write property tests for tolerance calculations
+  - [x] 5.5 Write property tests for tolerance calculations
     - **Property 20: Final Dataset Size Validation**
     - **Validates: Requirements 19.2**
     - **Property 21: Transformation Consistency**
@@ -164,14 +164,14 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - **Property 23: Non-Parametric Tolerance Limits as Extreme Order Statistics**
     - **Validates: Requirements 21.1, 21.2, 21.3, 21.5**
 
-  - [ ] 5.6 Implement Pass/Fail determination and Ppk calculation
+  - [x] 5.6 Implement Pass/Fail determination and Ppk calculation
     - Compare back-transformed tolerance limits to specification limits
     - Set Pass if all limits within specs, Fail if any exceed
     - Calculate Ppk = min(Ppu, Ppl) for parametric methods
     - Return Phase4Results with limits, pass_fail, ppk
     - _Requirements: 23.1, 23.2, 23.3, 23.4, 23.5_
 
-  - [ ] 5.7 Write property tests for Pass/Fail and Ppk
+  - [x] 5.7 Write property tests for Pass/Fail and Ppk
     - **Property 25: Pass/Fail Determination Correctness**
     - **Validates: Requirements 23.1, 23.2, 23.3**
     - **Property 26: Ppk Calculation Formula**
