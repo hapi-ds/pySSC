@@ -177,7 +177,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - **Property 26: Ppk Calculation Formula**
     - **Validates: Requirements 23.4**
 
-- [ ] 6. Checkpoint - Ensure all core calculation tests pass
+- [x] 6. Checkpoint - Ensure all core calculation tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 7. Hash verification and audit logging
@@ -188,7 +188,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Implement is_validated_state() comparing current vs stored hash
     - _Requirements: 28.1, 28.3, 29.1, 29.4_
 
-  - [ ]* 7.2 Write property tests for hash verification
+  - [ ] 7.2 Write property tests for hash verification
     - **Property 28: Hash Calculation Idempotence**
     - **Validates: Requirements 28.4**
     - **Property 29: Validation State Determination**
@@ -208,7 +208,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Use ISO 8601 timestamps and structured format: [TIMESTAMP] [LEVEL] [SESSION_ID] [EVENT_TYPE] {context_json}
     - _Requirements: 38.1, 38.2, 38.3, 38.4, 38.5, 38.6, 38.7, 38.8, 38.9, 38.10, 38.11, 38.12, 38.13, 38.14, 38.15, 38.16_
 
-  - [ ]* 7.4 Write property tests for audit logging
+  - [ ] 7.4 Write property tests for audit logging
     - **Property 34: Comprehensive Event Logging**
     - **Validates: Requirements 38.1, 38.2, 38.3, 38.4, 38.5, 38.6, 38.7, 38.8, 38.9**
     - **Property 35: Log Format Consistency**
@@ -225,7 +225,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Display "VALIDATED STATE: YES" or "VALIDATED STATE: NO - UNVERIFIED CHANGE"
     - _Requirements: 27.1, 27.2, 27.3, 27.4, 27.5, 27.6, 28.2, 29.2, 29.3, 29.5_
 
-  - [ ]* 8.2 Write property tests for report generation
+  - [ ] 8.2 Write property tests for report generation
     - **Property 27: Report Completeness**
     - **Validates: Requirements 27.1, 27.2, 27.3, 27.4, 27.5, 28.1, 28.2, 28.3**
 
@@ -236,7 +236,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Include final validated hash
     - _Requirements: 30.1, 30.2, 30.3, 30.4, 30.5, 30.6, 30.7_
 
-  - [ ]* 8.4 Write property tests for validation certificate
+  - [ ] 8.4 Write property tests for validation certificate
     - **Property 30: Validation Certificate Completeness**
     - **Validates: Requirements 30.2, 30.3, 30.4, 30.5, 30.6**
 
@@ -247,7 +247,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Implement add_vtm_to_pdf(story, vtm) for PDF integration
     - _Requirements: 34.1, 34.2, 34.3, 34.4, 34.5_
 
-  - [ ]* 8.6 Write property tests for VTM generation
+  - [ ] 8.6 Write property tests for VTM generation
     - **Property 31: Verification Traceability Matrix Completeness**
     - **Validates: Requirements 34.1, 34.2, 34.3, 34.5**
 
@@ -313,7 +313,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Update transparency display dynamically as workflow progresses
     - _Requirements: 5.5, 24.1, 24.2, 24.3, 24.4, 24.5, 25.4, 25.5_
 
-  - [ ]* 9.8 Write property tests for UI workflow and session isolation
+  - [ ] 9.8 Write property tests for UI workflow and session isolation
     - **Property 6: Specification Validation**
     - **Validates: Requirements 5.2, 5.3**
     - **Property 7: Workflow State Invalidation**
