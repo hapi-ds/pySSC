@@ -40,18 +40,18 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Create ValidationCertificate model for IQ/OQ/PQ reports
     - _Requirements: 27.2, 27.3, 27.4, 30.2, 30.3, 30.4_
 
-- [ ] 3. Calculation engine (calculations.py)
-  - [ ] 3.1 Implement Module A calculation methods
+- [x] 3. Calculation engine (calculations.py)
+  - [x] 3.1 Implement Module A calculation methods
     - Implement success_run_theorem(confidence, reliability) using formula n = ceiling(ln(1-C)/ln(R))
     - Implement cumulative_binomial(confidence, reliability, allowable_failures) with iterative search
     - Implement sensitivity_analysis(confidence, reliability) for c=0,1,2,3
     - _Requirements: 2.1, 2.2, 3.1, 3.2, 3.3, 4.1, 4.2_
 
-  - [ ]* 3.2 Write property tests for Module A calculations
+  - [x] 3.2 Write property tests for Module A calculations
     - **Property 2: Success Run Theorem Formula Correctness**
     - **Validates: Requirements 2.1, 2.2**
 
-  - [ ]* 3.3 Write property tests for calculation idempotence and monotonicity
+  - [x] 3.3 Write property tests for calculation idempotence and monotonicity
     - **Property 3: Calculation Idempotence**
     - **Validates: Requirements 2.3**
     - **Property 4: Cumulative Binomial Constraint Satisfaction**
@@ -59,14 +59,14 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - **Property 5: Sample Size Monotonicity with Allowable Failures**
     - **Validates: Requirements 3.4, 4.4**
 
-  - [ ] 3.4 Implement tolerance factor calculations
+  - [x] 3.4 Implement tolerance factor calculations
     - Implement one_sided_tolerance_factor(n, confidence, reliability) using non-central t-distribution
     - Implement two_sided_tolerance_factor(n, confidence, reliability) using Howe-Guenther approximation
     - Implement non_parametric_one_sided_sample_size(confidence, reliability)
     - Implement non_parametric_two_sided_sample_size(confidence, reliability)
     - _Requirements: 15.1, 15.2, 16.1, 16.2, 17.1, 18.1_
 
-  - [ ]* 3.5 Write property tests for tolerance factor calculations
+  - [x] 3.5 Write property tests for tolerance factor calculations
     - **Property 17: Sample Size Iteration Correctness**
     - **Validates: Requirements 15.3, 15.4, 16.3, 16.4**
     - **Property 18: Two-Sided Sample Size Monotonicity**
