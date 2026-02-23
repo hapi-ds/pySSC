@@ -337,8 +337,8 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Display validation state in UI after calculations
     - _Requirements: 27.1, 28.1, 29.1, 38.4, 38.9_
 
-- [ ] 10. Main application entry point
-  - [ ] 10.1 Create main.py with NiceGUI app initialization
+- [x] 10. Main application entry point
+  - [x] 10.1 Create main.py with NiceGUI app initialization
     - Initialize NiceGUI app with title "Sample Size Calculator"
     - Create UIController instance
     - Set up routing and page layout
@@ -346,13 +346,13 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Add startup logging
     - _Requirements: 35.4, 36.1, 36.2_
 
-  - [ ] 10.2 Add error handling and graceful shutdown
+  - [x] 10.2 Add error handling and graceful shutdown
     - Implement global exception handler
     - Log all unhandled exceptions
     - Ensure log files are flushed on shutdown
     - _Requirements: 38.14_
 
-- [ ] 11. Checkpoint - Ensure UI and integration tests pass
+- [x] 11. Checkpoint - Ensure UI and integration tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 12. Validation test suite (IQ/OQ/PQ)
