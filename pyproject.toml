@@ -65,10 +65,10 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "PT"]
-ignore = []
+ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["N806", "PT018", "E501", "W293"]
+"tests/**/*.py" = ["N806", "PT018", "W293"]
 
 [tool.ruff.format]
 quote-style = "double"

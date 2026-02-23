@@ -19,7 +19,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from src.sample_size_calculator.models import CalculationReport, ValidationCertificate
+from sample_size_calculator.models import CalculationReport, ValidationCertificate
 
 
 class ReportGenerator:

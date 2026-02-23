@@ -5,6 +5,7 @@ and Module V (variable data) analysis, with session management, workflow enforce
 and comprehensive audit logging.
 """
 
+import math
 import uuid
 from datetime import datetime
 from typing import Any
@@ -18,7 +19,6 @@ from sample_size_calculator.models import (
     AnalysisMethod,
     AttributeInputs,
     CalculationReport,
-    OutlierInfo,
     Phase1Results,
     Phase2Results,
     Phase3Results,
@@ -57,6 +57,8 @@ class ModuleVState:
         self.confidence: float | None = None
         self.reliability: float | None = None
         self.pilot_data: list[float] | None = None
+        self.estimated_mean: float | None = None
+        self.estimated_std: float | None = None
 
     def complete_phase1(self, results: Phase1Results) -> None:
         """Mark Phase 1 complete and enable Phase 2."""
@@ -567,17 +569,79 @@ class UIController:
             # Pilot data input
             ui.label("Pilot Data Input").classes("text-h6")
 
-            self.pilot_data_input = (
-                ui.textarea(
-                    label="Pilot Dataset (comma-separated values)",
-                    placeholder="e.g., 10.5, 12.3, 11.8, 13.2, 12.1",
+            # Input method selector
+            self.input_method_radio = (
+                ui.radio(
+                    ["Enter Pilot Dataset", "Enter Estimated Statistics"],
+                    value="Enter Pilot Dataset",
                 )
-                .classes("w-full")
+                .props("inline")
                 .tooltip(
-                    "Enter pilot data measurements separated by commas. "
-                    "Minimum 3 values required. Recommended: 12-30 samples.",
+                    "Choose how to provide pilot data: "
+                    "enter actual measurements or estimated mean/std from prior knowledge"
                 )
             )
+
+            # Dataset input (default visible)
+            with ui.column().classes("w-full") as self.dataset_input_container:
+                self.pilot_data_input = (
+                    ui.textarea(
+                        label="Pilot Dataset (comma-separated values)",
+                        placeholder="e.g., 10.5, 12.3, 11.8, 13.2, 12.1",
+                    )
+                    .classes("w-full")
+                    .tooltip(
+                        "Enter pilot data measurements separated by commas. "
+                        "Minimum 3 values required. Recommended: 12-30 samples.",
+                    )
+                )
+
+            # Statistics input (initially hidden)
+            with ui.column().classes("w-full") as self.statistics_input_container:
+                with ui.row().classes("w-full"):
+                    self.estimated_mean_input = (
+                        ui.number(
+                            label="Estimated Mean",
+                            value=None,
+                            step=0.1,
+                        )
+                        .classes("w-64")
+                        .tooltip(
+                            "The estimated mean value from prior knowledge or historical data"
+                        )
+                    )
+
+                    self.estimated_std_input = (
+                        ui.number(
+                            label="Estimated Standard Deviation",
+                            value=None,
+                            min=0.0001,
+                            step=0.1,
+                        )
+                        .classes("w-64")
+                        .tooltip(
+                            "The estimated standard deviation (must be > 0)"
+                        )
+                    )
+
+            self.statistics_input_container.set_visibility(False)
+
+            # Handler to toggle input visibility and clear data
+            def handle_input_method_change() -> None:
+                """Toggle between dataset and statistics input."""
+                if self.input_method_radio.value == "Enter Pilot Dataset":
+                    self.dataset_input_container.set_visibility(True)
+                    self.statistics_input_container.set_visibility(False)
+                    # Clear statistics inputs
+                    self.estimated_mean_input.value = None
+                    self.estimated_std_input.value = None
+                else:
+                    self.dataset_input_container.set_visibility(False)
+                    self.statistics_input_container.set_visibility(True)
+                    # Clear dataset input
+                    self.pilot_data_input.value = ""
+
+            self.input_method_radio.on_value_change(handle_input_method_change)
 
         # Analyze button
         with ui.row().classes("w-full"):
@@ -599,23 +663,6 @@ class UIController:
             )
 
             try:
-                # Parse pilot data
-                pilot_data_str = self.pilot_data_input.value
-                if not pilot_data_str:
-                    ui.notify("Please enter pilot data", type="warning")
-                    return
-
-                pilot_data = [
-                    float(x.strip()) for x in pilot_data_str.split(",") if x.strip()
-                ]
-
-                if len(pilot_data) < 3:
-                    ui.notify(
-                        "Pilot dataset must contain at least 3 data points",
-                        type="negative",
-                    )
-                    return
-
                 # Validate specification limits
                 spec_type = SpecificationType(self.spec_type_radio.value)
                 lsl = self.lsl_input.value
@@ -629,40 +676,121 @@ class UIController:
                 self.module_v_state.spec_limits = spec_limits
                 self.module_v_state.confidence = self.v_confidence_input.value
                 self.module_v_state.reliability = self.v_reliability_input.value
-                self.module_v_state.pilot_data = pilot_data
 
-                # Detect outliers
-                phase1_results = detect_outliers(pilot_data)
-                self.module_v_state.complete_phase1(phase1_results)
+                # Check input method
+                input_method = self.input_method_radio.value
 
-                # Display results
-                self.phase1_results_container.clear()
-                with self.phase1_results_container:
-                    ui.label("Outlier Detection Results").classes("text-h6")
-                    ui.label(f"Q1: {phase1_results.q1:.4f}").classes("text-body1")
-                    ui.label(f"Q3: {phase1_results.q3:.4f}").classes("text-body1")
-                    ui.label(f"IQR: {phase1_results.iqr:.4f}").classes("text-body1")
-                    ui.separator()
+                if input_method == "Enter Pilot Dataset":
+                    # Parse pilot data
+                    pilot_data_str = self.pilot_data_input.value
+                    if not pilot_data_str:
+                        ui.notify("Please enter pilot data", type="warning")
+                        return
 
-                    if phase1_results.outliers:
-                        ui.label(
-                            f"Outliers Detected: {len(phase1_results.outliers)}"
-                        ).classes("text-body1 text-warning")
-                        for outlier in phase1_results.outliers:
-                            ui.label(f"  • Value: {outlier.value}").classes(
-                                "text-body2"
-                            )
-                    else:
-                        ui.label("No outliers detected").classes(
-                            "text-body1 text-positive"
+                    pilot_data = [
+                        float(x.strip()) for x in pilot_data_str.split(",") if x.strip()
+                    ]
+
+                    if len(pilot_data) < 3:
+                        ui.notify(
+                            "Pilot dataset must contain at least 3 data points",
+                            type="negative",
                         )
+                        return
 
-                    # Warning for small datasets
-                    if len(pilot_data) < 30:
+                    self.module_v_state.pilot_data = pilot_data
+
+                    # Detect outliers
+                    phase1_results = detect_outliers(pilot_data)
+                    self.module_v_state.complete_phase1(phase1_results)
+
+                    # Display results
+                    self.phase1_results_container.clear()
+                    with self.phase1_results_container:
+                        ui.label("Outlier Detection Results").classes("text-h6")
+                        ui.label(f"Q1: {phase1_results.q1:.4f}").classes("text-body1")
+                        ui.label(f"Q3: {phase1_results.q3:.4f}").classes("text-body1")
+                        ui.label(f"IQR: {phase1_results.iqr:.4f}").classes("text-body1")
+                        ui.separator()
+
+                        if phase1_results.outliers:
+                            ui.label(
+                                f"Outliers Detected: {len(phase1_results.outliers)}"
+                            ).classes("text-body1 text-warning")
+                            for outlier in phase1_results.outliers:
+                                ui.label(f"  • Value: {outlier.value}").classes(
+                                    "text-body2"
+                                )
+                        else:
+                            ui.label("No outliers detected").classes(
+                                "text-body1 text-positive"
+                            )
+
+                        # Warning for small datasets
+                        if len(pilot_data) < 30:
+                            ui.label(
+                                f"⚠ Warning: Pilot dataset contains {len(pilot_data)} data points. "
+                                "For reliable variance estimation, use 12-30 samples."
+                            ).classes("text-body2 text-warning")
+
+                else:  # Enter Estimated Statistics
+                    # Validate estimated statistics
+                    estimated_mean = self.estimated_mean_input.value
+                    estimated_std = self.estimated_std_input.value
+
+                    if estimated_mean is None:
+                        ui.notify(
+                            "Please enter estimated mean",
+                            type="warning",
+                        )
+                        return
+
+                    if estimated_std is None:
+                        ui.notify(
+                            "Please enter estimated standard deviation",
+                            type="warning",
+                        )
+                        return
+
+                    if estimated_std <= 0:
+                        ui.notify(
+                            "Estimated standard deviation must be greater than 0",
+                            type="negative",
+                        )
+                        return
+
+                    # Store estimated statistics
+                    self.module_v_state.pilot_data = None
+                    self.module_v_state.estimated_mean = estimated_mean
+                    self.module_v_state.estimated_std = estimated_std
+
+                    # Create Phase1Results with no outliers (no dataset to analyze)
+                    phase1_results = Phase1Results(
+                        pilot_data=[],
+                        outliers=[],
+                        q1=0.0,
+                        q3=0.0,
+                        iqr=0.0,
+                    )
+                    self.module_v_state.complete_phase1(phase1_results)
+
+                    # Display results
+                    self.phase1_results_container.clear()
+                    with self.phase1_results_container:
+                        ui.label("Estimated Statistics").classes("text-h6")
+                        ui.label(f"Mean: {estimated_mean:.4f}").classes("text-body1")
+                        ui.label(f"Standard Deviation: {estimated_std:.4f}").classes(
+                            "text-body1"
+                        )
+                        ui.separator()
                         ui.label(
-                            f"⚠ Warning: Pilot dataset contains {len(pilot_data)} data points. "
-                            "For reliable variance estimation, use 12-30 samples."
-                        ).classes("text-body2 text-warning")
+                            "Using estimated statistics (no outlier detection performed)"
+                        ).classes("text-body2 text-info")
+                        ui.separator()
+                        ui.label(
+                            "Note: Phase 2 (normality testing) is not applicable for estimated statistics. "
+                            "You must enable manual override and select an analysis method in Phase 2 before proceeding to Phase 3."
+                        ).classes("text-body2 text-info")
 
                 self.phase1_results_card.set_visibility(True)
 
@@ -683,7 +811,16 @@ class UIController:
                     str(e),
                     "phase1_inputs",
                     {
-                        "pilot_data": self.pilot_data_input.value,
+                        "input_method": self.input_method_radio.value,
+                        "pilot_data": self.pilot_data_input.value
+                        if self.input_method_radio.value == "Enter Pilot Dataset"
+                        else None,
+                        "estimated_mean": self.estimated_mean_input.value
+                        if self.input_method_radio.value == "Enter Estimated Statistics"
+                        else None,
+                        "estimated_std": self.estimated_std_input.value
+                        if self.input_method_radio.value == "Enter Estimated Statistics"
+                        else None,
                         "spec_type": self.spec_type_radio.value,
                         "lsl": self.lsl_input.value,
                         "usl": self.usl_input.value,
@@ -698,6 +835,15 @@ class UIController:
 
     def _create_phase2_ui(self) -> None:
         """Create Phase 2 UI (outlier exclusion and transformation cascade)."""
+        # Add conditional message for estimated statistics
+        self.phase2_estimated_stats_notice = ui.card().classes("w-full bg-blue-50")
+        with self.phase2_estimated_stats_notice:
+            ui.label(
+                "Using Estimated Statistics: Normality testing is not applicable. "
+                "Please enable manual override and select your analysis method below."
+            ).classes("text-body1")
+        self.phase2_estimated_stats_notice.set_visibility(False)
+
         with ui.card().classes("w-full"):
             ui.label("Outlier Exclusion").classes("text-h6")
 
@@ -764,62 +910,105 @@ class UIController:
                     ui.notify("Phase 1 results not found", type="negative")
                     return
 
-                # Apply exclusions (if any were marked)
-                excluded_outliers = [
-                    o for o in phase1_results.outliers if o.is_excluded
-                ]
+                # Check if using estimated statistics (no pilot data)
+                if not phase1_results.pilot_data:  # Empty list means estimated statistics
+                    # Show notice
+                    self.phase2_estimated_stats_notice.set_visibility(True)
 
-                if excluded_outliers:
-                    # Validate rationales
-                    for outlier in excluded_outliers:
-                        if not outlier.rationale or not outlier.rationale.strip():
-                            ui.notify(
-                                f"Please provide rationale for excluding outlier {outlier.value}",
-                                type="negative",
-                            )
-                            return
-
-                    cleaned_data = apply_exclusions(phase1_results, excluded_outliers)
-
-                    # Log exclusions
-                    for outlier in excluded_outliers:
-                        self.logger.log_outlier_exclusion(
-                            outlier.value, outlier.rationale or "", self.session_id
+                    # Skip outlier handling and transformation cascade
+                    # User must manually select analysis method
+                    if not self.manual_override_checkbox.value:
+                        ui.notify(
+                            "For estimated statistics, please enable manual override and select analysis method",
+                            type="warning",
                         )
-                else:
-                    cleaned_data = phase1_results.pilot_data
+                        return
 
-                # Determine transformation method
-                manual_method = None
-                if self.manual_override_checkbox.value:
+                    # Determine transformation method from manual selection
                     method_str = self.manual_method_radio.value
                     if method_str == "None (Parametric)":
-                        manual_method = TransformationMethod.NONE
+                        transformation_method = TransformationMethod.NONE
+                        analysis_method = AnalysisMethod.PARAMETRIC
                     elif method_str == "Logarithmic":
-                        manual_method = TransformationMethod.LOGARITHMIC
+                        transformation_method = TransformationMethod.LOGARITHMIC
+                        analysis_method = AnalysisMethod.PARAMETRIC
                     elif method_str == "Box-Cox":
-                        manual_method = TransformationMethod.BOX_COX
+                        transformation_method = TransformationMethod.BOX_COX
+                        analysis_method = AnalysisMethod.PARAMETRIC
                     elif method_str == "Yeo-Johnson":
-                        manual_method = TransformationMethod.YEO_JOHNSON
+                        transformation_method = TransformationMethod.YEO_JOHNSON
+                        analysis_method = AnalysisMethod.PARAMETRIC
                     else:  # Non-Parametric
-                        manual_method = AnalysisMethod.NON_PARAMETRIC
+                        transformation_method = TransformationMethod.NONE
+                        analysis_method = AnalysisMethod.NON_PARAMETRIC
 
-                # Run transformation cascade
-                if manual_method == AnalysisMethod.NON_PARAMETRIC:
-                    # Special handling for manual non-parametric selection
-                    from sample_size_calculator.normality import shapiro_wilk_test
-
-                    p_value = shapiro_wilk_test(cleaned_data)
+                    # Create Phase2Results with user-selected method
                     phase2_results = Phase2Results(
-                        cleaned_data=cleaned_data,
-                        shapiro_p_value=p_value,
-                        transformation_method=TransformationMethod.NONE,
-                        analysis_method=AnalysisMethod.NON_PARAMETRIC,
-                        lambda_param=None,
+                        cleaned_data=[],  # Empty list for estimated statistics
+                        shapiro_p_value=0.0,  # Not applicable
+                        transformation_method=transformation_method,
+                        analysis_method=analysis_method,
+                        lambda_param=None,  # Not applicable for estimated statistics
                         manual_override=True,
                     )
                 else:
-                    phase2_results = transformation_cascade(cleaned_data, manual_method)
+                    # Pilot dataset case - existing logic
+                    # Apply exclusions (if any were marked)
+                    excluded_outliers = [
+                        o for o in phase1_results.outliers if o.is_excluded
+                    ]
+
+                    if excluded_outliers:
+                        # Validate rationales
+                        for outlier in excluded_outliers:
+                            if not outlier.rationale or not outlier.rationale.strip():
+                                ui.notify(
+                                    f"Please provide rationale for excluding outlier {outlier.value}",
+                                    type="negative",
+                                )
+                                return
+
+                        cleaned_data = apply_exclusions(phase1_results, excluded_outliers)
+
+                        # Log exclusions
+                        for outlier in excluded_outliers:
+                            self.logger.log_outlier_exclusion(
+                                outlier.value, outlier.rationale or "", self.session_id
+                            )
+                    else:
+                        cleaned_data = phase1_results.pilot_data
+
+                    # Determine transformation method
+                    manual_method = None
+                    if self.manual_override_checkbox.value:
+                        method_str = self.manual_method_radio.value
+                        if method_str == "None (Parametric)":
+                            manual_method = TransformationMethod.NONE
+                        elif method_str == "Logarithmic":
+                            manual_method = TransformationMethod.LOGARITHMIC
+                        elif method_str == "Box-Cox":
+                            manual_method = TransformationMethod.BOX_COX
+                        elif method_str == "Yeo-Johnson":
+                            manual_method = TransformationMethod.YEO_JOHNSON
+                        else:  # Non-Parametric
+                            manual_method = AnalysisMethod.NON_PARAMETRIC
+
+                    # Run transformation cascade
+                    if manual_method == AnalysisMethod.NON_PARAMETRIC:
+                        # Special handling for manual non-parametric selection
+                        from sample_size_calculator.normality import shapiro_wilk_test
+
+                        p_value = shapiro_wilk_test(cleaned_data)
+                        phase2_results = Phase2Results(
+                            cleaned_data=cleaned_data,
+                            shapiro_p_value=p_value,
+                            transformation_method=TransformationMethod.NONE,
+                            analysis_method=AnalysisMethod.NON_PARAMETRIC,
+                            lambda_param=None,
+                            manual_override=True,
+                        )
+                    else:
+                        phase2_results = transformation_cascade(cleaned_data, manual_method)
 
                 self.module_v_state.complete_phase2(phase2_results)
 
@@ -934,13 +1123,126 @@ class UIController:
                     ui.notify("Missing required data from previous phases", type="negative")
                     return
 
-                # Calculate capability margin
-                k_margin = calculate_capability_margin(
-                    phase2_results.cleaned_data,
-                    spec_limits,
-                    phase2_results.transformation_method,
-                    phase2_results.lambda_param,
-                )
+                # Check if using estimated statistics
+                if (
+                    self.module_v_state.estimated_mean is not None
+                    and self.module_v_state.estimated_std is not None
+                ):
+                    # Use estimated statistics directly
+                    mean = self.module_v_state.estimated_mean
+                    std = self.module_v_state.estimated_std
+
+                    # Calculate k_margin manually using the same logic as calculate_capability_margin
+                    # Forward-transform spec limits based on transformation method
+                    transformation_method = phase2_results.transformation_method
+                    lambda_param = phase2_results.lambda_param
+
+                    lsl_t = None
+                    usl_t = None
+
+                    if transformation_method == TransformationMethod.LOGARITHMIC:
+                        # Log transformation: y = ln(x)
+                        if spec_limits.lsl is not None:
+                            if spec_limits.lsl <= 0:
+                                raise ValueError(
+                                    "LSL must be positive for logarithmic transformation"
+                                )
+                            lsl_t = math.log(spec_limits.lsl)
+                        if spec_limits.usl is not None:
+                            if spec_limits.usl <= 0:
+                                raise ValueError(
+                                    "USL must be positive for logarithmic transformation"
+                                )
+                            usl_t = math.log(spec_limits.usl)
+
+                    elif transformation_method == TransformationMethod.BOX_COX:
+                        # Box-Cox transformation: y = (x^λ - 1) / λ (for λ ≠ 0)
+                        if lambda_param is None:
+                            raise ValueError(
+                                "Lambda parameter required for Box-Cox transformation"
+                            )
+
+                        if spec_limits.lsl is not None:
+                            if spec_limits.lsl <= 0:
+                                raise ValueError(
+                                    "LSL must be positive for Box-Cox transformation"
+                                )
+                            if abs(lambda_param) < 1e-10:  # lambda ≈ 0
+                                lsl_t = math.log(spec_limits.lsl)
+                            else:
+                                lsl_t = (spec_limits.lsl**lambda_param - 1) / lambda_param
+
+                        if spec_limits.usl is not None:
+                            if spec_limits.usl <= 0:
+                                raise ValueError(
+                                    "USL must be positive for Box-Cox transformation"
+                                )
+                            if abs(lambda_param) < 1e-10:  # lambda ≈ 0
+                                usl_t = math.log(spec_limits.usl)
+                            else:
+                                usl_t = (spec_limits.usl**lambda_param - 1) / lambda_param
+
+                    elif transformation_method == TransformationMethod.YEO_JOHNSON:
+                        # Yeo-Johnson transformation (works with all values)
+                        if lambda_param is None:
+                            raise ValueError(
+                                "Lambda parameter required for Yeo-Johnson transformation"
+                            )
+
+                        def yeo_johnson_forward_single(x: float, lmbda: float) -> float:
+                            """Apply Yeo-Johnson transformation to a single value."""
+                            if x >= 0:
+                                if abs(lmbda) < 1e-10:  # lambda ≈ 0
+                                    return math.log(x + 1)
+                                else:
+                                    return ((x + 1) ** lmbda - 1) / lmbda
+                            else:  # x < 0
+                                if abs(lmbda - 2) < 1e-10:  # lambda ≈ 2
+                                    return -math.log(-x + 1)
+                                else:
+                                    return -((-x + 1) ** (2 - lmbda) - 1) / (2 - lmbda)
+
+                        if spec_limits.lsl is not None:
+                            lsl_t = yeo_johnson_forward_single(spec_limits.lsl, lambda_param)
+                        if spec_limits.usl is not None:
+                            usl_t = yeo_johnson_forward_single(spec_limits.usl, lambda_param)
+
+                    else:  # TransformationMethod.NONE
+                        # No transformation - use original limits
+                        lsl_t = spec_limits.lsl
+                        usl_t = spec_limits.usl
+
+                    # Calculate capability margins
+                    margins = []
+
+                    if lsl_t is not None:
+                        # Lower margin: (mean - LSL) / std
+                        lower_margin = (mean - lsl_t) / std
+                        margins.append(lower_margin)
+
+                    if usl_t is not None:
+                        # Upper margin: (USL - mean) / std
+                        upper_margin = (usl_t - mean) / std
+                        margins.append(upper_margin)
+
+                    # k_margin is the minimum of the calculated margins
+                    k_margin = min(margins)
+
+                    # Check if process is capable
+                    if k_margin <= 0:
+                        raise ValueError(
+                            "Process is incapable: k_margin <= 0. "
+                            "Mean is outside specification limits or too close to limits."
+                        )
+
+                else:
+                    # Use existing logic: calculate_capability_margin with pilot data
+                    k_margin = calculate_capability_margin(
+                        phase2_results.cleaned_data,
+                        spec_limits,
+                        phase2_results.transformation_method,
+                        phase2_results.lambda_param,
+                    )
 
                 # Calculate required sample size
                 phase3_results = calculate_required_sample_size(
@@ -1296,51 +1598,47 @@ class UIController:
             self.phase4_expansion.disable()
 
     def _populate_outlier_exclusion_ui(self) -> None:
-        """Populate outlier exclusion UI with detected outliers."""
-        phase1_results = self.module_v_state.phase1_results
-        if phase1_results is None or not phase1_results.outliers:
+            """Populate outlier exclusion UI with detected outliers."""
+            phase1_results = self.module_v_state.phase1_results
+            if phase1_results is None or not phase1_results.outliers:
+                self.outlier_exclusion_container.clear()
+                with self.outlier_exclusion_container:
+                    ui.label("No outliers detected").classes("text-body1")
+                return
+
             self.outlier_exclusion_container.clear()
             with self.outlier_exclusion_container:
-                ui.label("No outliers detected").classes("text-body1")
-            return
+                for _i, outlier in enumerate(phase1_results.outliers):
+                    with ui.card().classes("w-full bg-yellow-50"):
+                        with ui.row().classes("w-full items-center"):
+                            ui.label(f"Outlier Value: {outlier.value}").classes(
+                                "text-body1 font-bold"
+                            )
 
-        self.outlier_exclusion_container.clear()
-        with self.outlier_exclusion_container:
-            for i, outlier in enumerate(phase1_results.outliers):
-                with ui.card().classes("w-full bg-yellow-50"):
-                    with ui.row().classes("w-full items-center"):
-                        ui.label(f"Outlier Value: {outlier.value}").classes(
-                            "text-body1 font-bold"
+                            # Exclude checkbox
+                            exclude_cb = ui.checkbox("Exclude").bind_value(
+                                outlier, "is_excluded"
+                            )
+
+                        # Rationale input (inside the card)
+                        rationale_input = (
+                            ui.textarea(
+                                label="Engineering Rationale (required if excluded)",
+                                placeholder="e.g., Measurement error, sensor malfunction, process upset",
+                            )
+                            .classes("w-full")
+                            .bind_value(outlier, "rationale")
                         )
 
-                        # Exclude checkbox
-                        exclude_cb = ui.checkbox("Exclude").bind_value(
-                            outlier, "is_excluded"
+                        # Initially hide the rationale input
+                        rationale_input.set_visibility(False)
+
+                        # Update visibility when checkbox changes
+                        exclude_cb.on(
+                            "update:model-value",
+                            lambda e, r=rationale_input: r.set_visibility(e.args),
                         )
 
-                    # Rationale input
-                    rationale_input = (
-                        ui.textarea(
-                            label="Engineering Rationale (required if excluded)",
-                            placeholder="e.g., Measurement error, sensor malfunction, process upset",
-                        )
-                        .classes("w-full")
-                        .bind_value(outlier, "rationale")
-                    )
-
-                    # Show/hide rationale based on checkbox
-                    def update_rationale_visibility(
-                        checkbox: ui.checkbox, textarea: ui.textarea
-                    ) -> None:
-                        """Update rationale input visibility."""
-
-                        def toggle() -> None:
-                            textarea.set_visibility(checkbox.value)
-
-                        checkbox.on('change', toggle)
-                        textarea.set_visibility(checkbox.value)
-
-                    update_rationale_visibility(exclude_cb, rationale_input)
 
     def _display_method_transparency(self) -> None:
         """Display active mathematical path."""
