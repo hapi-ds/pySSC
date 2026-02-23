@@ -180,21 +180,21 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
 - [x] 6. Checkpoint - Ensure all core calculation tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Hash verification and audit logging
-  - [ ] 7.1 Create hash_verifier.py for SHA-256 verification
+- [x] 7. Hash verification and audit logging
+  - [x] 7.1 Create hash_verifier.py for SHA-256 verification
     - Implement calculate_file_hash(filepath) using hashlib.sha256
     - Implement get_engine_hash() for calculations.py
     - Implement get_validated_hash() and set_validated_hash(hash_value) using config/validated_hash.json
     - Implement is_validated_state() comparing current vs stored hash
     - _Requirements: 28.1, 28.3, 29.1, 29.4_
 
-  - [ ] 7.2 Write property tests for hash verification
+  - [x] 7.2 Write property tests for hash verification
     - **Property 28: Hash Calculation Idempotence**
     - **Validates: Requirements 28.4**
     - **Property 29: Validation State Determination**
     - **Validates: Requirements 29.1, 29.2, 29.3**
 
-  - [ ] 7.3 Create audit_logger.py with comprehensive logging
+  - [x] 7.3 Create audit_logger.py with comprehensive logging
     - Initialize logger with RotatingFileHandler (10MB limit, 90-day retention)
     - Implement log_ui_interaction(event_type, session_id, context)
     - Implement log_button_click(button_id, module, phase, session_id)
@@ -208,7 +208,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Use ISO 8601 timestamps and structured format: [TIMESTAMP] [LEVEL] [SESSION_ID] [EVENT_TYPE] {context_json}
     - _Requirements: 38.1, 38.2, 38.3, 38.4, 38.5, 38.6, 38.7, 38.8, 38.9, 38.10, 38.11, 38.12, 38.13, 38.14, 38.15, 38.16_
 
-  - [ ] 7.4 Write property tests for audit logging
+  - [x] 7.4 Write property tests for audit logging
     - **Property 34: Comprehensive Event Logging**
     - **Validates: Requirements 38.1, 38.2, 38.3, 38.4, 38.5, 38.6, 38.7, 38.8, 38.9**
     - **Property 35: Log Format Consistency**
