@@ -28,7 +28,7 @@ class TestInverseLogTransform:
         transformed = log_transform(original)
         assert transformed is not None, "Transform should succeed with positive values"
         back = inverse_log_transform(transformed)
-        
+
         assert np.allclose(original, back, rtol=1e-10)
 
     def test_inverse_log_round_trip(self):
@@ -37,7 +37,7 @@ class TestInverseLogTransform:
         transformed = log_transform(original)
         assert transformed is not None, "Transform should succeed with positive values"
         back = inverse_log_transform(transformed)
-        
+
         assert np.allclose(original, back, rtol=1e-10)
 
     def test_inverse_log_single_value(self):
@@ -46,7 +46,7 @@ class TestInverseLogTransform:
         transformed = log_transform(original)
         assert transformed is not None, "Transform should succeed with positive values"
         back = inverse_log_transform(transformed)
-        
+
         assert np.allclose(original, back, rtol=1e-10)
 
 
@@ -60,7 +60,7 @@ class TestInverseBoxCoxTransform:
         assert result is not None, "Transform should succeed with positive values"
         transformed, lambda_param = result
         back = inverse_box_cox_transform(transformed, lambda_param)
-        
+
         assert np.allclose(original, back, rtol=1e-10)
 
     def test_inverse_box_cox_round_trip(self):
@@ -70,7 +70,7 @@ class TestInverseBoxCoxTransform:
         assert result is not None, "Transform should succeed with positive values"
         transformed, lambda_param = result
         back = inverse_box_cox_transform(transformed, lambda_param)
-        
+
         assert np.allclose(original, back, rtol=1e-10)
 
     def test_inverse_box_cox_lambda_zero(self):
@@ -81,7 +81,7 @@ class TestInverseBoxCoxTransform:
         assert result is not None, "Transform should succeed with positive values"
         transformed, lambda_param = result
         back = inverse_box_cox_transform(transformed, lambda_param)
-        
+
         assert np.allclose(original, back, rtol=1e-10)
 
     def test_inverse_box_cox_various_lambdas(self):
@@ -91,7 +91,7 @@ class TestInverseBoxCoxTransform:
             [0.1, 0.5, 1.0, 5.0, 10.0],
             [10.0, 20.0, 30.0, 40.0, 50.0],
         ]
-        
+
         for original in test_cases:
             result = box_cox_transform(original)
             assert result is not None, "Transform should succeed with positive values"
@@ -108,7 +108,7 @@ class TestInverseYeoJohnsonTransform:
         original = [1.0, 2.0, 3.0, 4.0, 5.0]
         transformed, lambda_param = yeo_johnson_transform(original)
         back = inverse_yeo_johnson_transform(transformed, lambda_param)
-        
+
         assert np.allclose(original, back, rtol=1e-10)
 
     def test_inverse_yeo_johnson_mixed_signs(self):
@@ -116,7 +116,7 @@ class TestInverseYeoJohnsonTransform:
         original = [-2.0, -1.0, 0.0, 1.0, 2.0]
         transformed, lambda_param = yeo_johnson_transform(original)
         back = inverse_yeo_johnson_transform(transformed, lambda_param)
-        
+
         assert np.allclose(original, back, rtol=1e-10)
 
     def test_inverse_yeo_johnson_negative(self):
@@ -124,7 +124,7 @@ class TestInverseYeoJohnsonTransform:
         original = [-5.0, -4.0, -3.0, -2.0, -1.0]
         transformed, lambda_param = yeo_johnson_transform(original)
         back = inverse_yeo_johnson_transform(transformed, lambda_param)
-        
+
         assert np.allclose(original, back, rtol=1e-10)
 
     def test_inverse_yeo_johnson_round_trip(self):
@@ -132,7 +132,7 @@ class TestInverseYeoJohnsonTransform:
         original = [-10.0, -1.0, 0.0, 1.0, 10.0]
         transformed, lambda_param = yeo_johnson_transform(original)
         back = inverse_yeo_johnson_transform(transformed, lambda_param)
-        
+
         assert np.allclose(original, back, rtol=1e-10)
 
     def test_inverse_yeo_johnson_various_patterns(self):
@@ -142,7 +142,7 @@ class TestInverseYeoJohnsonTransform:
             [-0.5, -0.1, 0.1, 0.5, 1.0],
             [-100.0, -10.0, 0.0, 10.0, 100.0],
         ]
-        
+
         for original in test_cases:
             transformed, lambda_param = yeo_johnson_transform(original)
             back = inverse_yeo_johnson_transform(transformed, lambda_param)
@@ -153,7 +153,7 @@ class TestInverseYeoJohnsonTransform:
         original = [3.14159]
         transformed, lambda_param = yeo_johnson_transform(original)
         back = inverse_yeo_johnson_transform(transformed, lambda_param)
-        
+
         assert np.allclose(original, back, rtol=1e-10)
 
 
@@ -164,14 +164,16 @@ class TestRoundTripProperty:
         """Test round-trip property for log transformation with tolerance limit values."""
         # Simulate tolerance limits in transformed space
         tolerance_limits = [0.5, 1.0, 1.5, 2.0, 2.5]
-        
+
         # Back-transform to original space
         original_limits = inverse_log_transform(tolerance_limits)
-        
+
         # Forward-transform back to transformed space
         back_to_transformed = log_transform(original_limits)
-        assert back_to_transformed is not None, "Transform should succeed with positive values"
-        
+        assert back_to_transformed is not None, (
+            "Transform should succeed with positive values"
+        )
+
         # Should match within numerical precision
         assert np.allclose(tolerance_limits, back_to_transformed, rtol=1e-10)
 
@@ -182,23 +184,28 @@ class TestRoundTripProperty:
         result = box_cox_transform(sample_data)
         assert result is not None, "Transform should succeed with positive values"
         transformed_data, lambda_param = result
-        
+
         # Simulate tolerance limits calculated in transformed space
         # (e.g., mean ± k * std in transformed space)
         mean_t = np.mean(transformed_data)
         std_t = np.std(transformed_data, ddof=1)
-        tolerance_limits: list[float] = [float(mean_t - 2*std_t), float(mean_t + 2*std_t)]
-        
+        tolerance_limits: list[float] = [
+            float(mean_t - 2 * std_t),
+            float(mean_t + 2 * std_t),
+        ]
+
         # Back-transform to original space
         original_limits = inverse_box_cox_transform(tolerance_limits, lambda_param)
-        
+
         # Forward-transform back to transformed space using the same lambda
         # For Box-Cox, we need to manually apply the transformation with the locked lambda
         if np.abs(lambda_param) < 1e-10:
             back_to_transformed = np.log(original_limits).tolist()
         else:
-            back_to_transformed = ((np.power(original_limits, lambda_param) - 1) / lambda_param).tolist()
-        
+            back_to_transformed = (
+                (np.power(original_limits, lambda_param) - 1) / lambda_param
+            ).tolist()
+
         # Should match within numerical precision
         assert np.allclose(tolerance_limits, back_to_transformed, rtol=1e-9)
 
@@ -209,16 +216,19 @@ class TestRoundTripProperty:
         result = yeo_johnson_transform(sample_data)
         assert result is not None, "Transform should succeed"
         transformed_data, lambda_param = result
-        
+
         # Simulate tolerance limits calculated in transformed space
         # (e.g., mean ± k * std in transformed space)
         mean_t = np.mean(transformed_data)
         std_t = np.std(transformed_data, ddof=1)
-        tolerance_limits: list[float] = [float(mean_t - 2*std_t), float(mean_t + 2*std_t)]
-        
+        tolerance_limits: list[float] = [
+            float(mean_t - 2 * std_t),
+            float(mean_t + 2 * std_t),
+        ]
+
         # Back-transform to original space
         original_limits = inverse_yeo_johnson_transform(tolerance_limits, lambda_param)
-        
+
         # Forward-transform back to transformed space using the same lambda
         # For Yeo-Johnson, we need to manually apply the transformation with the locked lambda
         def apply_yeo_johnson(x, lam):
@@ -232,8 +242,10 @@ class TestRoundTripProperty:
                     return -(np.power(-x + 1, 2 - lam) - 1) / (2 - lam)
                 else:
                     return -np.log(-x + 1)
-        
-        back_to_transformed = [apply_yeo_johnson(x, lambda_param) for x in original_limits]
-        
+
+        back_to_transformed = [
+            apply_yeo_johnson(x, lambda_param) for x in original_limits
+        ]
+
         # Should match within numerical precision
         assert np.allclose(tolerance_limits, back_to_transformed, rtol=1e-9)

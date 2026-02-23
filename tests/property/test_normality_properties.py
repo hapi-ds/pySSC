@@ -53,9 +53,7 @@ class TestNormalityTestingProperties:
         )
     )
     @settings(deadline=1000)
-    def test_property_13_shapiro_wilk_deterministic(
-        self, data: list[float]
-    ) -> None:
+    def test_property_13_shapiro_wilk_deterministic(self, data: list[float]) -> None:
         """Property 13b: Shapiro-Wilk Test is Deterministic.
 
         **Validates: Requirements 9.1, 9.2**
@@ -111,9 +109,7 @@ class TestNormalityTestingProperties:
         )
     )
     @settings(deadline=1000)
-    def test_property_13_is_normal_with_default_alpha(
-        self, data: list[float]
-    ) -> None:
+    def test_property_13_is_normal_with_default_alpha(self, data: list[float]) -> None:
         """Property 13d: is_normal with Default Alpha (0.05).
 
         **Validates: Requirements 9.3, 9.4**
@@ -142,9 +138,7 @@ class TestNormalityTestingProperties:
         p_value=st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
     )
     @settings(deadline=1000)
-    def test_property_13_is_normal_boundary_behavior(
-        self, p_value: float
-    ) -> None:
+    def test_property_13_is_normal_boundary_behavior(self, p_value: float) -> None:
         """Property 13e: is_normal Boundary Behavior.
 
         **Validates: Requirements 9.3, 9.4**

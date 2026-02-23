@@ -92,7 +92,7 @@ class HashVerifier:
         config = {
             "validated_hash": hash_value,
             "validation_date": None,  # To be set by validation suite
-            "validator": None  # To be set by validation suite
+            "validator": None,  # To be set by validation suite
         }
 
         try:

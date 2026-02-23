@@ -21,7 +21,12 @@ class TestTransformationCascadeProperties:
 
     @given(
         data=st.lists(
-            st.floats(min_value=-1000.0, max_value=1000.0, allow_nan=False, allow_subnormal=False),
+            st.floats(
+                min_value=-1000.0,
+                max_value=1000.0,
+                allow_nan=False,
+                allow_subnormal=False,
+            ),
             min_size=3,
             max_size=50,
             unique=True,
@@ -44,21 +49,19 @@ class TestTransformationCascadeProperties:
         assert result is not None, "Cascade should always return a result"
         assert hasattr(result, "cleaned_data"), "Result should have cleaned_data"
         assert hasattr(result, "shapiro_p_value"), "Result should have shapiro_p_value"
-        assert hasattr(
-            result, "transformation_method"
-        ), "Result should have transformation_method"
+        assert hasattr(result, "transformation_method"), (
+            "Result should have transformation_method"
+        )
         assert hasattr(result, "analysis_method"), "Result should have analysis_method"
         assert hasattr(result, "lambda_param"), "Result should have lambda_param"
         assert hasattr(result, "manual_override"), "Result should have manual_override"
 
         # Verify data integrity
         assert len(result.cleaned_data) > 0, "Cleaned data should not be empty"
-        assert isinstance(
-            result.shapiro_p_value, float
-        ), "P-value should be a float"
-        assert (
-            0.0 <= result.shapiro_p_value <= 1.0
-        ), f"P-value should be in [0, 1], got {result.shapiro_p_value}"
+        assert isinstance(result.shapiro_p_value, float), "P-value should be a float"
+        assert 0.0 <= result.shapiro_p_value <= 1.0, (
+            f"P-value should be in [0, 1], got {result.shapiro_p_value}"
+        )
 
         # Verify transformation method is valid
         assert result.transformation_method in TransformationMethod, (
@@ -73,13 +76,18 @@ class TestTransformationCascadeProperties:
         )
 
         # Verify manual_override is False for automatic cascade
-        assert (
-            result.manual_override is False
-        ), "Manual override should be False for automatic cascade"
+        assert result.manual_override is False, (
+            "Manual override should be False for automatic cascade"
+        )
 
     @given(
         data=st.lists(
-            st.floats(min_value=-1000.0, max_value=1000.0, allow_nan=False, allow_subnormal=False),
+            st.floats(
+                min_value=-1000.0,
+                max_value=1000.0,
+                allow_nan=False,
+                allow_subnormal=False,
+            ),
             min_size=3,
             max_size=50,
             unique=True,
@@ -123,16 +131,19 @@ class TestTransformationCascadeProperties:
 
     @given(
         data=st.lists(
-            st.floats(min_value=-1000.0, max_value=1000.0, allow_nan=False, allow_subnormal=False),
+            st.floats(
+                min_value=-1000.0,
+                max_value=1000.0,
+                allow_nan=False,
+                allow_subnormal=False,
+            ),
             min_size=3,
             max_size=50,
             unique=True,
         ).filter(lambda x: max(x) - min(x) > 0.01)
     )
     @settings(deadline=2000)
-    def test_property_14c_lambda_param_set_correctly(
-        self, data: list[float]
-    ) -> None:
+    def test_property_14c_lambda_param_set_correctly(self, data: list[float]) -> None:
         """Property 14c: Lambda Parameter Set Correctly for Box-Cox and Yeo-Johnson.
 
         **Validates: Requirements 11.2, 11.5, 12.2, 12.4**
@@ -166,16 +177,19 @@ class TestTransformationCascadeProperties:
 
     @given(
         data=st.lists(
-            st.floats(min_value=-1000.0, max_value=1000.0, allow_nan=False, allow_subnormal=False),
+            st.floats(
+                min_value=-1000.0,
+                max_value=1000.0,
+                allow_nan=False,
+                allow_subnormal=False,
+            ),
             min_size=3,
             max_size=50,
             unique=True,
         ).filter(lambda x: max(x) - min(x) > 0.01)
     )
     @settings(deadline=2000)
-    def test_property_14d_data_length_preserved(
-        self, data: list[float]
-    ) -> None:
+    def test_property_14d_data_length_preserved(self, data: list[float]) -> None:
         """Property 14d: Data Length is Preserved Through Transformation.
 
         **Validates: Requirements 10.1-10.5, 11.1-11.6, 12.1-12.4**
@@ -246,7 +260,12 @@ class TestTransformationCascadeProperties:
 
     @given(
         data=st.lists(
-            st.floats(min_value=-1000.0, max_value=1000.0, allow_nan=False, allow_subnormal=False),
+            st.floats(
+                min_value=-1000.0,
+                max_value=1000.0,
+                allow_nan=False,
+                allow_subnormal=False,
+            ),
             min_size=3,
             max_size=50,
             unique=True,
@@ -280,9 +299,7 @@ class TestTransformationCascadeProperties:
         result_negative = transformation_cascade(negative_data)
 
         # Should not crash and should return valid result
-        assert result_negative is not None, (
-            "Cascade should handle negative data"
-        )
+        assert result_negative is not None, "Cascade should handle negative data"
         assert len(result_negative.cleaned_data) == len(negative_data), (
             "Data length should be preserved for negative data"
         )
@@ -300,9 +317,7 @@ class TestManualOverrideProperties:
         ).filter(lambda x: max(x) - min(x) > 0.01)
     )
     @settings(deadline=2000)
-    def test_property_15a_manual_override_sets_flag(
-        self, data: list[float]
-    ) -> None:
+    def test_property_15a_manual_override_sets_flag(self, data: list[float]) -> None:
         """Property 15a: Manual Override Sets manual_override=True.
 
         **Validates: Requirements 10.6, 11.7, 12.6, 13.5**
@@ -358,7 +373,12 @@ class TestManualOverrideProperties:
 
     @given(
         data=st.lists(
-            st.floats(min_value=-1000.0, max_value=1000.0, allow_nan=False, allow_subnormal=False),
+            st.floats(
+                min_value=-1000.0,
+                max_value=1000.0,
+                allow_nan=False,
+                allow_subnormal=False,
+            ),
             min_size=3,
             max_size=50,
             unique=True,
@@ -425,9 +445,9 @@ class TestManualOverrideProperties:
                 data, manual_method=TransformationMethod.LOGARITHMIC
             )
 
-            assert manual_result.transformation_method == TransformationMethod.LOGARITHMIC, (
-                "Manual override should force Logarithmic transformation"
-            )
+            assert (
+                manual_result.transformation_method == TransformationMethod.LOGARITHMIC
+            ), "Manual override should force Logarithmic transformation"
             assert manual_result.manual_override is True
             # The p-value might be different from automatic cascade
             # because we're forcing a specific method
@@ -438,9 +458,9 @@ class TestManualOverrideProperties:
                 data, manual_method=TransformationMethod.BOX_COX
             )
 
-            assert manual_result_bc.transformation_method == TransformationMethod.BOX_COX, (
-                "Manual override should force Box-Cox transformation"
-            )
+            assert (
+                manual_result_bc.transformation_method == TransformationMethod.BOX_COX
+            ), "Manual override should force Box-Cox transformation"
             assert manual_result_bc.manual_override is True
 
         # Force Yeo-Johnson
@@ -449,9 +469,10 @@ class TestManualOverrideProperties:
                 data, manual_method=TransformationMethod.YEO_JOHNSON
             )
 
-            assert manual_result_yj.transformation_method == TransformationMethod.YEO_JOHNSON, (
-                "Manual override should force Yeo-Johnson transformation"
-            )
+            assert (
+                manual_result_yj.transformation_method
+                == TransformationMethod.YEO_JOHNSON
+            ), "Manual override should force Yeo-Johnson transformation"
             assert manual_result_yj.manual_override is True
 
     @given(

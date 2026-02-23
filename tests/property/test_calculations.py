@@ -108,15 +108,15 @@ class TestModuleACalculations:
         cumulative_prob_n = binom.cdf(c, n, 1 - r_rel)
         assert cumulative_prob_n <= 1 - c_conf, (
             f"Constraint not satisfied for n={n}: "
-            f"P(X <= {c}) = {cumulative_prob_n:.6f} > {1-c_conf:.6f}"
+            f"P(X <= {c}) = {cumulative_prob_n:.6f} > {1 - c_conf:.6f}"
         )
 
         # Verify n is the minimum (n-1 should not satisfy the constraint)
         if n > 1:
             cumulative_prob_n_minus_1 = binom.cdf(c, n - 1, 1 - r_rel)
             assert cumulative_prob_n_minus_1 > 1 - c_conf, (
-                f"n={n} is not minimum: n-1={n-1} also satisfies constraint "
-                f"with P(X <= {c}) = {cumulative_prob_n_minus_1:.6f} <= {1-c_conf:.6f}"
+                f"n={n} is not minimum: n-1={n - 1} also satisfies constraint "
+                f"with P(X <= {c}) = {cumulative_prob_n_minus_1:.6f} <= {1 - c_conf:.6f}"
             )
 
     @given(
@@ -144,7 +144,7 @@ class TestModuleACalculations:
         for i in range(1, len(sample_sizes)):
             assert sample_sizes[i] >= sample_sizes[i - 1], (
                 f"Sample size not monotonic: "
-                f"n(c={i-1})={sample_sizes[i-1]} > n(c={i})={sample_sizes[i]} "
+                f"n(c={i - 1})={sample_sizes[i - 1]} > n(c={i})={sample_sizes[i]} "
                 f"for C={confidence}%, R={reliability}%"
             )
 
@@ -154,7 +154,6 @@ class TestModuleACalculations:
         assert results[1][0] == 1, "Second result should be for c=1"
         assert results[2][0] == 2, "Third result should be for c=2"
         assert results[3][0] == 3, "Fourth result should be for c=3"
-
 
 
 class TestModuleVToleranceFactors:
@@ -208,11 +207,11 @@ class TestModuleVToleranceFactors:
             # Tolerance factors should decrease with increasing sample size
             assert k1_prev >= k1, (
                 f"One-sided tolerance factor should decrease with sample size: "
-                f"k1(n={n-1})={k1_prev:.6f} should be >= k1(n={n})={k1:.6f}"
+                f"k1(n={n - 1})={k1_prev:.6f} should be >= k1(n={n})={k1:.6f}"
             )
             assert k2_prev >= k2, (
                 f"Two-sided tolerance factor should decrease with sample size: "
-                f"k2(n={n-1})={k2_prev:.6f} should be >= k2(n={n})={k2:.6f}"
+                f"k2(n={n - 1})={k2_prev:.6f} should be >= k2(n={n})={k2:.6f}"
             )
 
     @given(

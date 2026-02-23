@@ -407,6 +407,7 @@ def calculate_tolerance_limits(
                     return -math.log(-x + 1)
                 else:
                     return -((-x + 1) ** (2 - lmbda) - 1) / (2 - lmbda)
+
         if phase2_results.lambda_param is None:
             raise ValueError("Lambda parameter required for Yeo-Johnson transformation")
         transformed_data = [

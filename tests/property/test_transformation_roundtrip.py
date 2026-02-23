@@ -30,9 +30,7 @@ class TestTransformationRoundTrip:
         )
     )
     @settings(deadline=1000)
-    def test_property_24_log_transformation_round_trip(
-        self, data: list[float]
-    ) -> None:
+    def test_property_24_log_transformation_round_trip(self, data: list[float]) -> None:
         """Property 24a: Log Transformation Round-Trip.
 
         **Validates: Requirements 22.1, 22.2, 22.3, 22.5**
@@ -77,7 +75,7 @@ class TestTransformationRoundTrip:
         For all valid positive data, applying Box-Cox transformation followed by
         inverse Box-Cox transformation should produce the original data within
         numerical precision.
-        
+
         Note: Extreme lambda values (|lambda| > 5.0) are filtered out because
         they cause numerical precision issues in power transformations that
         exceed the limits of floating-point arithmetic. This is a known
@@ -113,7 +111,12 @@ class TestTransformationRoundTrip:
 
     @given(
         data=st.lists(
-            st.floats(min_value=-1000.0, max_value=1000.0, allow_nan=False, allow_subnormal=False),
+            st.floats(
+                min_value=-1000.0,
+                max_value=1000.0,
+                allow_nan=False,
+                allow_subnormal=False,
+            ),
             min_size=3,
             max_size=50,
             unique=True,  # Avoid constant data which causes numerical issues
@@ -204,7 +207,7 @@ class TestTransformationRoundTrip:
 
         Test Box-Cox transformation round-trip with various data ranges to ensure
         numerical stability across different scales and lambda values.
-        
+
         Note: Extreme lambda values (|lambda| > 5.0) are filtered out to avoid
         numerical precision issues in power transformations.
         """
@@ -213,11 +216,11 @@ class TestTransformationRoundTrip:
         if result is None:
             return
         transformed, lambda_param = result
-        
+
         # Filter extreme lambda values
         if abs(lambda_param) > 5.0:
             return
-            
+
         back_transformed = inverse_box_cox_transform(transformed, lambda_param)
         # Use relaxed tolerance for Box-Cox due to power transformations
         # Relative tolerance accounts for scale-dependent errors
@@ -230,11 +233,11 @@ class TestTransformationRoundTrip:
         if result_small is None:
             return
         transformed_small, lambda_small = result_small
-        
+
         # Filter extreme lambda values
         if abs(lambda_small) > 5.0:
             return
-            
+
         back_transformed_small = inverse_box_cox_transform(
             transformed_small, lambda_small
         )
@@ -243,22 +246,22 @@ class TestTransformationRoundTrip:
 
         # Test with scaled data (very large values)
         large_data = [x * 1000.0 for x in data]
-        
+
         # Skip if scaled data exceeds Box-Cox numerical precision limits
         # Box-Cox transformations break down with values > 100,000 due to
         # floating-point precision issues in power transformations
         if max(large_data) > 100000:
             return
-            
+
         result_large = box_cox_transform(large_data)
         if result_large is None:
             return
         transformed_large, lambda_large = result_large
-        
+
         # Filter extreme lambda values
         if abs(lambda_large) > 5.0:
             return
-            
+
         back_transformed_large = inverse_box_cox_transform(
             transformed_large, lambda_large
         )
@@ -274,7 +277,12 @@ class TestTransformationRoundTrip:
 
     @given(
         data=st.lists(
-            st.floats(min_value=-1000.0, max_value=1000.0, allow_nan=False, allow_subnormal=False),
+            st.floats(
+                min_value=-1000.0,
+                max_value=1000.0,
+                allow_nan=False,
+                allow_subnormal=False,
+            ),
             min_size=3,
             max_size=50,
             unique=True,  # Avoid constant data
@@ -330,14 +338,14 @@ class TestTransformationRoundTrip:
 
         Test transformation round-trip with edge cases like very small values,
         values close to zero, and uniform data.
-        
+
         Note: Extreme lambda values (|lambda| > 5.0) are filtered out to avoid
         numerical precision issues in power transformations.
         """
         # Test with non-uniform data (Box-Cox requires variance)
         # Create data with slight variation to avoid constant data error
         varied_data = [scale * (1 + i * 0.01) for i in range(size)]
-        
+
         # Log transformation
         log_result = log_transform(varied_data)
         if log_result is not None:
@@ -364,7 +372,7 @@ class TestTransformationRoundTrip:
 
         # Test with data including zero (only Yeo-Johnson should work)
         data_with_zero = [0.0] + [scale * (i + 1) for i in range(size - 1)]
-        
+
         yj_transformed_zero, yj_lambda_zero = yeo_johnson_transform(data_with_zero)
         # Filter extreme lambda values to avoid numerical precision issues
         if abs(yj_lambda_zero) <= 5.0:

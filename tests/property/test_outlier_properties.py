@@ -96,9 +96,7 @@ class TestOutlierDetectionIdempotence:
         )
     )
     @settings(deadline=1000)
-    def test_property_10_outlier_detection_idempotence(
-        self, data: list[float]
-    ) -> None:
+    def test_property_10_outlier_detection_idempotence(self, data: list[float]) -> None:
         """Property 10: Outlier Detection Idempotence.
 
         **Validates: Requirements 7.5**
@@ -133,8 +131,8 @@ class TestOutlierDetectionIdempotence:
         )
 
         # Verify the number of outliers is consistent
-        assert len(results1.outliers) == len(results2.outliers) == len(
-            results3.outliers
+        assert (
+            len(results1.outliers) == len(results2.outliers) == len(results3.outliers)
         ), "Number of outliers differs across multiple runs"
 
 

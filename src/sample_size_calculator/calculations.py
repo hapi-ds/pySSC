@@ -133,9 +133,7 @@ class CalculationEngine:
             if c == 0:
                 n = CalculationEngine.success_run_theorem(confidence, reliability)
             else:
-                n = CalculationEngine.cumulative_binomial(
-                    confidence, reliability, c
-                )
+                n = CalculationEngine.cumulative_binomial(confidence, reliability, c)
             results.append((c, n))
         return results
 
@@ -310,7 +308,7 @@ class CalculationEngine:
         for _ in range(max_iterations):
             # Calculate the probability that both min and max are within tolerance
             # Formula: 1 - N*R^(N-1) + (N-1)*R^N >= c_conf
-            prob = 1 - n * (r_rel ** (n - 1)) + (n - 1) * (r_rel ** n)
+            prob = 1 - n * (r_rel ** (n - 1)) + (n - 1) * (r_rel**n)
 
             if prob >= c_conf:
                 return n

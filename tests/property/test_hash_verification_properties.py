@@ -39,12 +39,13 @@ class TestHashVerification:
 
             # All hashes should be identical
             assert hash1 == hash2 == hash3, (
-                f"Hash calculation is not idempotent: "
-                f"got {hash1}, {hash2}, {hash3}"
+                f"Hash calculation is not idempotent: got {hash1}, {hash2}, {hash3}"
             )
 
             # Verify hash is a valid hexadecimal string of correct length (64 chars for SHA-256)
-            assert len(hash1) == 64, f"SHA-256 hash should be 64 characters, got {len(hash1)}"
+            assert len(hash1) == 64, (
+                f"SHA-256 hash should be 64 characters, got {len(hash1)}"
+            )
             assert all(c in "0123456789abcdef" for c in hash1), (
                 f"Hash should be hexadecimal, got {hash1}"
             )
@@ -57,7 +58,9 @@ class TestHashVerification:
         content1=st.binary(min_size=1, max_size=1000),
         content2=st.binary(min_size=1, max_size=1000),
     )
-    def test_property_28_hash_uniqueness(self, content1: bytes, content2: bytes) -> None:
+    def test_property_28_hash_uniqueness(
+        self, content1: bytes, content2: bytes
+    ) -> None:
         """Property 28: Hash Uniqueness (additional validation).
 
         **Validates: Requirements 28.4**
@@ -83,9 +86,7 @@ class TestHashVerification:
             hash2 = HashVerifier.calculate_file_hash(tmp_path2)
 
             # Different contents should produce different hashes
-            assert hash1 != hash2, (
-                f"Different contents produced same hash: {hash1}"
-            )
+            assert hash1 != hash2, f"Different contents produced same hash: {hash1}"
 
         finally:
             # Clean up temporary files
@@ -197,7 +198,9 @@ class TestHashVerification:
         )
 
         # Verify it's a valid SHA-256 hash
-        assert len(hash1) == 64, f"Engine hash should be 64 characters, got {len(hash1)}"
+        assert len(hash1) == 64, (
+            f"Engine hash should be 64 characters, got {len(hash1)}"
+        )
         assert all(c in "0123456789abcdef" for c in hash1), (
             f"Engine hash should be hexadecimal, got {hash1}"
         )

@@ -215,6 +215,7 @@ def inverse_box_cox_transform(data: list[float], lambda_param: float) -> list[fl
     result = special.inv_boxcox(data_array, lambda_param)
     return result.tolist()
 
+
 def inverse_yeo_johnson_transform(
     data: list[float], lambda_param: float
 ) -> list[float]:

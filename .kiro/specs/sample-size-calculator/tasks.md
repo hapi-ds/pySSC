@@ -216,8 +216,8 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - **Property 36: Logging Non-Idempotence**
     - **Validates: Requirements 38.17**
 
-- [ ] 8. Report generation (ReportLab)
-  - [ ] 8.1 Create report_generator.py with PDF generation
+- [x] 8. Report generation (ReportLab)
+  - [x] 8.1 Create report_generator.py with PDF generation
     - Implement generate_user_report(report_data) using ReportLab
     - Use Flowable paragraphs to prevent text overflow
     - Include header/footer with page numbers
@@ -225,29 +225,29 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Display "VALIDATED STATE: YES" or "VALIDATED STATE: NO - UNVERIFIED CHANGE"
     - _Requirements: 27.1, 27.2, 27.3, 27.4, 27.5, 27.6, 28.2, 29.2, 29.3, 29.5_
 
-  - [ ] 8.2 Write property tests for report generation
+  - [x] 8.2 Write property tests for report generation
     - **Property 27: Report Completeness**
     - **Validates: Requirements 27.1, 27.2, 27.3, 27.4, 27.5, 28.1, 28.2, 28.3**
 
-  - [ ] 8.3 Implement validation certificate generation
+  - [x] 8.3 Implement validation certificate generation
     - Implement generate_validation_certificate(cert_data)
     - Include test execution date, tester name, system info (OS, Python version)
     - Include VTM table with URS IDs, test IDs, and results
     - Include final validated hash
     - _Requirements: 30.1, 30.2, 30.3, 30.4, 30.5, 30.6, 30.7_
 
-  - [ ] 8.4 Write property tests for validation certificate
+  - [x] 8.4 Write property tests for validation certificate
     - **Property 30: Validation Certificate Completeness**
     - **Validates: Requirements 30.2, 30.3, 30.4, 30.5, 30.6**
 
-  - [ ] 8.5 Create vtm_generator.py for traceability matrix
+  - [x] 8.5 Create vtm_generator.py for traceability matrix
     - Implement generate_vtm(test_results) returning DataFrame
     - Include columns: URS_ID, Requirement, Test_ID, Result
     - Implement export_vtm_csv(vtm, filepath)
     - Implement add_vtm_to_pdf(story, vtm) for PDF integration
     - _Requirements: 34.1, 34.2, 34.3, 34.4, 34.5_
 
-  - [ ] 8.6 Write property tests for VTM generation
+  - [x] 8.6 Write property tests for VTM generation
     - **Property 31: Verification Traceability Matrix Completeness**
     - **Validates: Requirements 34.1, 34.2, 34.3, 34.5**
 

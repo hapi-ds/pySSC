@@ -67,18 +67,11 @@ def detect_outliers(data: list[float]) -> Phase1Results:
         if value < lower_bound or value > upper_bound:
             outliers.append(OutlierInfo(value=value, is_excluded=False, rationale=None))
 
-    return Phase1Results(
-        pilot_data=data,
-        outliers=outliers,
-        q1=q1,
-        q3=q3,
-        iqr=iqr
-    )
+    return Phase1Results(pilot_data=data, outliers=outliers, q1=q1, q3=q3, iqr=iqr)
 
 
 def apply_exclusions(
-    phase1_results: Phase1Results,
-    exclusions: list[OutlierInfo]
+    phase1_results: Phase1Results, exclusions: list[OutlierInfo]
 ) -> list[float]:
     """Apply user-specified outlier exclusions to create a cleaned dataset.
 
@@ -117,16 +110,12 @@ def apply_exclusions(
 
     # Create set of excluded values for efficient lookup
     excluded_values = {
-        exclusion.value
-        for exclusion in exclusions
-        if exclusion.is_excluded
+        exclusion.value for exclusion in exclusions if exclusion.is_excluded
     }
 
     # Filter out excluded outliers from pilot data
     cleaned_data = [
-        value
-        for value in phase1_results.pilot_data
-        if value not in excluded_values
+        value for value in phase1_results.pilot_data if value not in excluded_values
     ]
 
     return cleaned_data
