@@ -115,3 +115,52 @@ class HashVerifier:
             return False
 
         return current_hash == validated_hash
+
+
+
+# Convenience functions for direct import
+def get_engine_hash() -> str:
+    """Get current SHA-256 hash of calculations.py.
+
+    Convenience function that wraps HashVerifier.get_engine_hash().
+
+    Returns:
+        Hexadecimal SHA-256 hash string of the calculation engine
+    """
+    return HashVerifier.get_engine_hash()
+
+
+def is_validated_state() -> bool:
+    """Check if current engine hash matches validated hash.
+
+    Convenience function that wraps HashVerifier.is_validated_state().
+
+    Returns:
+        True if current hash matches validated hash, False otherwise
+    """
+    return HashVerifier.is_validated_state()
+
+
+def get_validated_hash() -> str | None:
+    """Retrieve stored validated hash from configuration file.
+
+    Convenience function that wraps HashVerifier.get_validated_hash().
+
+    Returns:
+        Stored validated hash string, or None if not found or file doesn't exist
+    """
+    return HashVerifier.get_validated_hash()
+
+
+def set_validated_hash(hash_value: str) -> None:
+    """Store validated hash to configuration file.
+
+    Convenience function that wraps HashVerifier.set_validated_hash().
+
+    Args:
+        hash_value: SHA-256 hash string to store as validated
+
+    Raises:
+        IOError: If the configuration file cannot be written
+    """
+    return HashVerifier.set_validated_hash(hash_value)
