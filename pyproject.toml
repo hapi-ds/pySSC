@@ -32,11 +32,15 @@ dependencies = [
 [dependency-groups]
 dev = [
     "hypothesis>=6.151.9",
+    "jupyterlab>=4.5.4",
+    "matplotlib>=3.10.8",
+    "pandas>=3.0.1",
     "playwright>=1.58.0",
     "pypdf2>=3.0.1",
     "pytest>=9.0.2",
     "pytest-playwright>=0.7.2",
     "ruff>=0.15.2",
+    "seaborn>=0.13.2",
 ]
 
 [build-system]
