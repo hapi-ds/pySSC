@@ -33,9 +33,11 @@ env/
 logs/
 *.log
 
-# Test data
+# Test data (but keep tests/ directory for validation)
 testdata/
-tests/
+
+# Scripts are needed for validation
+# scripts/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -43,9 +45,6 @@ tests/
 
 # Requirements docs
 requirements/
-
-# Scripts
-scripts/
 
 # Kiro specs
 .kiro/

@@ -47,7 +47,16 @@ The Sample Size Calculator is a Python-based web application for determining sta
 Docker Compose (no need to install playwright)
 
 ```bash
+# build it
+docker compose build
+# start it
 docker compose up -d
+# optional validate it - need some time
+docker compose exec sample-size-calculator uv run python scripts/run_validation.py --tester "Your Name"
+# connect to it / use it
+http://localhost:8080
+# shut down
+docker compose down
 ```
 
 ### Prerequisites

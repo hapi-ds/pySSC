@@ -65,7 +65,7 @@ markers = [
     "iq: Installation Qualification tests",
     "oq: Operational Qualification tests",
     "pq: Performance Qualification tests",
-    "urs: URS requirement traceability marker",
+    "urs(urs_ids): URS requirement traceability marker - accepts one or more URS IDs",
 ]
 
 [tool.ruff]

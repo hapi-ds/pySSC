@@ -21,8 +21,9 @@ WORKDIR /app
 # Copy dependency files, LICENSE, and README (required by pyproject.toml)
 COPY pyproject.toml uv.lock LICENSE README.md ./
 
-# Install Python dependencies using uv (frozen lockfile, no dev dependencies)
-RUN uv sync --frozen --no-dev
+# Install Python dependencies using uv (frozen lockfile, including dev dependencies for validation)
+# Note: Dev dependencies include pytest, playwright, and pytest-json-report needed for IQ/OQ/PQ tests
+RUN uv sync --frozen
 
 # Install Playwright and chromium browser with system dependencies
 # This is required for PQ validation tests
@@ -73,12 +74,17 @@ COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
 # Copy Playwright browsers from builder
 COPY --from=builder --chown=appuser:appuser /root/.cache/ms-playwright /home/appuser/.cache/ms-playwright
 
-# Copy application source code
-COPY --chown=appuser:appuser src/ /app/src/
+# Copy project configuration files needed for IQ tests
+COPY --chown=appuser:appuser pyproject.toml uv.lock LICENSE README.md /app/
 
-# Create directories for logs and reports with correct permissions
-RUN mkdir -p /app/logs /app/reports && \
-    chown -R appuser:appuser /app/logs /app/reports
+# Copy application source code, scripts, and tests
+COPY --chown=appuser:appuser src/ /app/src/
+COPY --chown=appuser:appuser scripts/ /app/scripts/
+COPY --chown=appuser:appuser tests/ /app/tests/
+
+# Create directories for logs, reports, and pytest cache with correct permissions
+RUN mkdir -p /app/logs /app/reports /app/.pytest_cache /app/.hypothesis && \
+    chown -R appuser:appuser /app/logs /app/reports /app/.pytest_cache /app/.hypothesis /app
 
 # Switch to non-root user
 USER appuser

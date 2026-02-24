@@ -166,4 +166,4 @@ def test_pytest_markers_configured():
     assert '"iq:' in content, "IQ marker must be defined"
     assert '"oq:' in content, "OQ marker must be defined"
     assert '"pq:' in content, "PQ marker must be defined"
-    assert '"urs:' in content, "URS marker must be defined"
+    assert '"urs(' in content or '"urs:' in content, "URS marker must be defined"

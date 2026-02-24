@@ -58,6 +58,8 @@ Verifies end-to-end workflows using Playwright:
 
 ## Running Complete Validation Suite
 
+### Local Validation
+
 Use the automated validation script to run all tests and generate the validation certificate:
 
 ```bash
@@ -83,6 +85,30 @@ uv run python scripts/run_validation.py --tester "Jane Smith"
 # Skip PQ tests
 uv run python scripts/run_validation.py --tester "Jane Smith" --skip-pq
 ```
+
+### Docker Validation
+
+To run the validation suite inside a Docker container:
+
+```bash
+# Start the container
+docker compose up -d
+
+# Execute validation script inside the container
+docker compose exec sample-size-calculator uv run python scripts/run_validation.py --tester "Your Name" --skip-pq
+
+# Or run specific test suites
+docker compose exec sample-size-calculator uv run pytest tests/validation/test_iq.py -v -m iq
+docker compose exec sample-size-calculator uv run pytest tests/validation/test_oq.py -v -m oq
+
+# View generated validation certificate
+ls -la ./reports/validation/
+
+# Stop the container
+docker compose down
+```
+
+**Note:** PQ tests should be skipped when running validation inside Docker (use `--skip-pq` flag) since the application is already running. PQ tests require starting/stopping the application and are best run locally before containerization.
 
 ## Test Markers
 
