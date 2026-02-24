@@ -87,12 +87,6 @@ def extract_test_results(pytest_data: dict, suite_name: str) -> list[dict]:
     test_results = []
     
     for test in pytest_data.get("tests", []):
-        # Extract URS IDs from markers
-        urs_ids = []
-        for marker in test.get("markers", []):
-            if marker.get("name") == "urs":
-                urs_ids.extend(marker.get("args", []))
-        
         # Get test outcome
         outcome = test.get("outcome", "unknown")
         result = "PASSED" if outcome == "passed" else "FAILED"
@@ -100,6 +94,9 @@ def extract_test_results(pytest_data: dict, suite_name: str) -> list[dict]:
         # Get test ID
         test_id = test.get("nodeid", "unknown")
         test_name = test_id.split("::")[-1] if "::" in test_id else test_id
+        
+        # Extract URS IDs by parsing the test file
+        urs_ids = extract_urs_from_test_file(test_id)
         
         # Create entry for each URS ID
         if urs_ids:
@@ -121,6 +118,45 @@ def extract_test_results(pytest_data: dict, suite_name: str) -> list[dict]:
             })
     
     return test_results
+
+
+def extract_urs_from_test_file(nodeid: str) -> list[str]:
+    """Extract URS IDs from test source code.
+    
+    Args:
+        nodeid: Pytest node ID (e.g., "tests/validation/test_iq.py::test_name")
+        
+    Returns:
+        List of URS IDs found in the test decorators
+    """
+    import re
+    
+    # Parse nodeid to get file path and test name
+    if "::" not in nodeid:
+        return []
+    
+    file_path, test_name = nodeid.split("::", 1)
+    
+    try:
+        # Read the test file
+        with open(file_path, 'r') as f:
+            content = f.read()
+        
+        # Find the test function
+        # Look for @pytest.mark.urs decorators before the test function
+        pattern = rf'@pytest\.mark\.urs\((.*?)\).*?def {re.escape(test_name)}'
+        matches = re.findall(pattern, content, re.DOTALL)
+        
+        urs_ids = []
+        for match in matches:
+            # Extract quoted strings from the decorator arguments
+            urs_pattern = r'["\']([^"\']+)["\']'
+            urs_ids.extend(re.findall(urs_pattern, match))
+        
+        return urs_ids
+    except Exception as e:
+        print(f"Warning: Could not extract URS IDs from {file_path}: {e}")
+        return []
 
 
 def main():

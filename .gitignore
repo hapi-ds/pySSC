@@ -185,3 +185,6 @@ logs/
 reports/**/*.pdf
 !reports/.gitkeep
 !reports/*/.gitkeep
+
+# test results
+test_results_*.json

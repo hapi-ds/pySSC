@@ -44,6 +44,8 @@ Verifies end-to-end workflows using Playwright:
 1. Install Playwright browsers:
    ```bash
    uv run playwright install
+   # or
+   uv run playwright install --with-deps chromium
    ```
 
 2. Start the application:

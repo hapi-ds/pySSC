@@ -68,6 +68,10 @@ markers = [
     "urs(urs_ids): URS requirement traceability marker - accepts one or more URS IDs",
 ]
 
+[tool.pytest-json-report]
+# Include marker information in JSON report
+include_markers = true
+
 [tool.ruff]
 line-length = 88
 target-version = "py311"
