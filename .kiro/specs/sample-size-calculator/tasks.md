@@ -355,8 +355,8 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
 - [x] 11. Checkpoint - Ensure UI and integration tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Validation test suite (IQ/OQ/PQ)
-  - [ ] 12.1 Create tests/validation/test_iq.py for Installation Qualification
+- [x] 12. Validation test suite (IQ/OQ/PQ)
+  - [x] 12.1 Create tests/validation/test_iq.py for Installation Qualification
     - Test uv.lock file exists and has correct format
     - Test uv sync installs dependencies without conflicts
     - Verify scipy version 1.x.x is installed
@@ -364,7 +364,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Use pytest markers: @pytest.mark.iq and @pytest.mark.urs("31.2", "31.3", "31.4", "31.5")
     - _Requirements: 31.2, 31.3, 31.4, 31.5, 32.2_
 
-  - [ ] 12.2 Create tests/validation/test_oq.py for Operational Qualification
+  - [x] 12.2 Create tests/validation/test_oq.py for Operational Qualification
     - Test all Module A formulas against known standard values
     - Test Success Run Theorem: C=95%, R=95%, c=0 → n=59
     - Test Cumulative Binomial: C=95%, R=95%, c=1 → n=93
@@ -375,7 +375,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Use pytest markers linking each test to specific URS IDs
     - _Requirements: 32.1, 32.2, 32.3, 32.4, 32.5_
 
-  - [ ] 12.3 Create tests/validation/test_pq.py for Performance Qualification
+  - [x] 12.3 Create tests/validation/test_pq.py for Performance Qualification
     - Set up playwright for automated UI testing
     - Test complete Module A workflow: input → calculate → verify output → generate report
     - Test complete Module V workflow: Phase 1 → Phase 2 → Phase 3 → Phase 4 → generate report
@@ -385,7 +385,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Use pytest markers: @pytest.mark.pq and @pytest.mark.urs(...)
     - _Requirements: 33.1, 33.2, 33.3, 33.4, 33.5_
 
-  - [ ] 12.4 Create validation report generation script
+  - [x] 12.4 Create validation report generation script
     - Create script to run full validation suite (IQ + OQ + PQ)
     - Collect test results with URS ID mapping
     - Generate VTM using vtm_generator
@@ -393,101 +393,166 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Store validated hash in config/validated_hash.json
     - _Requirements: 30.1, 34.4_
 
-- [ ] 13. Docker deployment
-  - [ ] 13.1 Create Dockerfile with multi-stage build
+- [x] 13. Docker deployment with Playwright and reports directory
+  - [x] 13.1 Create Dockerfile with multi-stage build and Playwright
     - Use python:3.11-slim as base image
+    - Install system dependencies for Playwright (chromium dependencies)
     - Install uv in builder stage
     - Copy pyproject.toml and uv.lock
     - Run uv sync --frozen --no-dev
+    - Install Playwright browsers: uv run playwright install --with-deps chromium
     - Create production stage with non-root user (appuser)
     - Copy .venv from builder
     - Copy src/ and config/ directories
-    - Create logs/ directory with correct permissions
+    - Create logs/ and reports/ directories with correct permissions
     - Expose port 8080
     - Add healthcheck using HTTP request to localhost:8080
     - Set CMD to run main.py
     - _Requirements: 35.1, 35.5_
 
-  - [ ] 13.2 Create docker-compose.yml for deployment
+  - [x] 13.2 Create docker-compose.yml for deployment
     - Define sample-size-calculator service
     - Map port ${PORT:-8080}:8080
-    - Mount volumes: ./logs:/app/logs and ./config:/app/config:ro
+    - Mount volumes: ./logs:/app/logs, ./config:/app/config:ro, ./reports:/app/reports
     - Set environment variables: LOG_LEVEL, LOG_RETENTION_DAYS
     - Configure restart: unless-stopped
     - Add healthcheck configuration
     - _Requirements: 35.1, 35.2, 35.4_
 
-  - [ ] 13.3 Create .dockerignore file
-    - Exclude __pycache__/, *.pyc, .venv/, logs/, .git/, tests/, .pytest_cache/
+  - [x] 13.3 Create .dockerignore file
+    - Exclude __pycache__/, *.pyc, .venv/, logs/, reports/, .git/, tests/, .pytest_cache/
     - _Requirements: 35.5_
 
-  - [ ] 13.4 Test Docker deployment
+  - [x] 13.4 Test Docker deployment with Playwright
     - Build image: docker compose build
     - Start container: docker compose up -d
     - Verify web interface accessible at http://localhost:8080
+    - Verify Playwright is functional inside container
     - Verify validated state after deployment
     - Test log file persistence in mounted volume
+    - Verify reports/ directory is accessible and writable
     - _Requirements: 35.2, 35.3_
 
-- [ ] 14. Documentation and configuration
-  - [ ] 14.1 Create comprehensive README.md
+- [-] 14. Enhanced UI features and report management
+  - [-] 14.1 Implement reports directory structure
+    - Create ./reports/ directory with subdirectories:
+      - ./reports/validation/ for IQ/OQ/PQ certificates
+      - ./reports/calculations/ for sample size calculation reports
+      - ./reports/full/ for comprehensive full reports
+    - Ensure proper permissions for report generation
+    - Add timestamp-based naming for all reports
+    - _Requirements: 27.1, 30.1_
+
+  - [~] 14.2 Implement full report generation module
+    - Create full_report_generator.py that combines:
+      - Sample size calculation report (current calculation)
+      - Latest validation reports (IQ/OQ/PQ certificates)
+      - Audit trail logs (filtered for current session)
+      - Calculator signature (engine hash and validation state)
+    - Generate comprehensive PDF with all sections
+    - Save to ./reports/full/ directory
+    - Include table of contents and section dividers
+    - _Requirements: 27.1, 28.2, 29.2, 30.1, 38.16_
+
+  - [~] 14.3 Update report generation to use reports directory
+    - Modify generate_user_report() to save to ./reports/calculations/
+    - Modify generate_validation_certificate() to save to ./reports/validation/
+    - Add report file path display in UI after generation
+    - Add download link for generated reports
+    - _Requirements: 27.1, 30.1_
+
+  - [~] 14.4 Add full report generation button to UI
+    - Create "Generate Full Report" button in UI (separate from regular PDF report)
+    - Wire button to full_report_generator.py module
+    - Display report generation status and file path
+    - Add download link for generated full report
+    - _Requirements: 27.1, 28.2, 29.2, 30.1, 38.16_
+
+  - [~] 14.5 Add full validation button to UI
+    - Create "Run Full Validation (IQ/OQ/PQ)" button in UI header/settings area
+    - Implement validation runner that executes IQ/OQ/PQ test suite
+    - Display validation progress and results in UI
+    - Save validation certificate to ./reports/validation/ directory
+    - Update validated hash after successful validation
+    - Log validation execution to audit trail
+    - _Requirements: 30.1, 32.5_
+
+  - [~] 14.5 Create comprehensive README.md
     - Add project overview and features
     - Add installation instructions (uv sync)
     - Add usage instructions for both modules
     - Add Docker deployment instructions
-    - Add validation instructions (running IQ/OQ/PQ suite)
+    - Add validation instructions (running IQ/OQ/PQ suite via UI button)
+    - Add reports directory structure explanation
+    - Add full report generation instructions
     - Add development setup instructions
     - Add architecture overview
     - Add troubleshooting section
     - _Requirements: 35.2_
 
-  - [ ] 14.2 Create config/validated_hash.json template
+  - [~] 14.6 Create config/validated_hash.json template
     - Create JSON structure with validated_hash, validation_date, validator fields
     - Initialize with empty/placeholder values
     - _Requirements: 29.4_
 
-  - [ ] 14.3 Create .env.example file
+  - [~] 14.7 Create .env.example file
     - Add PORT=8080
     - Add LOG_LEVEL=INFO
     - Add LOG_RETENTION_DAYS=90
+    - Add REPORTS_DIR=./reports
     - _Requirements: 35.4_
 
-  - [ ] 14.4 Add inline code documentation
+  - [~] 14.8 Add inline code documentation
     - Add docstrings to all public functions and classes
     - Use Google docstring style
     - Include type information and examples
     - Add comments for complex statistical formulas with references
     - _Requirements: 26.4_
 
-- [ ] 15. Final validation and testing
-  - [ ] 15.1 Run complete test suite
+- [ ] 15. Final validation and testing with enhanced features
+  - [~] 15.1 Run complete test suite
     - Run unit tests: uv run pytest tests/unit/ -q
     - Run property tests: uv run pytest tests/property/ -q
     - Run integration tests: uv run pytest tests/integration/ -q
     - Verify all tests pass
     - _Requirements: 32.5_
 
-  - [ ] 15.2 Run validation suite and generate certificate
-    - Run IQ tests: uv run pytest tests/validation/test_iq.py -v
-    - Run OQ tests: uv run pytest tests/validation/test_oq.py -v
-    - Run PQ tests: uv run pytest tests/validation/test_pq.py -v
-    - Generate validation certificate PDF
-    - Store validated hash
+  - [~] 15.2 Test validation button and report generation
+    - Start application: uv run python src/main.py
+    - Click "Run Full Validation (IQ/OQ/PQ)" button in UI
+    - Verify IQ/OQ/PQ tests execute successfully
+    - Verify validation certificate saved to ./reports/validation/
+    - Verify validated hash is updated
     - _Requirements: 30.1, 31.3, 32.5_
 
-  - [ ] 15.3 Run code quality checks
+  - [~] 15.3 Test full report generation
+    - Perform a Module A calculation
+    - Click "Generate Full Report" button
+    - Verify full report includes:
+      - Current calculation report
+      - Validation certificates
+      - Audit trail logs
+      - Calculator signature (engine hash)
+    - Verify report saved to ./reports/full/
+    - Verify all sections are properly formatted
+    - _Requirements: 27.1, 28.2, 29.2, 30.1, 38.16_
+
+  - [~] 15.4 Run code quality checks
     - Run ruff linter: uv run ruff check src/
     - Run ruff formatter: uv run ruff format src/
     - Run type checker: uvx ty check src/
     - Fix all warnings and errors
     - _Requirements: Code quality standards_
 
-  - [ ] 15.4 Verify Docker deployment end-to-end
+  - [~] 15.5 Verify Docker deployment end-to-end with new features
     - Build and start: docker compose up -d
     - Access UI and perform Module A calculation
     - Access UI and perform Module V 4-phase workflow
-    - Generate and download PDF reports
-    - Verify logs are written to mounted volume
+    - Click "Run Full Validation (IQ/OQ/PQ)" button and verify Playwright works
+    - Generate regular PDF report and verify saved to ./reports/calculations/
+    - Generate full report and verify saved to ./reports/full/
+    - Verify all reports accessible in mounted ./reports/ volume
+    - Verify logs are written to mounted ./logs/ volume
     - Verify validation state is YES
     - Stop: docker compose down
     - _Requirements: 35.2, 35.3_

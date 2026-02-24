@@ -1,0 +1,68 @@
+# Docker Compose configuration for Sample Size Calculator
+# Requirements: 35.1, 35.2, 35.4
+# 
+# This configuration deploys the Sample Size Calculator application with:
+# - Persistent storage for logs and reports
+# - Read-only config mounting
+# - Configurable environment variables
+# - Health checks for reliability
+# - Automatic restart policy
+
+services:
+  sample-size-calculator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    # Map configurable port (default 8080) to container port 8080
+    ports:
+      - "${PORT:-8080}:8080"
+    
+    # Volume mounts for data persistence and configuration
+    volumes:
+      # Logs directory - read/write for audit trail persistence
+      - ./logs:/app/logs
+      
+      # Config directory - read-only for security
+      # Contains validated_hash.json and other configuration files
+      - ./config:/app/config:ro
+      
+      # Reports directory - read/write for PDF report generation
+      - ./reports:/app/reports
+    
+    # Environment variables for application configuration
+    environment:
+      # Logging configuration
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-90}
+      
+      # Application port (internal)
+      - PORT=8080
+      
+      # Python environment
+      - PYTHONUNBUFFERED=1
+    
+    # Restart policy: restart unless explicitly stopped
+    restart: unless-stopped
+    
+    # Health check configuration
+    # Verifies the web interface is accessible and responding
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    
+    # Container name for easy reference
+    container_name: sample-size-calculator
+    
+    # Resource limits (optional, can be adjusted based on needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
