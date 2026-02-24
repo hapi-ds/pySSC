@@ -6,7 +6,7 @@ Medical device design verification and process validation sample size calculator
 
 Test project for:
 
-- Spec-Driven Development (SDD) with coding-agends (I used Kiro, Antigravity, Opencode with different local llms)
+- Spec-Driven Development (SDD) with coding-agents (I used Kiro, Antigravity, Opencode with different local llms)
 - The feasibility of self-validating software (complient with ISO/TR 80002-2)
 
 ## Result and Current Status
@@ -15,11 +15,11 @@ Test project for:
 - Software validation still far from complete
 - Example applications are explained in a Jupyter Notebook (see ./testdata), including the generation of corresponding test data.
 
-SDD development with coding agendas is incredibly fast and virtually a must for any commercial software development.
+SDD development with coding agents is incredibly fast and virtually a must for any commercial software development. In some simple things, however, it's almost unbearable because of sheer stupidity. The problem here is that you often get “stuck” in the workflow and spend too much time looking for ways to solve it with the coding agent. But coding agents are improving so rapidly that this problem will quickly resolve itself. 
 
 BUT
 
-Without human support, even such a small, simple project is not possible. And SW validation and E2E testing with meaningful data are definitely not the strong points of current agends. In principle, however, the approach of self-validating software is feasible and, in my view, also more secure than other approaches.
+Without human support, even such a small, simple project is not possible. And SW validation and E2E testing with meaningful data are definitely not the strong points of current agents. In principle, however, the approach of self-validating software is feasible and, in my view, also more secure than other approaches - I'll stay on it
 
 
 ## Overview
