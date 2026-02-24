@@ -79,12 +79,16 @@ class TestReportGeneration:
         )
 
         # Generate the PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, report_path = ReportGenerator.generate_user_report(report_data)
 
         # Verify PDF was generated
         assert pdf_bytes is not None, "PDF bytes should not be None"
         assert len(pdf_bytes) > 0, "PDF should have content"
         assert pdf_bytes[:4] == b"%PDF", "PDF should start with PDF header"
+        
+        # Verify report path was returned
+        assert report_path is not None, "Report path should not be None"
+        assert str(report_path).endswith(".pdf"), "Report path should be a PDF file"
 
         # If PyPDF is available, do detailed content verification
         if HAS_PYPDF:
@@ -186,7 +190,7 @@ class TestReportGeneration:
         )
 
         # Generate the PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, report_path = ReportGenerator.generate_user_report(report_data)
 
         # Verify PDF was generated successfully
         assert pdf_bytes is not None, "PDF bytes should not be None"
@@ -246,7 +250,7 @@ class TestReportGeneration:
         )
 
         # Generate the PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, report_path = ReportGenerator.generate_user_report(report_data)
 
         # Verify PDF was generated
         assert pdf_bytes is not None, "PDF bytes should not be None"
@@ -322,7 +326,7 @@ class TestReportGeneration:
 
         # Generate the PDF report - should not raise an exception
         try:
-            pdf_bytes = ReportGenerator.generate_user_report(report_data)
+            pdf_bytes, report_path = ReportGenerator.generate_user_report(report_data)
         except Exception as e:
             raise AssertionError(
                 f"Report generation should not fail with long text: {e}"
@@ -410,12 +414,16 @@ class TestValidationCertificate:
         )
 
         # Generate the validation certificate PDF
-        pdf_bytes = ReportGenerator.generate_validation_certificate(cert_data)
+        pdf_bytes, report_path = ReportGenerator.generate_validation_certificate(cert_data)
 
         # Verify PDF was generated
         assert pdf_bytes is not None, "PDF bytes should not be None"
         assert len(pdf_bytes) > 0, "PDF should have content"
         assert pdf_bytes[:4] == b"%PDF", "PDF should start with PDF header"
+        
+        # Verify report path was returned
+        assert report_path is not None, "Report path should not be None"
+        assert str(report_path).endswith(".pdf"), "Report path should be a PDF file"
 
         if HAS_PYPDF:
             # Parse the PDF to extract text
@@ -521,7 +529,7 @@ class TestValidationCertificate:
         )
 
         # Generate the validation certificate PDF
-        pdf_bytes = ReportGenerator.generate_validation_certificate(cert_data)
+        pdf_bytes, report_path = ReportGenerator.generate_validation_certificate(cert_data)
 
         # Verify PDF was generated successfully
         assert pdf_bytes is not None, "PDF bytes should not be None"
@@ -582,7 +590,7 @@ class TestValidationCertificate:
         )
 
         # Generate the validation certificate PDF
-        pdf_bytes = ReportGenerator.generate_validation_certificate(cert_data)
+        pdf_bytes, report_path = ReportGenerator.generate_validation_certificate(cert_data)
 
         # Verify PDF was generated
         assert pdf_bytes is not None, "PDF bytes should not be None"
@@ -627,7 +635,7 @@ class TestValidationCertificate:
 
         # Generate the validation certificate PDF - should not raise an exception
         try:
-            pdf_bytes = ReportGenerator.generate_validation_certificate(cert_data)
+            pdf_bytes, report_path = ReportGenerator.generate_validation_certificate(cert_data)
         except Exception as e:
             raise AssertionError(
                 f"Certificate generation should not fail with many test results: {e}"

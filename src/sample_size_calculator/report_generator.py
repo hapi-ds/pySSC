@@ -6,6 +6,7 @@ text overflow.
 """
 
 from io import BytesIO
+from pathlib import Path
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -20,24 +21,32 @@ from reportlab.platypus import (
 )
 
 from sample_size_calculator.models import CalculationReport, ValidationCertificate
+from sample_size_calculator.report_paths import (
+    ensure_report_directories,
+    get_calculation_report_path,
+    get_validation_report_path,
+    save_report,
+)
 
 
 class ReportGenerator:
     """Generates PDF reports using ReportLab."""
 
     @staticmethod
-    def generate_user_report(report_data: CalculationReport) -> bytes:
-        """Generate user calculation report PDF.
+    def generate_user_report(report_data: CalculationReport) -> tuple[bytes, Path]:
+        """Generate user calculation report PDF and save to reports directory.
 
         Args:
             report_data: CalculationReport model containing all report information
 
         Returns:
-            PDF as bytes for download
+            Tuple of (PDF as bytes for download, Path to saved report file)
 
         Requirements:
-            27.1, 27.2, 27.3, 27.4, 27.5, 27.6, 28.2, 29.2, 29.3, 29.5
+            27.1, 27.2, 27.3, 27.4, 27.5, 27.6, 28.2, 29.2, 29.3, 29.5, 30.1
         """
+        # Ensure report directories exist
+        ensure_report_directories()
         # Create a BytesIO buffer to hold the PDF
         buffer = BytesIO()
 
@@ -251,21 +260,29 @@ class ReportGenerator:
         pdf_bytes = buffer.getvalue()
         buffer.close()
 
-        return pdf_bytes
+        # Save to reports directory (Requirement 27.1, 30.1)
+        report_path = get_calculation_report_path()
+        save_report(pdf_bytes, report_path)
+
+        return pdf_bytes, report_path
 
     @staticmethod
-    def generate_validation_certificate(cert_data: ValidationCertificate) -> bytes:
-        """Generate validation certificate PDF.
+    def generate_validation_certificate(
+        cert_data: ValidationCertificate,
+    ) -> tuple[bytes, Path]:
+        """Generate validation certificate PDF and save to reports directory.
 
         Args:
             cert_data: ValidationCertificate model containing validation information
 
         Returns:
-            PDF as bytes for download
+            Tuple of (PDF as bytes for download, Path to saved report file)
 
         Requirements:
-            30.1, 30.2, 30.3, 30.4, 30.5, 30.6, 30.7
+            27.1, 30.1, 30.2, 30.3, 30.4, 30.5, 30.6, 30.7
         """
+        # Ensure report directories exist
+        ensure_report_directories()
         # Create a BytesIO buffer to hold the PDF
         buffer = BytesIO()
 
@@ -435,7 +452,11 @@ class ReportGenerator:
         pdf_bytes = buffer.getvalue()
         buffer.close()
 
-        return pdf_bytes
+        # Save to reports directory (Requirement 27.1, 30.1)
+        report_path = get_validation_report_path()
+        save_report(pdf_bytes, report_path)
+
+        return pdf_bytes, report_path
 
     @staticmethod
     def _add_page_number(canvas, doc) -> None:

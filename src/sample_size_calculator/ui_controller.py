@@ -22,6 +22,7 @@ from nicegui import ui
 
 from sample_size_calculator.audit_logger import AuditLogger
 from sample_size_calculator.calculations import CalculationEngine
+from sample_size_calculator.full_report_generator import FullReportGenerator
 from sample_size_calculator.hash_verifier import get_engine_hash, is_validated_state
 from sample_size_calculator.models import (
     AnalysisMethod,
@@ -37,12 +38,14 @@ from sample_size_calculator.models import (
 )
 from sample_size_calculator.outliers import apply_exclusions, detect_outliers
 from sample_size_calculator.report_generator import ReportGenerator
+from sample_size_calculator.report_paths import get_full_report_path, save_report
 from sample_size_calculator.tolerance import (
     calculate_capability_margin,
     calculate_required_sample_size,
     calculate_tolerance_limits,
 )
 from sample_size_calculator.transformations import transformation_cascade
+from sample_size_calculator.validation_runner import ValidationRunner
 
 
 class ModuleVState:
@@ -158,10 +161,18 @@ class UIController:
         ui.page_title("Sample Size Calculator")
 
         with ui.header().classes("items-center justify-between"):
-            ui.label("Sample Size Calculator").classes("text-h4")
-            ui.label("Medical Device Design Verification & Process Validation").classes(
-                "text-subtitle1"
-            )
+            with ui.row().classes("items-center"):
+                ui.label("Sample Size Calculator").classes("text-h4")
+                ui.label(
+                    "Medical Device Design Verification & Process Validation"
+                ).classes("text-subtitle2 ml-4")
+
+            # Validation button in header
+            ui.button(
+                "Run Full Validation (IQ/OQ/PQ)",
+                on_click=self._handle_validation_button_click,
+                icon="verified",
+            ).classes("bg-blue-600").props("outline")
 
         with ui.tabs().classes("w-full") as tabs:
             module_a_tab = ui.tab("Module A")
@@ -258,12 +269,19 @@ class UIController:
         with results_card:
             results_container = ui.column().classes("w-full")
 
-        # Report generation button (initially hidden)
-        report_btn_container = ui.row().classes("w-full")
+        # Report generation buttons (initially hidden)
+        report_btn_container = ui.row().classes("w-full gap-2")
         with report_btn_container:
             report_btn = ui.button(
                 "Generate PDF Report", icon="picture_as_pdf"
             ).classes("bg-secondary")
+            full_report_btn = (
+                ui.button("Generate Full Report", icon="description")
+                .classes("bg-accent")
+                .tooltip(
+                    "Generate comprehensive report including calculation, validation status, and audit trail"
+                )
+            )
         report_btn_container.set_visibility(False)
 
         # Calculate button handler
@@ -462,12 +480,19 @@ class UIController:
                     method_path=method_path,
                 )
 
-                # Generate PDF
-                pdf_bytes = ReportGenerator.generate_user_report(report_data)
+                # Generate PDF and save to reports directory
+                pdf_bytes, report_path = ReportGenerator.generate_user_report(
+                    report_data
+                )
 
                 # Log report generation
                 self.logger.log_report_generation(
                     "user_calculation", engine_hash, validation_state, self.session_id
+                )
+
+                # Display report file path in UI
+                ui.notify(
+                    f"Report saved to: {report_path}", type="positive", position="top"
                 )
 
                 # Trigger download
@@ -481,6 +506,95 @@ class UIController:
                 ui.notify(f"Report generation error: {e}", type="negative")
 
         report_btn.on_click(handle_generate_report)
+
+        # Full report generation handler
+        def handle_generate_full_report() -> None:
+            """Generate comprehensive full report for Module A."""
+            self.logger.log_button_click(
+                "generate_full_report_module_a", "Module_A", None, self.session_id
+            )
+
+            try:
+                if self.module_a_results is None:
+                    ui.notify("No results to report", type="warning")
+                    return
+
+                # Get engine hash and validation state
+                engine_hash = get_engine_hash()
+                validation_state = is_validated_state()
+
+                # Prepare report data (same as regular report)
+                if self.module_a_results["type"] == "sensitivity":
+                    inputs = {
+                        "confidence": self.module_a_results["confidence"],
+                        "reliability": self.module_a_results["reliability"],
+                        "allowable_failures": "Sensitivity Analysis (c=0,1,2,3)",
+                    }
+                    results = {
+                        "method": "Sensitivity Analysis",
+                        "results": str(self.module_a_results["results"]),
+                    }
+                    method_path = "Sensitivity Analysis: Success Run Theorem and Cumulative Binomial"
+                else:
+                    inputs = {
+                        "confidence": self.module_a_results["confidence"],
+                        "reliability": self.module_a_results["reliability"],
+                        "allowable_failures": self.module_a_results[
+                            "allowable_failures"
+                        ],
+                    }
+                    results = {
+                        "method": self.module_a_results["method"],
+                        "sample_size": self.module_a_results["sample_size"],
+                    }
+                    method_path = self.module_a_results["method"]
+
+                report_data = CalculationReport(
+                    timestamp=datetime.now().isoformat(),
+                    module="Module A",
+                    inputs=inputs,
+                    results=results,
+                    engine_hash=engine_hash,
+                    validation_state=validation_state,
+                    method_path=method_path,
+                )
+
+                # Generate full report PDF
+                full_report_bytes = FullReportGenerator.generate_full_report(
+                    calculation_report=report_data,
+                    session_id=self.session_id,
+                    log_dir="logs",
+                    validation_reports_dir="reports/validation",
+                )
+
+                # Save to reports/full/ directory
+                report_path = get_full_report_path()
+                saved_path = save_report(full_report_bytes, report_path)
+
+                # Log report generation
+                self.logger.log_report_generation(
+                    "full_report", engine_hash, validation_state, self.session_id
+                )
+
+                # Display report file path in UI
+                ui.notify(
+                    f"Full report saved to: {saved_path}",
+                    type="positive",
+                    position="top",
+                    timeout=5000,
+                )
+
+                # Trigger download
+                ui.download(
+                    full_report_bytes,
+                    f"full_report_module_a_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                )
+                ui.notify("Full report generated successfully", type="positive")
+
+            except Exception as e:
+                ui.notify(f"Full report generation error: {e}", type="negative")
+
+        full_report_btn.on_click(handle_generate_full_report)
 
     def create_module_v_tab(self) -> None:
         """Create Module V UI tab with 4-phase sequential workflow."""
@@ -1502,12 +1616,19 @@ class UIController:
             self.phase4_results_container = ui.column().classes("w-full")
         self.phase4_results_card.set_visibility(False)
 
-        # Report generation button (initially hidden)
-        self.v_report_btn_container = ui.row().classes("w-full")
+        # Report generation buttons (initially hidden)
+        self.v_report_btn_container = ui.row().classes("w-full gap-2")
         with self.v_report_btn_container:
             v_report_btn = ui.button(
                 "Generate PDF Report", icon="picture_as_pdf"
             ).classes("bg-secondary")
+            v_full_report_btn = (
+                ui.button("Generate Full Report", icon="description")
+                .classes("bg-accent")
+                .tooltip(
+                    "Generate comprehensive report including calculation, validation status, and audit trail"
+                )
+            )
         self.v_report_btn_container.set_visibility(False)
 
         # Phase 4 button handler
@@ -1711,12 +1832,19 @@ class UIController:
                     method_path=method_path,
                 )
 
-                # Generate PDF
-                pdf_bytes = ReportGenerator.generate_user_report(report_data)
+                # Generate PDF and save to reports directory
+                pdf_bytes, report_path = ReportGenerator.generate_user_report(
+                    report_data
+                )
 
                 # Log report generation
                 self.logger.log_report_generation(
                     "user_calculation", engine_hash, validation_state, self.session_id
+                )
+
+                # Display report file path in UI
+                ui.notify(
+                    f"Report saved to: {report_path}", type="positive", position="top"
                 )
 
                 # Trigger download
@@ -1730,6 +1858,113 @@ class UIController:
                 ui.notify(f"Report generation error: {e}", type="negative")
 
         v_report_btn.on_click(handle_generate_v_report)
+
+        # Full report generation handler for Module V
+        def handle_generate_v_full_report() -> None:
+            """Generate comprehensive full report for Module V."""
+            self.logger.log_button_click(
+                "generate_full_report_module_v", "Module_V", "Phase_4", self.session_id
+            )
+
+            try:
+                if not self.module_v_state.phase4_complete:
+                    ui.notify("Please complete all phases first", type="warning")
+                    return
+
+                # Get engine hash and validation state
+                engine_hash = get_engine_hash()
+                validation_state = is_validated_state()
+
+                # Prepare report data (same as regular report)
+                phase2 = self.module_v_state.phase2_results
+                phase3 = self.module_v_state.phase3_results
+                phase4 = self.module_v_state.phase4_results
+                spec_limits = self.module_v_state.spec_limits
+
+                if (
+                    phase2 is None
+                    or phase3 is None
+                    or phase4 is None
+                    or spec_limits is None
+                ):
+                    ui.notify("Missing phase results", type="negative")
+                    return
+
+                inputs = {
+                    "specification_type": spec_limits.spec_type.value,
+                    "lsl": spec_limits.lsl,
+                    "usl": spec_limits.usl,
+                    "confidence": self.module_v_state.confidence,
+                    "reliability": self.module_v_state.reliability,
+                    "pilot_data_size": len(self.module_v_state.pilot_data or []),
+                    "final_data_size": len(phase4.final_data),
+                }
+
+                results = {
+                    "transformation_method": phase2.transformation_method.value,
+                    "analysis_method": phase2.analysis_method.value,
+                    "lambda_param": phase2.lambda_param,
+                    "required_sample_size": phase3.required_sample_size,
+                    "k_margin": phase3.k_margin,
+                    "k_factor": phase3.k_factor,
+                    "tolerance_limits": phase4.tolerance_limits,
+                    "pass_fail": phase4.pass_fail,
+                    "ppk": phase4.ppk,
+                }
+
+                # Build method path
+                method_path = f"Specification: {spec_limits.spec_type.value}\n"
+                method_path += f"Transformation: {phase2.transformation_method.value}\n"
+                method_path += f"Analysis: {phase2.analysis_method.value}\n"
+                if phase2.lambda_param is not None:
+                    method_path += f"Lambda: {phase2.lambda_param:.4f}\n"
+
+                report_data = CalculationReport(
+                    timestamp=datetime.now().isoformat(),
+                    module="Module V",
+                    inputs=inputs,
+                    results=results,
+                    engine_hash=engine_hash,
+                    validation_state=validation_state,
+                    method_path=method_path,
+                )
+
+                # Generate full report PDF
+                full_report_bytes = FullReportGenerator.generate_full_report(
+                    calculation_report=report_data,
+                    session_id=self.session_id,
+                    log_dir="logs",
+                    validation_reports_dir="reports/validation",
+                )
+
+                # Save to reports/full/ directory
+                report_path = get_full_report_path()
+                saved_path = save_report(full_report_bytes, report_path)
+
+                # Log report generation
+                self.logger.log_report_generation(
+                    "full_report", engine_hash, validation_state, self.session_id
+                )
+
+                # Display report file path in UI
+                ui.notify(
+                    f"Full report saved to: {saved_path}",
+                    type="positive",
+                    position="top",
+                    timeout=5000,
+                )
+
+                # Trigger download
+                ui.download(
+                    full_report_bytes,
+                    f"full_report_module_v_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                )
+                ui.notify("Full report generated successfully", type="positive")
+
+            except Exception as e:
+                ui.notify(f"Full report generation error: {e}", type="negative")
+
+        v_full_report_btn.on_click(handle_generate_v_full_report)
 
     def _enforce_sequential_workflow(self) -> None:
         """Enable/disable phase controls based on completion status."""
@@ -2033,9 +2268,10 @@ class UIController:
         ui.separator()
 
         # Section 1: Module A - Attribute Data Analysis
-        with ui.expansion("Risk-Based Statistical Strategies for Medical Device Verification and Validation", icon="warning").classes(
-            "w-full"
-        ):
+        with ui.expansion(
+            "Risk-Based Statistical Strategies for Medical Device Verification and Validation",
+            icon="warning",
+        ).classes("w-full"):
             with ui.card().classes("w-full"):
                 ui.markdown("""
 ## Introduction: Why We Can't Just Test 30 Units Anymore
@@ -2058,7 +2294,7 @@ Link those three, do the math, and you get your sample size. That's the story re
 Verification Plan.
 
 ## The Problem With Old Heuristics
-        
+
 We used to lean on the "rule of 30"—test 30 units because the t-distribution approximates normal at n≥30. That's true,
 but it's answering the wrong question. It's about the average performance. In design verification, you care about the
 extremes—the worst-case units. That's a different statistical problem entirely.
@@ -2075,7 +2311,7 @@ Start with ISO 14971. Map your hazards to severity levels, then define what conf
 | **Low** | Minor (temporary, no medical care) | 95% | 90.0% |
 | **Negligible** | Inconvenience only | 90% | 80.0% |
 
-This is my standard policy. It's an example of a “valid justification.” 
+This is my standard policy. It's an example of a “valid justification.”
 <span style="color:red">Revise</span> and document it, stick to it,
  and you will obtain reasonable sample sizes.
 
@@ -2108,8 +2344,6 @@ with the risk assessment, define your confidence and reliability targets, then c
 That's what regulators are actually looking for: the mathematical connection between "this could harm someone"
 and "we tested this many units."
                 """)
-
-
 
         # Section 1: Module A - Attribute Data Analysis
         with ui.expansion("Module A: Attribute Data Analysis", icon="info").classes(
@@ -2483,6 +2717,119 @@ For additional assistance:
 - Consider consulting a statistician for complex or critical applications
 - Document your analysis workflow for reproducibility and review
             """)
+
+    def _handle_validation_button_click(self) -> None:
+        """Handle validation button click to run IQ/OQ/PQ test suite."""
+        # Log button click
+        self.logger.log_button_click(
+            button_id="run_validation",
+            module="System",
+            phase=None,
+            session_id=self.session_id,
+        )
+
+        # Create dialog for tester name input
+        with ui.dialog() as dialog, ui.card():
+            ui.label("Run Full Validation Suite").classes("text-h6")
+            ui.label(
+                "This will run IQ/OQ/PQ tests and generate a validation certificate."
+            ).classes("text-subtitle2")
+            ui.separator()
+
+            tester_input = ui.input(
+                label="Tester Name",
+                placeholder="Enter your name",
+            ).classes("w-full")
+
+            progress_log = ui.log().classes("w-full h-64")
+
+            result_label = ui.label("").classes("text-subtitle1")
+
+            with ui.row().classes("w-full justify-end"):
+                ui.button("Cancel", on_click=dialog.close).props("flat")
+                run_button = ui.button(
+                    "Run Validation",
+                    on_click=lambda: self._run_validation(
+                        tester_input.value, progress_log, result_label, run_button
+                    ),
+                ).props("color=primary")
+
+        dialog.open()
+
+    async def _run_validation(
+        self,
+        tester_name: str,
+        progress_log: ui.log,
+        result_label: ui.label,
+        run_button: ui.button,
+    ) -> None:
+        """Run validation suite asynchronously.
+
+        Args:
+            tester_name: Name of the validation tester
+            progress_log: UI log component for progress updates
+            result_label: UI label for final result message
+            run_button: Button to disable during validation
+        """
+        if not tester_name or not tester_name.strip():
+            ui.notify("Please enter tester name", type="warning")
+            return
+
+        # Disable button during validation
+        run_button.disable()
+        result_label.text = "Running validation..."
+
+        def progress_callback(message: str) -> None:
+            """Callback to update progress log."""
+            progress_log.push(message)
+
+        # Run validation in background
+        runner = ValidationRunner(progress_callback=progress_callback)
+
+        try:
+            # Run validation (skip PQ tests since app is running)
+            success, message, cert_path = await ui.run_cpu_bound(
+                runner.run_validation, tester_name.strip(), skip_pq=True
+            )
+
+            # Log validation execution
+            self.logger.log_ui_interaction(
+                event_type="validation_execution",
+                session_id=self.session_id,
+                context={
+                    "tester": tester_name.strip(),
+                    "success": success,
+                    "certificate_path": str(cert_path) if cert_path else None,
+                },
+            )
+
+            # Update result label
+            if success:
+                result_label.text = f"✅ {message}"
+                result_label.classes("text-green-600")
+                ui.notify("Validation completed successfully!", type="positive")
+            else:
+                result_label.text = f"⚠️ {message}"
+                result_label.classes("text-orange-600")
+                ui.notify("Validation completed with warnings", type="warning")
+
+        except Exception as e:
+            error_msg = f"Validation error: {str(e)}"
+            result_label.text = f"❌ {error_msg}"
+            result_label.classes("text-red-600")
+            ui.notify(error_msg, type="negative")
+
+            # Log error
+            self.logger.log_validation_error(
+                error_type="validation_execution_error",
+                error_message=str(e),
+                field_id="validation_runner",
+                invalid_value=tester_name,
+                session_id=self.session_id,
+            )
+        finally:
+            # Re-enable button
+            run_button.enable()
 
 
 def create_ui() -> None:

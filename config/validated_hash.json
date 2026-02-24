@@ -1,6 +1,5 @@
 {
-  "validated_hash": "",
-  "validation_date": "",
-  "validator": "",
-  "notes": "This file stores the SHA-256 hash of the validated calculation engine. Run the validation suite to populate this file."
+  "validated_hash": null,
+  "validation_date": null,
+  "validator": null
 }

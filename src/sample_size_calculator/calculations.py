@@ -144,10 +144,36 @@ class CalculationEngine:
         """Calculate one-sided tolerance factor k1 using non-central t-distribution.
 
         The one-sided tolerance factor is used to calculate tolerance intervals
-        for parametric data with one-sided specifications.
+        for parametric data with one-sided specifications (either LSL or USL).
+
+        The tolerance factor k1 is calculated such that with confidence C, at least
+        proportion R of the population falls within the tolerance interval defined by:
+        - For LSL: TL = mean - k1 * std
+        - For USL: TU = mean + k1 * std
+
+        Mathematical Background:
+            The one-sided tolerance factor is derived from the non-central t-distribution.
+            For a sample of size n from a normal distribution, the tolerance factor k1
+            satisfies:
+
+            P(X̄ - k1*S ≤ μ - z_R*σ) = C
+
+            where:
+            - X̄ is the sample mean
+            - S is the sample standard deviation
+            - μ is the population mean
+            - σ is the population standard deviation
+            - z_R is the standard normal quantile at reliability R
+            - C is the confidence level
+
+            This is solved using the non-central t-distribution with:
+            - Degrees of freedom: df = n - 1
+            - Non-centrality parameter: ncp = z_R * √n
+            - Quantile: t_C at confidence level C
+            - Tolerance factor: k1 = t_C / √n
 
         Args:
-            n: Sample size
+            n: Sample size (must be ≥ 2)
             confidence: Confidence level as percentage (0-100)
             reliability: Reliability level as percentage (0-100)
 
@@ -158,7 +184,10 @@ class CalculationEngine:
             ValueError: If inputs are invalid or n < 2
 
         Reference:
-            ISO 16269-6:2014 Statistical interpretation of data
+            ISO 16269-6:2014 Statistical interpretation of data - Part 6:
+            Determination of statistical tolerance intervals
+
+        Validates: Requirements 15.1, 15.2
         """
         if n < 2:
             raise ValueError("Sample size must be at least 2")
@@ -198,10 +227,40 @@ class CalculationEngine:
         """Calculate two-sided tolerance factor k2 using Howe-Guenther approximation.
 
         The two-sided tolerance factor is used to calculate tolerance intervals
-        for parametric data with two-sided specifications.
+        for parametric data with two-sided specifications (both LSL and USL).
+
+        The tolerance interval is defined by:
+        - Lower limit: TL = mean - k2 * std
+        - Upper limit: TU = mean + k2 * std
+
+        With confidence C, at least proportion R of the population falls within [TL, TU].
+
+        Mathematical Background:
+            The two-sided tolerance factor accounts for both tails of the distribution.
+            The Howe-Guenther approximation provides an efficient method for calculating
+            k2 without requiring iterative numerical methods.
+
+            For a sample of size n from a normal distribution, the tolerance factor k2
+            satisfies:
+
+            P(X̄ - k2*S ≤ μ - z_{R/2}*σ AND X̄ + k2*S ≥ μ + z_{R/2}*σ) = C
+
+            where:
+            - X̄ is the sample mean
+            - S is the sample standard deviation
+            - μ is the population mean
+            - σ is the population standard deviation
+            - z_{R/2} is the standard normal quantile at (1+R)/2 (two-sided)
+            - C is the confidence level
+
+            The approximation uses the non-central t-distribution with:
+            - Degrees of freedom: df = n - 1
+            - Non-centrality parameter: ncp = z_{(1+R)/2} * √n
+            - Quantile: t_C at confidence level C
+            - Tolerance factor: k2 = t_C / √n
 
         Args:
-            n: Sample size
+            n: Sample size (must be ≥ 2)
             confidence: Confidence level as percentage (0-100)
             reliability: Reliability level as percentage (0-100)
 
@@ -212,7 +271,10 @@ class CalculationEngine:
             ValueError: If inputs are invalid or n < 2
 
         Reference:
-            Howe, W.G. (1969). Two-sided tolerance limits for normal populations
+            Howe, W.G. (1969). Two-sided tolerance limits for normal populations -
+            Some improvements. Journal of the American Statistical Association, 64(326), 610-620.
+
+        Validates: Requirements 16.1, 16.2
         """
         if n < 2:
             raise ValueError("Sample size must be at least 2")
@@ -276,7 +338,27 @@ class CalculationEngine:
         1 - N*R^(N-1) + (N-1)*R^N >= c_conf
 
         This formula accounts for using both minimum and maximum order statistics
-        for two-sided tolerance intervals.
+        for two-sided tolerance intervals in a distribution-free (non-parametric) manner.
+
+        Mathematical Background:
+            For non-parametric two-sided tolerance intervals, we use the extreme order
+            statistics (minimum and maximum) from the sample. The probability that both
+            the minimum and maximum of a sample of size N from a continuous distribution
+            capture at least proportion R of the population is given by:
+
+            P(min(X₁,...,Xₙ) ≤ F⁻¹((1-R)/2) AND max(X₁,...,Xₙ) ≥ F⁻¹((1+R)/2))
+                = 1 - N*R^(N-1) + (N-1)*R^N
+
+            where F is the cumulative distribution function of the population.
+
+            This formula is derived from order statistics theory and is valid for any
+            continuous distribution (distribution-free property). We iterate N upward
+            until this probability meets or exceeds the confidence level C.
+
+            The formula represents:
+            - 1: Total probability
+            - N*R^(N-1): Probability that at least one extreme is outside the interval
+            - (N-1)*R^N: Correction term for overlap (inclusion-exclusion principle)
 
         Args:
             confidence: Confidence level as percentage (0-100)
@@ -288,6 +370,12 @@ class CalculationEngine:
         Raises:
             ValueError: If inputs are invalid
             RuntimeError: If calculation does not converge
+
+        Reference:
+            Wilks, S. S. (1941). Determination of sample sizes for setting tolerance limits.
+            The Annals of Mathematical Statistics, 12(1), 91-96.
+
+        Validates: Requirements 18.1, 18.2
         """
         if not (0 < confidence < 100):
             raise ValueError("Confidence must be between 0 and 100")

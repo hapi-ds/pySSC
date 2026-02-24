@@ -242,13 +242,14 @@ def main():
         validated_hash=engine_hash
     )
     
-    # Generate PDF
-    pdf_bytes = ReportGenerator.generate_validation_certificate(cert_data)
+    # Generate PDF and save to reports directory
+    pdf_bytes, report_path = ReportGenerator.generate_validation_certificate(cert_data)
     
-    # Save PDF
+    # Note: The report is already saved by the generator, but we also save to the specified output path
     output_path = Path(args.output)
     output_path.write_bytes(pdf_bytes)
     print(f"✅ Validation certificate saved to: {output_path}")
+    print(f"✅ Also saved to reports directory: {report_path}")
     
     # Store validated hash if all tests passed
     if all_passed:

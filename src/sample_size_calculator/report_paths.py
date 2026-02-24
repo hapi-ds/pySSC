@@ -24,7 +24,7 @@ ReportType = Literal["validation", "calculations", "full"]
 
 def get_timestamp() -> str:
     """Generate timestamp string for report filenames.
-    
+
     Returns:
         Timestamp in format YYYYMMDD_HHMMSS (e.g., "20240315_143022")
     """
@@ -33,24 +33,24 @@ def get_timestamp() -> str:
 
 def get_report_path(report_type: ReportType, prefix: str = "report") -> Path:
     """Generate a timestamped report file path.
-    
+
     Args:
         report_type: Type of report ("validation", "calculations", or "full")
         prefix: Filename prefix (default: "report")
-        
+
     Returns:
         Path object for the report file with timestamp-based naming
-        
+
     Examples:
         >>> get_report_path("validation", "validation_certificate")
         Path('reports/validation/validation_certificate_20240315_143022.pdf')
-        
+
         >>> get_report_path("calculations", "calculation_report")
         Path('reports/calculations/calculation_report_20240315_143022.pdf')
     """
     timestamp = get_timestamp()
     filename = f"{prefix}_{timestamp}.pdf"
-    
+
     if report_type == "validation":
         return VALIDATION_DIR / filename
     elif report_type == "calculations":
@@ -63,12 +63,12 @@ def get_report_path(report_type: ReportType, prefix: str = "report") -> Path:
 
 def ensure_report_directories() -> None:
     """Ensure all report subdirectories exist with proper permissions.
-    
+
     Creates the reports directory structure if it doesn't exist:
     - reports/validation/
     - reports/calculations/
     - reports/full/
-    
+
     This function is idempotent and safe to call multiple times.
     """
     VALIDATION_DIR.mkdir(parents=True, exist_ok=True)
@@ -78,10 +78,10 @@ def ensure_report_directories() -> None:
 
 def get_validation_report_path() -> Path:
     """Get path for a new validation certificate report.
-    
+
     Returns:
         Path for validation certificate with timestamp
-        
+
     Example:
         Path('reports/validation/validation_certificate_20240315_143022.pdf')
     """
@@ -90,10 +90,10 @@ def get_validation_report_path() -> Path:
 
 def get_calculation_report_path() -> Path:
     """Get path for a new calculation report.
-    
+
     Returns:
         Path for calculation report with timestamp
-        
+
     Example:
         Path('reports/calculations/calculation_report_20240315_143022.pdf')
     """
@@ -102,11 +102,33 @@ def get_calculation_report_path() -> Path:
 
 def get_full_report_path() -> Path:
     """Get path for a new comprehensive full report.
-    
+
     Returns:
         Path for full report with timestamp
-        
+
     Example:
         Path('reports/full/full_report_20240315_143022.pdf')
     """
     return get_report_path("full", "full_report")
+
+
+def save_report(report_bytes: bytes, report_path: Path) -> Path:
+    """Save report bytes to file and return the path.
+
+    Args:
+        report_bytes: PDF report as bytes
+        report_path: Path where report should be saved
+
+    Returns:
+        Path to the saved report file
+
+    Raises:
+        IOError: If report cannot be saved
+    """
+    # Ensure parent directory exists
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Write report to file
+    report_path.write_bytes(report_bytes)
+
+    return report_path

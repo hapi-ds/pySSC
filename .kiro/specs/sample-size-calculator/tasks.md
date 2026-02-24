@@ -433,8 +433,8 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Verify reports/ directory is accessible and writable
     - _Requirements: 35.2, 35.3_
 
-- [-] 14. Enhanced UI features and report management
-  - [-] 14.1 Implement reports directory structure
+- [x] 14. Enhanced UI features and report management
+  - [x] 14.1 Implement reports directory structure
     - Create ./reports/ directory with subdirectories:
       - ./reports/validation/ for IQ/OQ/PQ certificates
       - ./reports/calculations/ for sample size calculation reports
@@ -443,7 +443,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Add timestamp-based naming for all reports
     - _Requirements: 27.1, 30.1_
 
-  - [~] 14.2 Implement full report generation module
+  - [x] 14.2 Implement full report generation module
     - Create full_report_generator.py that combines:
       - Sample size calculation report (current calculation)
       - Latest validation reports (IQ/OQ/PQ certificates)
@@ -454,21 +454,21 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Include table of contents and section dividers
     - _Requirements: 27.1, 28.2, 29.2, 30.1, 38.16_
 
-  - [~] 14.3 Update report generation to use reports directory
+  - [x] 14.3 Update report generation to use reports directory
     - Modify generate_user_report() to save to ./reports/calculations/
     - Modify generate_validation_certificate() to save to ./reports/validation/
     - Add report file path display in UI after generation
     - Add download link for generated reports
     - _Requirements: 27.1, 30.1_
 
-  - [~] 14.4 Add full report generation button to UI
+  - [x] 14.4 Add full report generation button to UI
     - Create "Generate Full Report" button in UI (separate from regular PDF report)
     - Wire button to full_report_generator.py module
     - Display report generation status and file path
     - Add download link for generated full report
     - _Requirements: 27.1, 28.2, 29.2, 30.1, 38.16_
 
-  - [~] 14.5 Add full validation button to UI
+  - [x] 14.5 Add full validation button to UI
     - Create "Run Full Validation (IQ/OQ/PQ)" button in UI header/settings area
     - Implement validation runner that executes IQ/OQ/PQ test suite
     - Display validation progress and results in UI
@@ -477,7 +477,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Log validation execution to audit trail
     - _Requirements: 30.1, 32.5_
 
-  - [~] 14.5 Create comprehensive README.md
+  - [x] 14.5 Create comprehensive README.md
     - Add project overview and features
     - Add installation instructions (uv sync)
     - Add usage instructions for both modules
@@ -490,34 +490,34 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Add troubleshooting section
     - _Requirements: 35.2_
 
-  - [~] 14.6 Create config/validated_hash.json template
+  - [x] 14.6 Create config/validated_hash.json template
     - Create JSON structure with validated_hash, validation_date, validator fields
     - Initialize with empty/placeholder values
     - _Requirements: 29.4_
 
-  - [~] 14.7 Create .env.example file
+  - [x] 14.7 Create .env.example file
     - Add PORT=8080
     - Add LOG_LEVEL=INFO
     - Add LOG_RETENTION_DAYS=90
     - Add REPORTS_DIR=./reports
     - _Requirements: 35.4_
 
-  - [~] 14.8 Add inline code documentation
+  - [x] 14.8 Add inline code documentation
     - Add docstrings to all public functions and classes
     - Use Google docstring style
     - Include type information and examples
     - Add comments for complex statistical formulas with references
     - _Requirements: 26.4_
 
-- [ ] 15. Final validation and testing with enhanced features
-  - [~] 15.1 Run complete test suite
+- [-] 15. Final validation and testing with enhanced features
+  - [x] 15.1 Run complete test suite
     - Run unit tests: uv run pytest tests/unit/ -q
     - Run property tests: uv run pytest tests/property/ -q
     - Run integration tests: uv run pytest tests/integration/ -q
     - Verify all tests pass
     - _Requirements: 32.5_
 
-  - [~] 15.2 Test validation button and report generation
+  - [x] 15.2 Test validation button and report generation
     - Start application: uv run python src/main.py
     - Click "Run Full Validation (IQ/OQ/PQ)" button in UI
     - Verify IQ/OQ/PQ tests execute successfully
@@ -525,7 +525,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Verify validated hash is updated
     - _Requirements: 30.1, 31.3, 32.5_
 
-  - [~] 15.3 Test full report generation
+  - [x] 15.3 Test full report generation
     - Perform a Module A calculation
     - Click "Generate Full Report" button
     - Verify full report includes:
@@ -537,14 +537,14 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Verify all sections are properly formatted
     - _Requirements: 27.1, 28.2, 29.2, 30.1, 38.16_
 
-  - [~] 15.4 Run code quality checks
+  - [x] 15.4 Run code quality checks
     - Run ruff linter: uv run ruff check src/
     - Run ruff formatter: uv run ruff format src/
     - Run type checker: uvx ty check src/
     - Fix all warnings and errors
     - _Requirements: Code quality standards_
 
-  - [~] 15.5 Verify Docker deployment end-to-end with new features
+  - [x] 15.5 Verify Docker deployment end-to-end with new features
     - Build and start: docker compose up -d
     - Access UI and perform Module A calculation
     - Access UI and perform Module V 4-phase workflow
@@ -557,7 +557,7 @@ The implementation uses Python with NiceGUI for the web interface, Pydantic for 
     - Stop: docker compose down
     - _Requirements: 35.2, 35.3_
 
-- [ ] 16. Final checkpoint - System ready for deployment
+- [x] 16. Final checkpoint - System ready for deployment
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

@@ -1,7 +1,20 @@
 """Pydantic data models for the Sample Size Calculator application.
 
 This module defines all data structures used throughout the application,
-providing type safety, validation, and serialization capabilities.
+providing type safety, validation, and serialization capabilities. All models
+use Pydantic for automatic validation and type checking at runtime.
+
+The models serve as the single source of truth for data structures across:
+- User interface (input validation and display)
+- Calculation engine (parameter passing and result storage)
+- Report generation (PDF content and formatting)
+- Audit logging (structured event data)
+
+References:
+    - Pydantic documentation: https://docs.pydantic.dev/
+    - ISO/TR 80002-2: Medical device software validation guidance
+
+Validates: Requirements 37.1, 37.2, 37.3, 37.4, 37.5
 """
 
 from enum import StrEnum
@@ -37,7 +50,24 @@ class AnalysisMethod(StrEnum):
 
 
 class AttributeInputs(BaseModel):
-    """Input parameters for Module A attribute data analysis."""
+    """Input parameters for Module A attribute data analysis.
+
+    This model validates input parameters for binary Pass/Fail test scenarios.
+    It supports both zero-failure testing (Success Run Theorem) and scenarios
+    with allowable failures (Cumulative Binomial Distribution).
+
+    Attributes:
+        confidence: Confidence level as percentage (0-100). The probability that
+            the true reliability is at least the specified value. Typical values:
+            90%, 95%, 99%.
+        reliability: Reliability level as percentage (0-100). The minimum acceptable
+            proportion of passing units in the population. Typical values: 90%, 95%, 99%.
+        allowable_failures: Number of failures allowed in the test (c). Use 0 for
+            zero-failure testing, or None for sensitivity analysis across c=0,1,2,3.
+            Must be non-negative integer.
+
+    Validates: Requirements 1.1, 1.2, 1.3
+    """
 
     confidence: float = Field(gt=0, lt=100, description="Confidence level (%)")
     reliability: float = Field(gt=0, lt=100, description="Reliability level (%)")
