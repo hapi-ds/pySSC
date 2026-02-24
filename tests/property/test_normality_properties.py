@@ -33,7 +33,7 @@ class TestNormalityTestingProperties:
         a valid p-value in the range [0, 1].
         """
         # Perform Shapiro-Wilk test
-        p_value = shapiro_wilk_test(data)
+        statistic, p_value = shapiro_wilk_test(data)
 
         # Verify p-value is a float
         assert isinstance(p_value, float), (
@@ -62,9 +62,9 @@ class TestNormalityTestingProperties:
         times on the same data should produce identical p-values.
         """
         # Run Shapiro-Wilk test multiple times
-        p_value1 = shapiro_wilk_test(data)
-        p_value2 = shapiro_wilk_test(data)
-        p_value3 = shapiro_wilk_test(data)
+        statistic1, p_value1 = shapiro_wilk_test(data)
+        statistic2, p_value2 = shapiro_wilk_test(data)
+        statistic3, p_value3 = shapiro_wilk_test(data)
 
         # Verify all p-values are identical
         assert p_value1 == p_value2 == p_value3, (
@@ -119,7 +119,7 @@ class TestNormalityTestingProperties:
         to transformation attempts if p <= 0.05.
         """
         # Perform Shapiro-Wilk test
-        p_value = shapiro_wilk_test(data)
+        statistic, p_value = shapiro_wilk_test(data)
 
         # Classify with default alpha
         result = is_normal(p_value)
@@ -186,7 +186,7 @@ class TestNormalityTestingProperties:
         classification should be consistent with the p-value threshold.
         """
         # Perform Shapiro-Wilk test once
-        p_value = shapiro_wilk_test(data)
+        statistic, p_value = shapiro_wilk_test(data)
 
         # Test with different alpha values
         result1 = is_normal(p_value, alpha1)

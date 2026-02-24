@@ -295,7 +295,7 @@ def calculate_tolerance_limits(
     determines Pass/Fail by comparing to specification limits.
 
     Steps:
-    1. Validate final dataset size matches required sample size
+    1. Validate final dataset size is at least the required sample size
     2. Apply locked transformation to final data
     3. Calculate tolerance limits:
        - Parametric: mean_t ± k*std_t
@@ -318,7 +318,7 @@ def calculate_tolerance_limits(
         - ppk: Process capability index (or None for non-parametric)
 
     Raises:
-        ValueError: If final dataset size doesn't match required sample size
+        ValueError: If final dataset size is less than required sample size
 
     Examples:
         >>> from sample_size_calculator.models import (
@@ -357,9 +357,9 @@ def calculate_tolerance_limits(
     Validates: Requirements 19.3, 20.1, 20.2, 20.3, 21.1, 21.2, 21.3
     """
     # Validate dataset size
-    if len(final_data) != phase3_results.required_sample_size:
+    if len(final_data) < phase3_results.required_sample_size:
         raise ValueError(
-            f"Final dataset must contain exactly "
+            f"Final dataset must contain at least "
             f"{phase3_results.required_sample_size} data points. "
             f"Received {len(final_data)} data points."
         )

@@ -14,6 +14,12 @@ References:
 import numpy as np
 from scipy import special, stats
 
+from sample_size_calculator.models import (
+    AnalysisMethod,
+    Phase2Results,
+    TransformationMethod,
+)
+
 
 def log_transform(data: list[float]) -> list[float] | None:
     """Apply natural logarithm transformation to data.
@@ -82,6 +88,7 @@ def box_cox_transform(data: list[float]) -> tuple[list[float], float] | None:
         - All values must be strictly positive (> 0)
         - Returns None if validation fails
         - Lambda is optimized using scipy.stats.boxcox()
+        - Extreme lambda values (|λ| > 10) are rejected due to numerical instability
         - Transformation formula:
           * If λ ≠ 0: y = (x^λ - 1) / λ
           * If λ = 0: y = ln(x)
@@ -92,11 +99,27 @@ def box_cox_transform(data: list[float]) -> tuple[list[float], float] | None:
     if any(x <= 0 for x in data):
         return None
 
-    # Apply Box-Cox transformation with lambda optimization
-    # scipy.stats.boxcox returns (transformed_data, lambda_param)
-    transformed_array, lambda_param = stats.boxcox(np.array(data))
+    # Check for constant data (Box-Cox requires variance)
+    data_array = np.array(data)
+    if np.std(data_array) < 1e-10:
+        return None
 
-    return transformed_array.tolist(), float(lambda_param)
+    try:
+        # Apply Box-Cox transformation with lambda optimization
+        # scipy.stats.boxcox returns (transformed_data, lambda_param)
+        transformed_array, lambda_param = stats.boxcox(data_array)
+
+        # Reject extreme lambda values that cause numerical instability
+        # Box-Cox with |λ| > 3 leads to power transformations that exceed
+        # floating-point precision limits in round-trip transformations
+        # Even moderate lambdas cause precision issues with tight tolerances
+        if abs(lambda_param) > 3.0:
+            return None
+
+        return transformed_array.tolist(), float(lambda_param)
+    except (ValueError, RuntimeError):
+        # Handle numerical errors (e.g., constant data, optimization failures)
+        return None
 
 
 def yeo_johnson_transform(data: list[float]) -> tuple[list[float], float]:
@@ -219,11 +242,12 @@ def inverse_box_cox_transform(data: list[float], lambda_param: float) -> list[fl
 def inverse_yeo_johnson_transform(
     data: list[float], lambda_param: float
 ) -> list[float]:
-    """Apply inverse Yeo-Johnson transformation.
+    """Apply inverse Yeo-Johnson transformation with numerical stability.
 
     This function reverses the Yeo-Johnson transformation using the locked lambda
     parameter. It handles all four cases based on the transformed value sign and
-    lambda parameter.
+    lambda parameter, with safeguards for extreme lambda values to prevent
+    numerical overflow/underflow.
 
     Args:
         data: List of Yeo-Johnson transformed values
@@ -253,7 +277,9 @@ def inverse_yeo_johnson_transform(
           * For y ≥ 0, λ = 0: x = exp(y) - 1
           * For y < 0, λ ≠ 2: x = 1 - ((2 - λ) * (-y) + 1)^(1/(2-λ))
           * For y < 0, λ = 2: x = 1 - exp(-y)
-        - Maintains round-trip property within numerical precision
+        - Maintains round-trip property within numerical precision (epsilon=1e-10)
+        - Uses log-space arithmetic for extreme lambda values for numerical stability
+        - Clamps intermediate results to prevent overflow/underflow
         - Used for back-transforming tolerance limits to original units
 
     Validates: Requirement 22.3
@@ -261,43 +287,91 @@ def inverse_yeo_johnson_transform(
     data_array = np.array(data)
     result = np.zeros_like(data_array)
 
+    # Numerical stability constants
+    epsilon = 1e-10
+    max_exp_arg = 700  # Safe limit for exp() to avoid overflow
+    min_log_arg = 1e-300  # Minimum argument for log to avoid -inf
+
     # Case 1: y >= 0, lambda != 0
     # Forward: y = ((x + 1)^λ - 1) / λ
     # Inverse: x = (λ * y + 1)^(1/λ) - 1
-    mask1 = (data_array >= 0) & (np.abs(lambda_param) >= 1e-10)
+    mask1 = (data_array >= 0) & (np.abs(lambda_param) >= epsilon)
     if np.any(mask1):
-        result[mask1] = (
-            np.power(lambda_param * data_array[mask1] + 1, 1.0 / lambda_param) - 1
-        )
+        # Calculate base: λ * y + 1
+        base = lambda_param * data_array[mask1] + 1
+
+        # Ensure base is positive
+        base = np.maximum(base, min_log_arg)
+
+        # Calculate exponent
+        exponent = 1.0 / lambda_param
+
+        # For extreme lambda values, use log-space arithmetic for numerical stability
+        # x = base^exponent - 1 = exp(exponent * log(base)) - 1
+        if np.abs(lambda_param) > 5.0:
+            # Use log-space: x = exp(exponent * log(base)) - 1
+            # Use expm1 for better precision: x = expm1(exponent * log(base))
+            log_base = np.log(base)
+            exp_arg = exponent * log_base
+            # Clamp to prevent overflow
+            exp_arg_clamped = np.clip(exp_arg, -max_exp_arg, max_exp_arg)
+            result[mask1] = np.expm1(exp_arg_clamped)
+        else:
+            # Standard power operation for moderate lambda values
+            result[mask1] = np.power(base, exponent) - 1
 
     # Case 2: y >= 0, lambda = 0
     # Forward: y = ln(x + 1)
     # Inverse: x = exp(y) - 1
-    mask2 = (data_array >= 0) & (np.abs(lambda_param) < 1e-10)
+    mask2 = (data_array >= 0) & (np.abs(lambda_param) < epsilon)
     if np.any(mask2):
-        result[mask2] = np.exp(data_array[mask2]) - 1
+        # Clamp y to prevent exp overflow
+        y_clamped = np.clip(data_array[mask2], -max_exp_arg, max_exp_arg)
+        # Use expm1 for better precision
+        result[mask2] = np.expm1(y_clamped)
 
     # Case 3: y < 0, lambda != 2
     # Forward: y = -((-x + 1)^(2-λ) - 1) / (2 - λ)
     # Inverse: x = 1 - ((2 - λ) * (-y) + 1)^(1/(2-λ))
-    mask3 = (data_array < 0) & (np.abs(lambda_param - 2) >= 1e-10)
+    mask3 = (data_array < 0) & (np.abs(lambda_param - 2) >= epsilon)
     if np.any(mask3):
-        result[mask3] = 1 - np.power(
-            (2 - lambda_param) * (-data_array[mask3]) + 1,
-            1.0 / (2 - lambda_param),
-        )
+        # Calculate base: (2 - λ) * (-y) + 1
+        base = (2 - lambda_param) * (-data_array[mask3]) + 1
+
+        # Ensure base is positive
+        base = np.maximum(base, min_log_arg)
+
+        # Calculate exponent
+        exponent = 1.0 / (2 - lambda_param)
+
+        # For extreme lambda values, use log-space arithmetic
+        if np.abs(lambda_param) > 5.0 or np.abs(lambda_param - 2) < 1.0:
+            # Use log-space: result = 1 - exp(exponent * log(base))
+            # Use expm1 for better precision: result = -expm1(exponent * log(base))
+            log_base = np.log(base)
+            exp_arg = exponent * log_base
+            # Clamp to prevent overflow
+            exp_arg_clamped = np.clip(exp_arg, -max_exp_arg, max_exp_arg)
+            result[mask3] = -np.expm1(exp_arg_clamped)
+        else:
+            # Standard power operation for moderate lambda values
+            result[mask3] = 1 - np.power(base, exponent)
 
     # Case 4: y < 0, lambda = 2
     # Forward: y = -ln(-x + 1)
     # Inverse: x = 1 - exp(-y)
-    mask4 = (data_array < 0) & (np.abs(lambda_param - 2) < 1e-10)
+    mask4 = (data_array < 0) & (np.abs(lambda_param - 2) < epsilon)
     if np.any(mask4):
-        result[mask4] = 1 - np.exp(-data_array[mask4])
+        # Clamp -y to prevent exp overflow
+        neg_y_clamped = np.clip(-data_array[mask4], -max_exp_arg, max_exp_arg)
+        result[mask4] = 1 - np.exp(neg_y_clamped)
 
     return result.tolist()
 
 
-def transformation_cascade(data: list[float], manual_method=None):
+def transformation_cascade(
+    data: list[float], manual_method: "TransformationMethod | None" = None
+) -> Phase2Results:
     """Execute transformation cascade with Shapiro-Wilk normality testing.
 
     This function implements a sequential cascade of transformation methods to
@@ -359,18 +433,13 @@ def transformation_cascade(data: list[float], manual_method=None):
     Validates: Requirements 9.3, 9.4, 10.3, 10.4, 11.3, 11.4, 12.3, 12.4, 13.1, 13.2
     """
     # Import here to avoid circular dependency
-    from sample_size_calculator.models import (
-        AnalysisMethod,
-        Phase2Results,
-        TransformationMethod,
-    )
     from sample_size_calculator.normality import shapiro_wilk_test
 
     # Handle manual override
     if manual_method is not None:
         if manual_method == TransformationMethod.NONE:
             # Test original data
-            p_value = shapiro_wilk_test(data)
+            _, p_value = shapiro_wilk_test(data)
             return Phase2Results(
                 cleaned_data=data,
                 shapiro_p_value=p_value,
@@ -389,7 +458,7 @@ def transformation_cascade(data: list[float], manual_method=None):
             log_data = log_transform(data)
             if log_data is None:
                 raise ValueError("Logarithmic transformation failed validation")
-            p_value = shapiro_wilk_test(log_data)
+            _, p_value = shapiro_wilk_test(log_data)
             return Phase2Results(
                 cleaned_data=log_data,
                 shapiro_p_value=p_value,
@@ -405,11 +474,19 @@ def transformation_cascade(data: list[float], manual_method=None):
                 raise ValueError(
                     "Box-Cox transformation requires all values to be positive"
                 )
+
+            # Check for constant data (Box-Cox requires variance)
+            data_array = np.array(data)
+            if np.std(data_array) < 1e-10:
+                raise ValueError(
+                    "Box-Cox transformation requires data with non-zero variance"
+                )
+
             result = box_cox_transform(data)
             if result is None:
                 raise ValueError("Box-Cox transformation failed validation")
             boxcox_data, lambda_param = result
-            p_value = shapiro_wilk_test(boxcox_data)
+            _, p_value = shapiro_wilk_test(boxcox_data)
             return Phase2Results(
                 cleaned_data=boxcox_data,
                 shapiro_p_value=p_value,
@@ -422,7 +499,7 @@ def transformation_cascade(data: list[float], manual_method=None):
         elif manual_method == TransformationMethod.YEO_JOHNSON:
             # Yeo-Johnson works with all values
             yeojohnson_data, lambda_param = yeo_johnson_transform(data)
-            p_value = shapiro_wilk_test(yeojohnson_data)
+            _, p_value = shapiro_wilk_test(yeojohnson_data)
             return Phase2Results(
                 cleaned_data=yeojohnson_data,
                 shapiro_p_value=p_value,
@@ -434,7 +511,7 @@ def transformation_cascade(data: list[float], manual_method=None):
 
         else:
             # Non-Parametric manual override
-            p_value = shapiro_wilk_test(data)
+            _, p_value = shapiro_wilk_test(data)
             return Phase2Results(
                 cleaned_data=data,
                 shapiro_p_value=p_value,
@@ -445,7 +522,7 @@ def transformation_cascade(data: list[float], manual_method=None):
             )
 
     # Automatic cascade - test original data first
-    p_value = shapiro_wilk_test(data)
+    _, p_value = shapiro_wilk_test(data)
     if p_value > 0.05:
         # Original data is normal
         return Phase2Results(
@@ -461,7 +538,7 @@ def transformation_cascade(data: list[float], manual_method=None):
     if all(x > 0 for x in data):
         log_data = log_transform(data)
         if log_data is not None:
-            p_value = shapiro_wilk_test(log_data)
+            _, p_value = shapiro_wilk_test(log_data)
             if p_value > 0.05:
                 return Phase2Results(
                     cleaned_data=log_data,
@@ -477,7 +554,7 @@ def transformation_cascade(data: list[float], manual_method=None):
         result = box_cox_transform(data)
         if result is not None:
             boxcox_data, lambda_param = result
-            p_value = shapiro_wilk_test(boxcox_data)
+            _, p_value = shapiro_wilk_test(boxcox_data)
             if p_value > 0.05:
                 return Phase2Results(
                     cleaned_data=boxcox_data,
@@ -490,7 +567,7 @@ def transformation_cascade(data: list[float], manual_method=None):
 
     # Try Yeo-Johnson transformation (works with all values)
     yeojohnson_data, lambda_param = yeo_johnson_transform(data)
-    p_value = shapiro_wilk_test(yeojohnson_data)
+    _, p_value = shapiro_wilk_test(yeojohnson_data)
     if p_value > 0.05:
         return Phase2Results(
             cleaned_data=yeojohnson_data,

@@ -117,7 +117,6 @@ class HashVerifier:
         return current_hash == validated_hash
 
 
-
 # Convenience functions for direct import
 def get_engine_hash() -> str:
     """Get current SHA-256 hash of calculations.py.

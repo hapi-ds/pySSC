@@ -20,8 +20,9 @@ class TestNormalityTesting:
         """
         data = [1.0, 2.0, 3.0, 4.0, 5.0]
 
-        p_value = shapiro_wilk_test(data)
+        statistic, p_value = shapiro_wilk_test(data)
 
+        assert isinstance(statistic, float)
         assert isinstance(p_value, float)
         assert 0.0 <= p_value <= 1.0
 
@@ -34,7 +35,7 @@ class TestNormalityTesting:
         np.random.seed(42)
         normal_data = np.random.normal(0, 1, 100).tolist()
 
-        p_value = shapiro_wilk_test(normal_data)
+        statistic, p_value = shapiro_wilk_test(normal_data)
 
         # Normal data should have high p-value (typically > 0.05)
         assert p_value > 0.05
@@ -48,7 +49,7 @@ class TestNormalityTesting:
         np.random.seed(456)
         uniform_data = np.random.uniform(0, 1, 100).tolist()
 
-        p_value = shapiro_wilk_test(uniform_data)
+        statistic, p_value = shapiro_wilk_test(uniform_data)
 
         # Just verify we get a valid p-value
         # (uniform data may or may not be detected as non-normal with small samples)
@@ -61,7 +62,7 @@ class TestNormalityTesting:
         """
         data = [1.0, 2.0, 3.0]
 
-        p_value = shapiro_wilk_test(data)
+        statistic, p_value = shapiro_wilk_test(data)
 
         assert isinstance(p_value, float)
         assert 0.0 <= p_value <= 1.0
@@ -122,7 +123,8 @@ class TestNormalityTesting:
         """
         data = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
 
-        p_value1 = shapiro_wilk_test(data)
-        p_value2 = shapiro_wilk_test(data)
+        statistic1, p_value1 = shapiro_wilk_test(data)
+        statistic2, p_value2 = shapiro_wilk_test(data)
 
         assert p_value1 == p_value2
+        assert statistic1 == statistic2

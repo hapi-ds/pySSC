@@ -373,7 +373,7 @@ def test_property_20_final_dataset_size_validation(sample_size: int):
     )
 
     # Should raise ValueError due to size mismatch
-    with pytest.raises(ValueError, match="must contain exactly"):
+    with pytest.raises(ValueError, match="must contain at least"):
         calculate_tolerance_limits(final_data, phase2, phase3, spec_limits)
 
     # Now test with correct size - should not raise

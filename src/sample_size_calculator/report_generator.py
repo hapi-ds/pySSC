@@ -159,34 +159,69 @@ class ReportGenerator:
         story.append(Paragraph("Calculated Results", heading_style))
         story.append(Spacer(1, 0.1 * inch))
 
-        # Create results table using Flowable paragraphs
-        result_data = []
+        # Create results table with professional formatting (Bug 9 fix)
+        # Use 3-column table: Parameter, Value, Unit
+        result_data = [
+            # Header row
+            [
+                Paragraph("<b>Parameter</b>", bold_style),
+                Paragraph("<b>Value</b>", bold_style),
+                Paragraph("<b>Unit</b>", bold_style),
+            ]
+        ]
+
+        # Add data rows
         for key, value in report_data.results.items():
             # Format the key to be more readable
             formatted_key = key.replace("_", " ").title()
+            # Extract unit if present in the value string, otherwise use empty
+            value_str = str(value)
+            unit = ""  # Default empty unit
+
             # Use Paragraph for values to prevent overflow
             result_data.append(
                 [
-                    Paragraph(f"<b>{formatted_key}</b>", normal_style),
-                    Paragraph(str(value), normal_style),
+                    Paragraph(formatted_key, normal_style),
+                    Paragraph(value_str, normal_style),
+                    Paragraph(unit, normal_style),
                 ]
             )
 
-        if result_data:
-            result_table = Table(result_data, colWidths=[2.5 * inch, 4 * inch])
+        if len(result_data) > 1:  # More than just header
+            result_table = Table(result_data, colWidths=[200, 150, 100])
             result_table.setStyle(
                 TableStyle(
                     [
-                        ("BACKGROUND", (0, 0), (-1, -1), colors.white),
-                        ("TEXTCOLOR", (0, 0), (-1, -1), colors.black),
-                        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                        ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-                        ("FONTSIZE", (0, 0), (-1, -1), 10),
+                        # Header row styling
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 11),
+                        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                        # Data rows styling
+                        ("BACKGROUND", (0, 1), (-1, -1), colors.white),
+                        ("TEXTCOLOR", (0, 1), (-1, -1), colors.black),
+                        (
+                            "ALIGN",
+                            (0, 1),
+                            (0, -1),
+                            "LEFT",
+                        ),  # Parameter column left-aligned
+                        (
+                            "ALIGN",
+                            (1, 1),
+                            (1, -1),
+                            "RIGHT",
+                        ),  # Value column right-aligned
+                        ("ALIGN", (2, 1), (2, -1), "LEFT"),  # Unit column left-aligned
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                        ("FONTSIZE", (0, 1), (-1, -1), 10),
                         ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
                         (
                             "ROWBACKGROUNDS",
-                            (0, 0),
+                            (0, 1),
                             (-1, -1),
                             [colors.white, colors.lightgrey],
                         ),
