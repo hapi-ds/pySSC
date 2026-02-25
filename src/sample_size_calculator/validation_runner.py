@@ -101,7 +101,10 @@ class ValidationRunner:
             urs_ids = []
 
             test_id = test.get("nodeid", "unknown")
-            test_name = test_id.split("::")[-1] if "::" in test_id else test_id
+            # Extract clean test name (remove [param] from parametrized tests)
+            test_name = (
+                test_id.split("::")[-1].split("[")[0] if "::" in test_id else test_id
+            )
 
             if "::" in test_id:
                 # Parse the marker directly from the source file
@@ -146,9 +149,6 @@ class ValidationRunner:
                             # Use the most recent marker (first in reverse order = last in file)
                             if collected_urs_ids:
                                 urs_ids = [collected_urs_ids[0]]
-
-                            # DEBUG: Print extracted URS IDs
-                            print(f"DEBUG EXTRACT: {test_name} -> {urs_ids}")
 
                             break
                 except Exception:

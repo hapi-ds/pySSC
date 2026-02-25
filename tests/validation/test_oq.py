@@ -79,12 +79,12 @@ def test_success_run_theorem_high_reliability():
     system shall calculate the minimum sample size (n) using
     the Success Run Theorem.
 
-    Standard test case: C=95%, R=99%, c=0 → n=29
+    Standard test case: C=95%, R=99%, c=0 → n=299
     """
     result = CalculationEngine.success_run_theorem(95.0, 99.0)
 
     assert isinstance(result, int), "Result must be an integer"
-    assert result == 29, f"Expected n=29 for C=95%, R=99%, got {result}"
+    assert result == 299, f"Expected n=299 for C=95%, R=99%, got {result}"
 
 
 @pytest.mark.oq
@@ -229,9 +229,7 @@ def test_one_sided_tolerance_factor():
     k1_small = CalculationEngine.one_sided_tolerance_factor(10, 95.0, 95.0)
     k1_large = CalculationEngine.one_sided_tolerance_factor(100, 95.0, 95.0)
 
-    assert k1_small > k1_large, (
-        "k1 should decrease as sample size increases"
-    )
+    assert k1_small > k1_large, "k1 should decrease as sample size increases"
 
 
 @pytest.mark.oq
@@ -260,9 +258,7 @@ def test_two_sided_tolerance_factor():
     k2_small = CalculationEngine.two_sided_tolerance_factor(10, 95.0, 95.0)
     k2_large = CalculationEngine.two_sided_tolerance_factor(100, 95.0, 95.0)
 
-    assert k2_small > k2_large, (
-        "k2 should decrease as sample size increases"
-    )
+    assert k2_small > k2_large, "k2 should decrease as sample size increases"
 
 
 @pytest.mark.oq
@@ -288,9 +284,7 @@ def test_two_sided_factor_greater_than_one_sided():
     k1 = CalculationEngine.one_sided_tolerance_factor(n, confidence, reliability)
     k2 = CalculationEngine.two_sided_tolerance_factor(n, confidence, reliability)
 
-    assert k2 > k1, (
-        f"Two-sided factor k2={k2} must be greater than one-sided k1={k1}"
-    )
+    assert k2 > k1, f"Two-sided factor k2={k2} must be greater than one-sided k1={k1}"
 
 
 @pytest.mark.oq
@@ -339,11 +333,9 @@ def test_non_parametric_two_sided_sample_size():
     C = 0.95
     R = 0.95
     n = result
-    constraint_value = 1 - n * (R ** (n - 1)) + (n - 1) * (R ** n)
+    constraint_value = 1 - n * (R ** (n - 1)) + (n - 1) * (R**n)
 
-    assert constraint_value >= C, (
-        f"Constraint not satisfied: {constraint_value} < {C}"
-    )
+    assert constraint_value >= C, f"Constraint not satisfied: {constraint_value} < {C}"
 
 
 # Transformation Tests
@@ -529,9 +521,7 @@ def test_capability_margin_calculation():
     # Create capable process data
     data = [10.0, 10.5, 11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5]
     spec_limits = SpecificationLimits(
-        spec_type=SpecificationType.TWO_SIDED,
-        lsl=8.0,
-        usl=16.0
+        spec_type=SpecificationType.TWO_SIDED, lsl=8.0, usl=16.0
     )
 
     k_margin = calculate_capability_margin(
@@ -558,15 +548,11 @@ def test_capability_margin_incapable_process():
     # Create incapable process data (mean outside specs)
     data = [20.0, 21.0, 22.0, 23.0, 24.0]
     spec_limits = SpecificationLimits(
-        spec_type=SpecificationType.TWO_SIDED,
-        lsl=8.0,
-        usl=16.0
+        spec_type=SpecificationType.TWO_SIDED, lsl=8.0, usl=16.0
     )
 
     with pytest.raises(ValueError, match="incapable|k_margin"):
-        calculate_capability_margin(
-            data, spec_limits, TransformationMethod.NONE, None
-        )
+        calculate_capability_margin(data, spec_limits, TransformationMethod.NONE, None)
 
 
 @pytest.mark.oq
@@ -585,9 +571,7 @@ def test_ppk_calculation():
     # Create centered process data
     data = [10.0, 10.5, 11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5]
     spec_limits = SpecificationLimits(
-        spec_type=SpecificationType.TWO_SIDED,
-        lsl=8.0,
-        usl=16.0
+        spec_type=SpecificationType.TWO_SIDED, lsl=8.0, usl=16.0
     )
 
     ppk = calculate_ppk(data, spec_limits)
@@ -645,7 +629,7 @@ def test_boundary_reliability_values():
 
     assert isinstance(n_low, int) and n_low > 0
     assert isinstance(n_high, int) and n_high > 0
-    assert n_low > n_high, "Higher reliability requires smaller sample size"
+    assert n_low < n_high, "Lower reliability requires smaller sample size"
 
 
 @pytest.mark.oq
@@ -714,10 +698,7 @@ def test_calculation_idempotence():
     standard values.
     """
     # Run same calculation multiple times
-    results = [
-        CalculationEngine.success_run_theorem(95.0, 95.0)
-        for _ in range(5)
-    ]
+    results = [CalculationEngine.success_run_theorem(95.0, 95.0) for _ in range(5)]
 
     # All results should be identical
     assert all(r == results[0] for r in results), (
@@ -750,7 +731,7 @@ def test_all_module_a_formulas():
         (95.0, 95.0, 2, 124),
         (95.0, 95.0, 3, 153),
         (99.0, 95.0, 0, 90),
-        (95.0, 99.0, 0, 29),
+        (95.0, 99.0, 0, 299),
         (90.0, 90.0, 0, 22),
     ]
 
@@ -758,9 +739,7 @@ def test_all_module_a_formulas():
         if c == 0:
             result = CalculationEngine.success_run_theorem(confidence, reliability)
         else:
-            result = CalculationEngine.cumulative_binomial(
-                confidence, reliability, c
-            )
+            result = CalculationEngine.cumulative_binomial(confidence, reliability, c)
 
         assert result == expected_n, (
             f"Failed for C={confidence}%, R={reliability}%, c={c}: "

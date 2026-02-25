@@ -97,7 +97,10 @@ def extract_test_results(pytest_data: dict, suite_name: str) -> list[dict]:
 
         # Get test ID
         test_id = test.get("nodeid", "unknown")
-        test_name = test_id.split("::")[-1] if "::" in test_id else test_id
+        # Extract clean test name (remove [param] from parametrized tests)
+        test_name = (
+            test_id.split("::")[-1].split("[")[0] if "::" in test_id else test_id
+        )
 
         # Extract URS IDs by parsing the test file
         urs_ids = extract_urs_from_test_file(test_id)
@@ -145,7 +148,7 @@ def extract_urs_from_test_file(nodeid: str) -> list[str]:
 
     parts = nodeid.split("::", 1)
     file_path = parts[0]
-    test_name = parts[1] if len(parts) > 1 else ""
+    test_name = parts[1].split("[")[0] if len(parts) > 1 else ""
 
     try:
         with open(file_path) as f:
@@ -244,15 +247,15 @@ def main():
         print("\n✅ OQ Tests PASSED")
 
     # Run PQ tests (optional, requires running app)
-    if not args.skip_pq:
-        print("\n⚠️  PQ tests require the application to be running.")
-        print("Please ensure the app is running at http://localhost:8080")
-        print("Press Enter to continue or Ctrl+C to skip PQ tests...")
-        try:
-            input()
-        except KeyboardInterrupt:
-            print("\nSkipping PQ tests")
-            args.skip_pq = True
+    #if not args.skip_pq:
+    #    print("\n⚠️  PQ tests require the application to be running.")
+    #    print("Please ensure the app is running at http://localhost:8080")
+    #    print("Press Enter to continue or Ctrl+C to skip PQ tests...")
+    #    try:
+    #        input()
+    #    except KeyboardInterrupt:
+    #        print("\nSkipping PQ tests")
+    #        args.skip_pq = True
 
     if not args.skip_pq:
         pq_data = run_test_suite("tests/validation/test_pq.py", "pq")
