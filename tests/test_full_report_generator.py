@@ -7,8 +7,6 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-import pytest
-
 from sample_size_calculator.full_report_generator import FullReportGenerator
 from sample_size_calculator.models import CalculationReport
 

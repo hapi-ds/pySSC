@@ -13,6 +13,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import (
+    PageBreak,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -269,20 +270,20 @@ class ReportGenerator:
     @staticmethod
     def generate_validation_certificate(
         cert_data: ValidationCertificate,
+        coverage_metrics: dict | None = None,
     ) -> tuple[bytes, Path]:
-        """Generate validation certificate PDF and save to reports directory.
+        """Generate validation certificate PDF with separate IQ/OQ/PQ chapters.
 
         Args:
             cert_data: ValidationCertificate model containing validation information
+            coverage_metrics: Optional dictionary containing URS coverage metrics
 
         Returns:
             Tuple of (PDF as bytes for download, Path to saved report file)
-
-        Requirements:
-            27.1, 30.1, 30.2, 30.3, 30.4, 30.5, 30.6, 30.7
         """
         # Ensure report directories exist
         ensure_report_directories()
+
         # Create a BytesIO buffer to hold the PDF
         buffer = BytesIO()
 
@@ -303,14 +304,15 @@ class ReportGenerator:
         styles = getSampleStyleSheet()
         title_style = styles["Title"]
         heading_style = styles["Heading2"]
+        heading3_style = styles["Heading3"]
         normal_style = styles["Normal"]
 
-        # Title
+        # ===== TITLE PAGE =====
         story.append(Paragraph("Sample Size Calculator", title_style))
         story.append(Paragraph("Validation Certificate", heading_style))
-        story.append(Spacer(1, 0.2 * inch))
+        story.append(Spacer(1, 0.3 * inch))
 
-        # Test Execution Date (Requirement 30.2)
+        # Test Execution Date
         story.append(
             Paragraph(
                 f"<b>Test Execution Date:</b> {cert_data.test_date}", normal_style
@@ -318,14 +320,14 @@ class ReportGenerator:
         )
         story.append(Spacer(1, 0.1 * inch))
 
-        # Tester Name (Requirement 30.3)
+        # Tester Name
         story.append(
             Paragraph(f"<b>Tester Name:</b> {cert_data.tester_name}", normal_style)
         )
         story.append(Spacer(1, 0.2 * inch))
 
-        # System Information (Requirement 30.4)
-        story.append(Paragraph("System Information", heading_style))
+        # System Information
+        story.append(Paragraph("System Information", heading3_style))
         story.append(Spacer(1, 0.1 * inch))
 
         sys_info_data = []
@@ -360,55 +362,410 @@ class ReportGenerator:
                 )
             )
             story.append(sys_info_table)
+
         story.append(Spacer(1, 0.2 * inch))
 
-        # Validated Hash (Requirement 30.6)
-        story.append(Paragraph("Validated Calculation Engine", heading_style))
+        # Validated Hash
+        story.append(Paragraph("Validated Calculation Engine", heading3_style))
         story.append(Spacer(1, 0.1 * inch))
         story.append(
             Paragraph(
                 f"<b>Validated Hash:</b> {cert_data.validated_hash}", normal_style
             )
         )
-        story.append(Spacer(1, 0.2 * inch))
 
-        # Test Results with VTM (Requirement 30.5)
-        story.append(Paragraph("Verification Traceability Matrix", heading_style))
-        story.append(Spacer(1, 0.1 * inch))
+        # Page break before chapters
+        story.append(PageBreak())
 
-        # Create VTM table using Flowable paragraphs
-        vtm_data = [
-            [
-                Paragraph("<b>URS ID</b>", normal_style),
-                Paragraph("<b>Test ID</b>", normal_style),
-                Paragraph("<b>Status</b>", normal_style),
+        # ===== HELPER FUNCTION TO GROUP TEST RESULTS BY TEST_ID =====
+        def group_test_results_by_test_id(results: list[dict]) -> list[dict]:
+            """Group test results by test_id, combining multiple URS IDs."""
+            grouped = {}
+            for result in results:
+                test_id = result.get("test_id", "N/A")
+                if test_id not in grouped:
+                    grouped[test_id] = {
+                        "test_id": test_id,
+                        "urs_ids": [],
+                        "status": result.get("status", "N/A"),
+                    }
+                urs_id = result.get("urs_id", "N/A")
+                if urs_id not in grouped[test_id]["urs_ids"]:
+                    grouped[test_id]["urs_ids"].append(urs_id)
+
+            # Convert back to list format with combined URS IDs
+            return [
+                {
+                    "test_id": data["test_id"],
+                    "urs_id": ", ".join(data["urs_ids"]),
+                    "status": data["status"],
+                }
+                for data in grouped.values()
             ]
+
+        # ===== SEPARATE TEST RESULTS BY SUITE =====
+        iq_results_raw = [
+            r for r in cert_data.test_results if "test_iq.py" in r.get("test_id", "")
+        ]
+        oq_results_raw = [
+            r for r in cert_data.test_results if "test_oq.py" in r.get("test_id", "")
+        ]
+        pq_results_raw = [
+            r for r in cert_data.test_results if "test_pq.py" in r.get("test_id", "")
         ]
 
-        for test_result in cert_data.test_results:
-            urs_id = test_result.get("urs_id", "N/A")
-            test_id = test_result.get("test_id", "N/A")
-            status = test_result.get("status", "N/A")
+        # Group results to combine multiple URS IDs per test
+        iq_results = group_test_results_by_test_id(iq_results_raw)
+        oq_results = group_test_results_by_test_id(oq_results_raw)
+        pq_results = group_test_results_by_test_id(pq_results_raw)
 
-            # Color code the status
-            if status.upper() in ["PASS", "PASSED"]:
-                status_text = f'<font color="green"><b>{status}</b></font>'
-            elif status.upper() in ["FAIL", "FAILED"]:
-                status_text = f'<font color="red"><b>{status}</b></font>'
-            else:
-                status_text = status
+        # ===== CHAPTER 1: IQ RESULTS =====
+        story.append(
+            Paragraph("CHAPTER 1: INSTALLATION QUALIFICATION (IQ)", heading_style)
+        )
+        story.append(Spacer(1, 0.2 * inch))
 
-            vtm_data.append(
+        if iq_results:
+            # IQ Test Results Table
+            iq_data = [
                 [
-                    Paragraph(str(urs_id), normal_style),
-                    Paragraph(str(test_id), normal_style),
-                    Paragraph(status_text, normal_style),
+                    Paragraph("<b>URS ID</b>", normal_style),
+                    Paragraph("<b>Test ID</b>", normal_style),
+                    Paragraph("<b>Status</b>", normal_style),
+                ]
+            ]
+
+            for test_result in iq_results:
+                test_id = test_result.get("test_id", "N/A")
+                urs_id = test_result.get("urs_id", "N/A")
+                status = test_result.get("status", "N/A")
+
+                # Color code the status
+                if status.upper() in ["PASS", "PASSED"]:
+                    status_text = f'<font color="green"><b>{status}</b></font>'
+                elif status.upper() in ["FAIL", "FAILED"]:
+                    status_text = f'<font color="red"><b>{status}</b></font>'
+                else:
+                    status_text = status
+
+                iq_data.append(
+                    [
+                        Paragraph(str(urs_id), normal_style),
+                        Paragraph(str(test_id), normal_style),
+                        Paragraph(status_text, normal_style),
+                    ]
+                )
+
+            iq_table = Table(iq_data, colWidths=[2 * inch, 2.5 * inch, 2 * inch])
+            iq_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, -1), 9),
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                        (
+                            "ROWBACKGROUNDS",
+                            (0, 1),
+                            (-1, -1),
+                            [colors.white, colors.lightgrey],
+                        ),
+                    ]
+                )
+            )
+            story.append(iq_table)
+            story.append(Spacer(1, 0.2 * inch))
+
+            # IQ Summary
+            iq_passed = sum(
+                1
+                for r in iq_results
+                if r.get("status", "").upper() in ["PASS", "PASSED"]
+            )
+            iq_failed = len(iq_results) - iq_passed
+            iq_urs_ids = set()
+            for r in iq_results:
+                urs_id_str = r.get("urs_id", "")
+                for urs_id in urs_id_str.split(", "):
+                    if urs_id and urs_id != "N/A":
+                        iq_urs_ids.add(urs_id)
+
+            story.append(Paragraph("<b>IQ Summary:</b>", normal_style))
+            story.append(Spacer(1, 0.05 * inch))
+            story.append(Paragraph(f"Total Tests: {len(iq_results)}", normal_style))
+            story.append(Paragraph(f"Passed: {iq_passed}", normal_style))
+            story.append(Paragraph(f"Failed: {iq_failed}", normal_style))
+            story.append(
+                Paragraph(
+                    f"URS Coverage: {', '.join(sorted(iq_urs_ids))}", normal_style
+                )
+            )
+        else:
+            story.append(Paragraph("No IQ tests found.", normal_style))
+
+        # Page break before next chapter
+        story.append(PageBreak())
+
+        # ===== CHAPTER 2: OQ RESULTS =====
+        story.append(
+            Paragraph("CHAPTER 2: OPERATIONAL QUALIFICATION (OQ)", heading_style)
+        )
+        story.append(Spacer(1, 0.2 * inch))
+
+        if oq_results:
+            # OQ Test Results Table
+            oq_data = [
+                [
+                    Paragraph("<b>URS ID</b>", normal_style),
+                    Paragraph("<b>Test ID</b>", normal_style),
+                    Paragraph("<b>Status</b>", normal_style),
+                ]
+            ]
+
+            for test_result in oq_results:
+                test_id = test_result.get("test_id", "N/A")
+                urs_id = test_result.get("urs_id", "N/A")
+                status = test_result.get("status", "N/A")
+
+                # Color code the status
+                if status.upper() in ["PASS", "PASSED"]:
+                    status_text = f'<font color="green"><b>{status}</b></font>'
+                elif status.upper() in ["FAIL", "FAILED"]:
+                    status_text = f'<font color="red"><b>{status}</b></font>'
+                else:
+                    status_text = status
+
+                oq_data.append(
+                    [
+                        Paragraph(str(urs_id), normal_style),
+                        Paragraph(str(test_id), normal_style),
+                        Paragraph(status_text, normal_style),
+                    ]
+                )
+
+            oq_table = Table(oq_data, colWidths=[2 * inch, 2.5 * inch, 2 * inch])
+            oq_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, -1), 9),
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                        (
+                            "ROWBACKGROUNDS",
+                            (0, 1),
+                            (-1, -1),
+                            [colors.white, colors.lightgrey],
+                        ),
+                    ]
+                )
+            )
+            story.append(oq_table)
+            story.append(Spacer(1, 0.2 * inch))
+
+            # OQ Summary
+            oq_passed = sum(
+                1
+                for r in oq_results
+                if r.get("status", "").upper() in ["PASS", "PASSED"]
+            )
+            oq_failed = len(oq_results) - oq_passed
+            oq_urs_ids = set()
+            for r in oq_results:
+                urs_id_str = r.get("urs_id", "")
+                for urs_id in urs_id_str.split(", "):
+                    if urs_id and urs_id != "N/A":
+                        oq_urs_ids.add(urs_id)
+
+            story.append(Paragraph("<b>OQ Summary:</b>", normal_style))
+            story.append(Spacer(1, 0.05 * inch))
+            story.append(Paragraph(f"Total Tests: {len(oq_results)}", normal_style))
+            story.append(Paragraph(f"Passed: {oq_passed}", normal_style))
+            story.append(Paragraph(f"Failed: {oq_failed}", normal_style))
+            story.append(
+                Paragraph(
+                    f"URS Coverage: {', '.join(sorted(oq_urs_ids))}", normal_style
+                )
+            )
+        else:
+            story.append(Paragraph("No OQ tests found.", normal_style))
+
+        # Page break before next chapter
+        story.append(PageBreak())
+
+        # ===== CHAPTER 3: PQ RESULTS =====
+        story.append(
+            Paragraph("CHAPTER 3: PERFORMANCE QUALIFICATION (PQ)", heading_style)
+        )
+        story.append(Spacer(1, 0.2 * inch))
+
+        if pq_results:
+            # PQ Test Results Table
+            pq_data = [
+                [
+                    Paragraph("<b>URS ID</b>", normal_style),
+                    Paragraph("<b>Test ID</b>", normal_style),
+                    Paragraph("<b>Status</b>", normal_style),
+                ]
+            ]
+
+            for test_result in pq_results:
+                test_id = test_result.get("test_id", "N/A")
+                urs_id = test_result.get("urs_id", "N/A")
+                status = test_result.get("status", "N/A")
+
+                # Color code the status
+                if status.upper() in ["PASS", "PASSED"]:
+                    status_text = f'<font color="green"><b>{status}</b></font>'
+                elif status.upper() in ["FAIL", "FAILED"]:
+                    status_text = f'<font color="red"><b>{status}</b></font>'
+                else:
+                    status_text = status
+
+                pq_data.append(
+                    [
+                        Paragraph(str(urs_id), normal_style),
+                        Paragraph(str(test_id), normal_style),
+                        Paragraph(status_text, normal_style),
+                    ]
+                )
+
+            pq_table = Table(pq_data, colWidths=[2 * inch, 2.5 * inch, 2 * inch])
+            pq_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, -1), 9),
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                        (
+                            "ROWBACKGROUNDS",
+                            (0, 1),
+                            (-1, -1),
+                            [colors.white, colors.lightgrey],
+                        ),
+                    ]
+                )
+            )
+            story.append(pq_table)
+            story.append(Spacer(1, 0.2 * inch))
+
+            # PQ Summary
+            pq_passed = sum(
+                1
+                for r in pq_results
+                if r.get("status", "").upper() in ["PASS", "PASSED"]
+            )
+            pq_failed = len(pq_results) - pq_passed
+            pq_urs_ids = set()
+            for r in pq_results:
+                urs_id_str = r.get("urs_id", "")
+                for urs_id in urs_id_str.split(", "):
+                    if urs_id and urs_id != "N/A":
+                        pq_urs_ids.add(urs_id)
+
+            story.append(Paragraph("<b>PQ Summary:</b>", normal_style))
+            story.append(Spacer(1, 0.05 * inch))
+            story.append(Paragraph(f"Total Tests: {len(pq_results)}", normal_style))
+            story.append(Paragraph(f"Passed: {pq_passed}", normal_style))
+            story.append(Paragraph(f"Failed: {pq_failed}", normal_style))
+            story.append(
+                Paragraph(
+                    f"URS Coverage: {', '.join(sorted(pq_urs_ids))}", normal_style
+                )
+            )
+        else:
+            story.append(Paragraph("No PQ tests found.", normal_style))
+
+        # Page break before summary chapter
+        story.append(PageBreak())
+
+        # ===== CHAPTER 4: VALIDATION SUMMARY =====
+        story.append(Paragraph("CHAPTER 4: VALIDATION SUMMARY", heading_style))
+        story.append(Spacer(1, 0.2 * inch))
+
+        # Overall test results (use grouped results for accurate count)
+        total_tests = len(iq_results) + len(oq_results) + len(pq_results)
+        total_passed = (
+            sum(
+                1
+                for r in iq_results
+                if r.get("status", "").upper() in ["PASS", "PASSED"]
+            )
+            + sum(
+                1
+                for r in oq_results
+                if r.get("status", "").upper() in ["PASS", "PASSED"]
+            )
+            + sum(
+                1
+                for r in pq_results
+                if r.get("status", "").upper() in ["PASS", "PASSED"]
+            )
+        )
+        total_failed = total_tests - total_passed
+        success_rate = (total_passed / total_tests * 100) if total_tests > 0 else 0
+
+        story.append(Paragraph("<b>Overall Test Results:</b>", heading3_style))
+        story.append(Spacer(1, 0.1 * inch))
+        story.append(Paragraph(f"Total Tests: {total_tests}", normal_style))
+        story.append(Paragraph(f"Passed: {total_passed}", normal_style))
+        story.append(Paragraph(f"Failed: {total_failed}", normal_style))
+        story.append(Paragraph(f"Success Rate: {success_rate:.1f}%", normal_style))
+        story.append(Spacer(1, 0.3 * inch))
+
+        # Coverage Summary Section (if coverage metrics provided)
+        if coverage_metrics:
+            story.append(Paragraph("<b>URS Coverage Summary:</b>", heading3_style))
+            story.append(Spacer(1, 0.1 * inch))
+
+            # Overall coverage metrics
+            coverage_data = [
+                [
+                    Paragraph("<b>Metric</b>", normal_style),
+                    Paragraph("<b>Value</b>", normal_style),
+                ]
+            ]
+
+            coverage_data.append(
+                [
+                    Paragraph("Total URS Requirements", normal_style),
+                    Paragraph(
+                        str(coverage_metrics.get("total_requirements", 0)),
+                        normal_style,
+                    ),
+                ]
+            )
+            coverage_data.append(
+                [
+                    Paragraph("Covered by Tests", normal_style),
+                    Paragraph(
+                        str(coverage_metrics.get("covered_requirements", 0)),
+                        normal_style,
+                    ),
+                ]
+            )
+            coverage_data.append(
+                [
+                    Paragraph("Coverage Percentage", normal_style),
+                    Paragraph(
+                        f"{coverage_metrics.get('coverage_percentage', 0):.1f}%",
+                        normal_style,
+                    ),
                 ]
             )
 
-        if len(vtm_data) > 1:  # More than just header
-            vtm_table = Table(vtm_data, colWidths=[2 * inch, 2.5 * inch, 2 * inch])
-            vtm_table.setStyle(
+            coverage_table = Table(coverage_data, colWidths=[3 * inch, 3.5 * inch])
+            coverage_table.setStyle(
                 TableStyle(
                     [
                         ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
@@ -427,17 +784,96 @@ class ReportGenerator:
                     ]
                 )
             )
-            story.append(vtm_table)
+            story.append(coverage_table)
+
+            # Uncovered requirements (if any)
+            uncovered_ids = coverage_metrics.get("uncovered_ids", [])
+            if uncovered_ids:
+                story.append(Spacer(1, 0.2 * inch))
+                story.append(
+                    Paragraph(
+                        "<b>Uncovered Requirements:</b>",
+                        normal_style,
+                    )
+                )
+                story.append(Spacer(1, 0.05 * inch))
+
+                uncovered_text = ", ".join(uncovered_ids)
+                story.append(Paragraph(uncovered_text, normal_style))
+
+            # Coverage by category
+            coverage_by_category = coverage_metrics.get("coverage_by_category", {})
+            if coverage_by_category:
+                story.append(Spacer(1, 0.3 * inch))
+                story.append(Paragraph("<b>Coverage by Category:</b>", heading3_style))
+                story.append(Spacer(1, 0.1 * inch))
+
+                category_data = [
+                    [
+                        Paragraph("<b>Category</b>", normal_style),
+                        Paragraph("<b>Total</b>", normal_style),
+                        Paragraph("<b>Covered</b>", normal_style),
+                        Paragraph("<b>Coverage %</b>", normal_style),
+                    ]
+                ]
+
+                for category, metrics in coverage_by_category.items():
+                    category_data.append(
+                        [
+                            Paragraph(category, normal_style),
+                            Paragraph(str(metrics.get("total", 0)), normal_style),
+                            Paragraph(str(metrics.get("covered", 0)), normal_style),
+                            Paragraph(
+                                f"{metrics.get('percentage', 0):.1f}%", normal_style
+                            ),
+                        ]
+                    )
+
+                category_table = Table(
+                    category_data,
+                    colWidths=[2 * inch, 1.5 * inch, 1.5 * inch, 1.5 * inch],
+                )
+                category_table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 9),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            (
+                                "ROWBACKGROUNDS",
+                                (0, 1),
+                                (-1, -1),
+                                [colors.white, colors.lightgrey],
+                            ),
+                        ]
+                    )
+                )
+                story.append(category_table)
+
         story.append(Spacer(1, 0.3 * inch))
+
+        # Overall validation status
+        validation_status = "✓ PASSED" if total_failed == 0 else "✗ FAILED"
+        status_color = "green" if total_failed == 0 else "red"
+        story.append(
+            Paragraph(
+                f'<b>Validation Status:</b> <font color="{status_color}"><b>{validation_status}</b></font>',
+                heading3_style,
+            )
+        )
+        story.append(Spacer(1, 0.2 * inch))
 
         # Certification Statement
         cert_statement = (
             "This certificate confirms that the Sample Size Calculator "
-            "application has successfully completed Installation "
-            "Qualification (IQ), Operational Qualification (OQ), and "
-            "Performance Qualification (PQ) testing. The calculation "
-            "engine hash has been validated and recorded for future "
-            "verification."
+            "application has completed Installation Qualification (IQ), "
+            "Operational Qualification (OQ), and Performance Qualification (PQ) "
+            "testing. The calculation engine hash has been validated and recorded "
+            "for future verification."
         )
         story.append(Paragraph(cert_statement, normal_style))
 
@@ -452,7 +888,7 @@ class ReportGenerator:
         pdf_bytes = buffer.getvalue()
         buffer.close()
 
-        # Save to reports directory (Requirement 27.1, 30.1)
+        # Save to reports directory
         report_path = get_validation_report_path()
         save_report(pdf_bytes, report_path)
 

@@ -1,7 +1,5 @@
 """Tests for validation runner module."""
 
-import pytest
-from pathlib import Path
 from sample_size_calculator.validation_runner import ValidationRunner
 
 

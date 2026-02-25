@@ -16,7 +16,7 @@ class VTMGenerator:
     """Generates Verification Traceability Matrix for validation documentation."""
 
     @staticmethod
-    def generate_vtm(test_results: list[dict]) -> pd.DataFrame:
+    def generate_vtm(test_results: list[dict], coverage_metrics: dict | None = None) -> pd.DataFrame:
         """Generate VTM from test results.
 
         Args:
@@ -25,6 +25,14 @@ class VTMGenerator:
                 - requirement: Requirement text (optional)
                 - test_id: Test case ID
                 - result: Test result (PASS/FAIL)
+            coverage_metrics: Optional dictionary containing URS coverage metrics with keys:
+                - total_requirements: Total number of URS requirements
+                - covered_requirements: Number of requirements covered by tests
+                - uncovered_requirements: Number of requirements not covered
+                - coverage_percentage: Percentage of requirements covered
+                - uncovered_ids: List of URS IDs not covered by any test
+                - coverage_by_category: Coverage breakdown by category
+                - coverage_by_suite: Coverage breakdown by test suite
 
         Returns:
             DataFrame with columns: URS_ID, Requirement, Test_ID, Result
@@ -60,12 +68,15 @@ class VTMGenerator:
         return vtm_df
 
     @staticmethod
-    def export_vtm_csv(vtm: pd.DataFrame, filepath: str | Path) -> None:
-        """Export VTM to CSV file.
+    def export_vtm_csv(
+        vtm: pd.DataFrame, filepath: str | Path, coverage_metrics: dict | None = None
+    ) -> None:
+        """Export VTM to CSV file with optional coverage summary.
 
         Args:
             vtm: VTM DataFrame
             filepath: Path to output CSV file
+            coverage_metrics: Optional dictionary containing URS coverage metrics
 
         Requirements:
             34.4
@@ -75,8 +86,40 @@ class VTMGenerator:
         # Ensure parent directory exists
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
-        # Export to CSV
-        vtm.to_csv(filepath, index=False)
+        # If coverage metrics provided, add summary header
+        if coverage_metrics:
+            with open(filepath, "w") as f:
+                # Write coverage summary as comments
+                f.write("# VTM Coverage Summary\n")
+                f.write(
+                    f"# Total URS Requirements: {coverage_metrics.get('total_requirements', 0)}\n"
+                )
+                f.write(
+                    f"# Covered by Tests: {coverage_metrics.get('covered_requirements', 0)}\n"
+                )
+                f.write(
+                    f"# Coverage Percentage: {coverage_metrics.get('coverage_percentage', 0):.1f}%\n"
+                )
+
+                uncovered_ids = coverage_metrics.get("uncovered_ids", [])
+                if uncovered_ids:
+                    f.write(f"# Uncovered Requirements: {', '.join(uncovered_ids)}\n")
+
+                f.write("#\n")
+                f.write("# Coverage by Category:\n")
+                coverage_by_category = coverage_metrics.get("coverage_by_category", {})
+                for category, metrics in coverage_by_category.items():
+                    f.write(
+                        f"#   {category}: {metrics.get('covered', 0)}/{metrics.get('total', 0)} "
+                        f"({metrics.get('percentage', 0):.1f}%)\n"
+                    )
+                f.write("#\n")
+
+            # Append VTM data
+            vtm.to_csv(filepath, mode="a", index=False)
+        else:
+            # Export to CSV without coverage summary
+            vtm.to_csv(filepath, index=False)
 
     @staticmethod
     def add_vtm_to_pdf(story: list, vtm: pd.DataFrame) -> None:

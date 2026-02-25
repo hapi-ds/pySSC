@@ -15,11 +15,14 @@ Test project for:
 - Software validation still far from complete
 - Example applications are explained in a Jupyter Notebook (see ./testdata), including the generation of corresponding test data.
 
-SDD development with coding agents is incredibly fast and virtually a must for any commercial software development. In some simple things, however, it's almost unbearable because of sheer stupidity. The problem here is that you often get “stuck” in the workflow and spend too much time looking for ways to solve it with the coding agent. But coding agents are improving so rapidly that this problem will quickly resolve itself. 
+SDD development with coding agents is incredibly fast and virtually a must for any commercial software development. In some simple things, however, it's almost unbearable because of sheer stupidity. The problem here is that you often get “stuck” in the workflow (=lazy) and spend too much time looking for ways to solve it with the coding agent. But coding agents are improving so rapidly that this problem will quickly resolve itself.
+
+The three encoding agents are in a neck-and-neck race. Especially with the latest update of the qwen3-coder-next LLM, my local assistant feels like it's on par with the “big ones”—I would even say that it works better in some ways.
+But this is constantly changing—at times, the same version worked better on Windows, then again on Linux. This shows how rapidly this technology is developing.
 
 BUT
 
-Without human support, even such a small, simple project is not possible. And SW validation and E2E testing with meaningful data are definitely not the strong points of current agents. In principle, however, the approach of self-validating software is feasible and, in my view, also more secure than other approaches - I'll stay on it
+Without human support, even such a small, simple project is not possible. And SW validation and E2E testing with meaningful data are definitely not the strong points of current agents. In principle, however, the approach of self-validating software is feasible and, in my view, also more secure than other approaches - I'll stay on it.
 
 
 ## Overview

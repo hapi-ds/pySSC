@@ -97,11 +97,62 @@ class ValidationRunner:
         test_results = []
 
         for test in pytest_data.get("tests", []):
-            # Extract URS IDs from markers
+            # Extract URS IDs from markers (from keywords since pytest-json-report doesn't capture args)
             urs_ids = []
-            for marker in test.get("markers", []):
-                if marker.get("name") == "urs":
-                    urs_ids.extend(marker.get("args", []))
+
+            test_id = test.get("nodeid", "unknown")
+            test_name = test_id.split("::")[-1] if "::" in test_id else test_id
+
+            if "::" in test_id:
+                # Parse the marker directly from the source file
+                import re
+
+                test_file_path = test_id.split("::")[0]
+                try:
+                    with open(test_file_path) as f:
+                        lines = f.readlines()
+
+                    # Find the line number of this test function
+                    for i, line in enumerate(lines):
+                        if f"def {test_name}(" in line:
+                            # Look backwards up to 10 lines for markers
+                            start_idx = max(0, i - 10)
+
+                            # Collect URS IDs from markers in reverse order (bottom-up)
+                            collected_urs_ids = []
+                            for j in range(i - 1, start_idx - 1, -1):
+                                line_content = lines[j]
+
+                                # Stop if we hit another test function or class
+                                if "def " in line_content or "class " in line_content:
+                                    break
+
+                                # Pattern to match @pytest.mark.urs("URS-ID", ...)
+                                pattern = r"@pytest\.mark\.urs\((.*?)\)"
+                                matches = re.findall(pattern, line_content)
+
+                                for match in matches:
+                                    urs_pattern = r'"([^"]+)"'
+                                    found_ids = re.findall(urs_pattern, match)
+
+                                    # Only add IDs that look like URS IDs
+                                    for urs_id in found_ids:
+                                        if (
+                                            urs_id.startswith("URS-")
+                                            and urs_id not in collected_urs_ids
+                                        ):
+                                            collected_urs_ids.append(urs_id)
+
+                            # Use the most recent marker (first in reverse order = last in file)
+                            if collected_urs_ids:
+                                urs_ids = [collected_urs_ids[0]]
+
+                            # DEBUG: Print extracted URS IDs
+                            print(f"DEBUG EXTRACT: {test_name} -> {urs_ids}")
+
+                            break
+                except Exception:
+                    pass
 
             # Get test outcome
             outcome = test.get("outcome", "unknown")

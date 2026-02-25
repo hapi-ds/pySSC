@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+import anyio
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -2788,7 +2789,7 @@ For additional assistance:
 
         try:
             # Run validation (skip PQ tests since app is running)
-            success, message, cert_path = await ui.run_cpu_bound(
+            success, message, cert_path = await anyio.to_thread.run_sync(  # type: ignore[attr-defined]
                 runner.run_validation, tester_name.strip(), skip_pq=True
             )
 

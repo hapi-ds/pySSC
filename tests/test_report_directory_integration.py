@@ -6,7 +6,6 @@ permissions for report generation.
 Requirements: 27.1, 30.1
 """
 
-from pathlib import Path
 
 import pytest
 

@@ -113,11 +113,11 @@ def test_ensure_report_directories(tmp_path, monkeypatch):
     test_reports_dir = tmp_path / "reports"
     
     # Monkey patch the directory constants
-    monkeypatch.setattr("sample_size_calculator.report_paths.VALIDATION_DIR", 
+    monkeypatch.setattr("sample_size_calculator.report_paths.VALIDATION_DIR",
                        test_reports_dir / "validation")
-    monkeypatch.setattr("sample_size_calculator.report_paths.CALCULATIONS_DIR", 
+    monkeypatch.setattr("sample_size_calculator.report_paths.CALCULATIONS_DIR",
                        test_reports_dir / "calculations")
-    monkeypatch.setattr("sample_size_calculator.report_paths.FULL_DIR", 
+    monkeypatch.setattr("sample_size_calculator.report_paths.FULL_DIR",
                        test_reports_dir / "full")
     
     # Directories should not exist yet
