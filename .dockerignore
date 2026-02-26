@@ -43,8 +43,8 @@ testdata/
 .ipynb_checkpoints/
 *.ipynb
 
-# Requirements docs
-requirements/
+# Requirements docs are needed for validation
+# requirements/
 
 # Kiro specs
 .kiro/

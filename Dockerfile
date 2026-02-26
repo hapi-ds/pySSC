@@ -77,10 +77,11 @@ COPY --from=builder --chown=appuser:appuser /root/.cache/ms-playwright /home/app
 # Copy project configuration files needed for IQ tests
 COPY --chown=appuser:appuser pyproject.toml uv.lock LICENSE README.md /app/
 
-# Copy application source code, scripts, and tests
+# Copy application source code, scripts, tests, and requirements
 COPY --chown=appuser:appuser src/ /app/src/
 COPY --chown=appuser:appuser scripts/ /app/scripts/
 COPY --chown=appuser:appuser tests/ /app/tests/
+COPY --chown=appuser:appuser requirements/ /app/requirements/
 
 # Create directories for logs, reports, notebooks, and pytest cache with correct permissions
 RUN mkdir -p /app/logs /app/reports /app/notebooks /app/.pytest_cache /app/.hypothesis && \
