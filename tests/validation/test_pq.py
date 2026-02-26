@@ -420,12 +420,12 @@ def test_concurrent_user_sessions(page: Page, base_url: str):
         content1 = page1.content()
         assert "59" in content1, "User 1 should see n=59"
 
-        # Verify User 2 sees n=90
+        # Verify User 2 sees n=90 (not 90 - this is also in css or somewhere else. Use 198 of c=3)
         content2 = page2.content()
-        assert "90" in content2, "User 2 should see n=90"
+        assert "198" in content2, "User 2 should see n=198"
 
-        # Verify sessions are independent (User 1 should NOT see 90)
-        assert "90" not in content1 or content1.count("90") == 0, (
+        # Verify sessions are independent (User 1 should NOT see 90 --> now 198)
+        assert "198" not in content1 or content1.count("198") == 0, (
             "User 1 should not see User 2's results"
         )
 
@@ -469,9 +469,7 @@ def test_module_v_sequential_workflow_enforcement(page_with_app: Page):
     # by attempting to complete Phase 1
 
     # Complete Phase 1
-    two_sided_radio = page.locator(
-        'input[type="radio"][value*="Two"], label:has-text("Two-Sided")'
-    ).first
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
     two_sided_radio.click()
 
     lsl_input = page.locator(
@@ -654,10 +652,9 @@ def test_phase_invalidation_on_input_change(page_with_app: Page):
     page.wait_for_timeout(500)
 
     # Complete Phase 1
-    two_sided_radio = page.locator(
-        'input[type="radio"][value*="Two"], label:has-text("Two-Sided")'
-    ).first
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
     two_sided_radio.click()
+
 
     lsl_input = page.locator(
         'input[aria-label*="LSL"], input[placeholder*="LSL"]'
@@ -720,20 +717,20 @@ def test_method_transparency_display(page_with_app: Page):
     page.wait_for_timeout(500)
 
     # Complete Phase 1 and Phase 2 to lock a method
-    two_sided_radio = page.locator(
-        'input[type="radio"][value*="Two"], label:has-text("Two-Sided")'
-    ).first
+    # Phase 1: Input specification and pilot data
+    # Select Two-Sided specification (click visible quasar radio component)
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
     two_sided_radio.click()
 
     lsl_input = page.locator(
         'input[aria-label*="LSL"], input[placeholder*="LSL"]'
     ).first
-    lsl_input.fill("8.0")
+    lsl_input.fill("9.9")
 
     usl_input = page.locator(
         'input[aria-label*="USL"], input[placeholder*="USL"]'
     ).first
-    usl_input.fill("16.0")
+    usl_input.fill("10.1")
 
     confidence_input = page.locator('input[aria-label*="Confidence"]').first
     confidence_input.fill("95")
@@ -741,7 +738,7 @@ def test_method_transparency_display(page_with_app: Page):
     reliability_input = page.locator('input[aria-label*="Reliability"]').first
     reliability_input.fill("95")
 
-    pilot_data = "10.0, 10.5, 11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5"
+    pilot_data = "10.015, 9.996, 10.019, 10.046, 9.993, 9.993, 10.047, 10.023, 9.986, 10.016"
     pilot_textarea = page.locator(
         'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
     ).first
