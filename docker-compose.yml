@@ -23,9 +23,9 @@ services:
       # Logs directory - read/write for audit trail persistence
       - ./logs:/app/logs
       
-      # Config directory - read-only for security
+      # Config directory - read/write for validation script
       # Contains validated_hash.json and other configuration files
-      - ./config:/app/config:ro
+      - ./config:/app/config
       
       # Reports directory - read/write for PDF report generation
       - ./reports:/app/reports
