@@ -43,13 +43,17 @@ def parse_urs_document(urs_document_path: str) -> set[str]:
     content = urs_path.read_text()
 
     # Pattern to match URS IDs like URS-IQ-01, URS-FUNC_A-02, URS-V-13, etc.
-    # Matches: URS-<CATEGORY>-<NUMBER>
-    pattern = r"\*\*URS-([A-Z_]+)-(\d+)\*\*"
+    # Matches: URS-<CATEGORY>-<NUMBER> (handles both _ and \_ in markdown)
+    pattern = r"\*\*URS-([A-Z\\_]+)-(\d+)\*\*"
 
     matches = re.findall(pattern, content)
 
     # Reconstruct URS IDs from matches
-    urs_ids = {f"URS-{category}-{number}" for category, number in matches}
+    urs_ids = set()
+    for category, number in matches:
+        # Normalize: remove backslashes from escaped underscores (e.g., \_ -> _)
+        normalized_category = category.replace("\\_", "_")
+        urs_ids.add(f"URS-{normalized_category}-{number}")
 
     return urs_ids
 
@@ -102,10 +106,12 @@ def extract_category_from_urs_id(urs_id: str) -> str:
     Returns:
         Category string like "IQ" or "FUNC_A"
     """
-    # Pattern: URS-<CATEGORY>-<NUMBER>
-    match = re.match(r"URS-([A-Z_]+)-\d+", urs_id)
+    # Pattern: URS-<CATEGORY>-<NUMBER> (handles both _ and \_ in markdown)
+    match = re.match(r"URS-([A-Z\\_]+)-\d+", urs_id)
     if match:
-        return match.group(1)
+        category = match.group(1)
+        # Remove backslashes from escaped underscores
+        return category.replace("\\_", "_")
     return "UNKNOWN"
 
 
