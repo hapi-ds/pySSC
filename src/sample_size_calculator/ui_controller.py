@@ -161,19 +161,20 @@ class UIController:
         """Create the main NiceGUI application with tabs."""
         ui.page_title("Sample Size Calculator")
 
-        with ui.header().classes("items-center justify-between"):
-            with ui.row().classes("items-center"):
+        with ui.header().classes("items-center justify-between w-full"):
+            with ui.row().classes("items-center gap-4"):
                 ui.label("Sample Size Calculator").classes("text-h4")
                 ui.label(
                     "Medical Device Design Verification & Process Validation"
-                ).classes("text-subtitle2 ml-4")
+                ).classes("text-subtitle2")
 
             # Validation button in header
             ui.button(
                 "Run Full Validation (IQ/OQ/PQ)",
                 on_click=self._handle_validation_button_click,
                 icon="verified",
-            ).classes("bg-blue-600").props("outline")
+                color="red",
+            ).props("outline")
 
         with ui.tabs().classes("w-full") as tabs:
             module_a_tab = ui.tab("Module A")
@@ -302,6 +303,7 @@ class UIController:
                     ui.notify(
                         "Please enter confidence and reliability values",
                         type="negative",
+                        timeout=0,
                     )
                     return
 
@@ -423,9 +425,9 @@ class UIController:
                     },
                     self.session_id,
                 )
-                ui.notify(f"Validation error: {e}", type="negative", duration=None)
+                ui.notify(f"Validation error: {e}", type="negative", timeout=0)
             except Exception as e:
-                ui.notify(f"Calculation error: {e}", type="negative", duration=None)
+                ui.notify(f"Calculation error: {e}", type="negative", timeout=0)
 
         calculate_btn.on_click(handle_calculate)
 
@@ -438,7 +440,7 @@ class UIController:
 
             try:
                 if self.module_a_results is None:
-                    ui.notify("No results to report", type="warning", duration=None)
+                    ui.notify("No results to report", type="warning", timeout=0)
                     return
 
                 # Get engine hash and validation state
@@ -504,7 +506,7 @@ class UIController:
                 ui.notify("Report generated successfully", type="positive")
 
             except Exception as e:
-                ui.notify(f"Report generation error: {e}", type="negative", duration=None)
+                ui.notify(f"Report generation error: {e}", type="negative", timeout=0)
 
         report_btn.on_click(handle_generate_report)
 
@@ -517,7 +519,7 @@ class UIController:
 
             try:
                 if self.module_a_results is None:
-                    ui.notify("No results to report", type="warning", duration=None)
+                    ui.notify("No results to report", type="warning", timeout=0)
                     return
 
                 # Get engine hash and validation state
@@ -593,7 +595,9 @@ class UIController:
                 ui.notify("Full report generated successfully", type="positive")
 
             except Exception as e:
-                ui.notify(f"Full report generation error: {e}", type="negative", duration=None)
+                ui.notify(
+                    f"Full report generation error: {e}", type="negative", timeout=0
+                )
 
         full_report_btn.on_click(handle_generate_full_report)
 
@@ -838,7 +842,7 @@ class UIController:
                     # Parse pilot data
                     pilot_data_str = self.pilot_data_input.value
                     if not pilot_data_str:
-                        ui.notify("Please enter pilot data", type="warning", duration=None)
+                        ui.notify("Please enter pilot data", type="warning", timeout=0)
                         return
 
                     pilot_data = [
@@ -849,6 +853,7 @@ class UIController:
                         ui.notify(
                             "Pilot dataset must contain at least 3 data points",
                             type="negative",
+                            timeout=0,
                         )
                         return
 
@@ -903,6 +908,7 @@ class UIController:
                         ui.notify(
                             "Please enter estimated standard deviation",
                             type="warning",
+                            timeout=0,
                         )
                         return
 
@@ -910,6 +916,7 @@ class UIController:
                         ui.notify(
                             "Estimated standard deviation must be greater than 0",
                             type="negative",
+                            timeout=0,
                         )
                         return
 
@@ -981,9 +988,9 @@ class UIController:
                     },
                     self.session_id,
                 )
-                ui.notify(f"Validation error: {e}", type="negative", duration=None)
+                ui.notify(f"Validation error: {e}", type="negative", timeout=0)
             except Exception as e:
-                ui.notify(f"Analysis error: {e}", type="negative", duration=None)
+                ui.notify(f"Analysis error: {e}", type="negative", timeout=0)
 
         analyze_phase1_btn.on_click(handle_analyze_phase1)
 
@@ -1070,13 +1077,15 @@ class UIController:
 
             try:
                 if not self.module_v_state.phase1_complete:
-                    ui.notify("Please complete Phase 1 first", type="warning", duration=None)
+                    ui.notify(
+                        "Please complete Phase 1 first", type="warning", timeout=0
+                    )
                     return
 
                 # Get outlier exclusions
                 phase1_results = self.module_v_state.phase1_results
                 if phase1_results is None:
-                    ui.notify("Phase 1 results not found", type="negative", duration=None)
+                    ui.notify("Phase 1 results not found", type="negative", timeout=0)
                     return
 
                 # Check if using estimated statistics (no pilot data)
@@ -1136,6 +1145,7 @@ class UIController:
                                 ui.notify(
                                     f"Please provide rationale for excluding outlier {outlier.value}",
                                     type="negative",
+                                    timeout=0,
                                 )
                                 return
 
@@ -1304,9 +1314,9 @@ class UIController:
                     {"manual_override": self.manual_override_checkbox.value},
                     self.session_id,
                 )
-                ui.notify(f"Validation error: {e}", type="negative", duration=None)
+                ui.notify(f"Validation error: {e}", type="negative", timeout=0)
             except Exception as e:
-                ui.notify(f"Processing error: {e}", type="negative", duration=None)
+                ui.notify(f"Processing error: {e}", type="negative", timeout=0)
 
         process_phase2_btn.on_click(handle_process_phase2)
 
@@ -1342,7 +1352,9 @@ class UIController:
 
             try:
                 if not self.module_v_state.phase2_complete:
-                    ui.notify("Please complete Phase 2 first", type="warning", duration=None)
+                    ui.notify(
+                        "Please complete Phase 2 first", type="warning", timeout=0
+                    )
                     return
 
                 phase2_results = self.module_v_state.phase2_results
@@ -1357,7 +1369,9 @@ class UIController:
                     or reliability is None
                 ):
                     ui.notify(
-                        "Missing required data from previous phases", type="negative"
+                        "Missing required data from previous phases",
+                        type="negative",
+                        timeout=0,
                     )
                     return
 
@@ -1582,9 +1596,9 @@ class UIController:
                     {},
                     self.session_id,
                 )
-                ui.notify(f"Calculation error: {e}", type="negative", duration=None)
+                ui.notify(f"Calculation error: {e}", type="negative", timeout=0)
             except Exception as e:
-                ui.notify(f"Calculation error: {e}", type="negative", duration=None)
+                ui.notify(f"Calculation error: {e}", type="negative", timeout=0)
 
         self.calculate_phase3_btn.on_click(handle_calculate_phase3)
 
@@ -1641,13 +1655,19 @@ class UIController:
 
             try:
                 if not self.module_v_state.phase3_complete:
-                    ui.notify("Please complete Phase 3 first", type="warning", duration=None)
+                    ui.notify(
+                        "Please complete Phase 3 first", type="warning", timeout=0
+                    )
                     return
 
                 # Parse final data
                 final_data_str = self.final_data_input.value
                 if not final_data_str:
-                    ui.notify("Please enter final validation data", type="warning", duration=None)
+                    ui.notify(
+                        "Please enter final validation data",
+                        type="warning",
+                        timeout=0,
+                    )
                     return
 
                 final_data = [
@@ -1664,7 +1684,9 @@ class UIController:
                     or spec_limits is None
                 ):
                     ui.notify(
-                        "Missing required data from previous phases", type="negative"
+                        "Missing required data from previous phases",
+                        type="negative",
+                        timeout=0,
                     )
                     return
 
@@ -1757,9 +1779,9 @@ class UIController:
                     {"final_data": self.final_data_input.value},
                     self.session_id,
                 )
-                ui.notify(f"Validation error: {e}", type="negative", duration=None)
+                ui.notify(f"Validation error: {e}", type="negative", timeout=0)
             except Exception as e:
-                ui.notify(f"Calculation error: {e}", type="negative", duration=None)
+                ui.notify(f"Calculation error: {e}", type="negative", timeout=0)
 
         calculate_phase4_btn.on_click(handle_calculate_phase4)
 
@@ -1772,7 +1794,11 @@ class UIController:
 
             try:
                 if not self.module_v_state.phase4_complete:
-                    ui.notify("Please complete all phases first", type="warning", duration=None)
+                    ui.notify(
+                        "Please complete all phases first",
+                        type="warning",
+                        timeout=0,
+                    )
                     return
 
                 # Get engine hash and validation state
@@ -1791,7 +1817,7 @@ class UIController:
                     or phase4 is None
                     or spec_limits is None
                 ):
-                    ui.notify("Missing phase results", type="negative", duration=None)
+                    ui.notify("Missing phase results", type="negative", timeout=0)
                     return
 
                 inputs = {
@@ -1856,7 +1882,7 @@ class UIController:
                 ui.notify("Report generated successfully", type="positive")
 
             except Exception as e:
-                ui.notify(f"Report generation error: {e}", type="negative", duration=None)
+                ui.notify(f"Report generation error: {e}", type="negative", timeout=0)
 
         v_report_btn.on_click(handle_generate_v_report)
 
@@ -1869,7 +1895,11 @@ class UIController:
 
             try:
                 if not self.module_v_state.phase4_complete:
-                    ui.notify("Please complete all phases first", type="warning", duration=None)
+                    ui.notify(
+                        "Please complete all phases first",
+                        type="warning",
+                        timeout=0,
+                    )
                     return
 
                 # Get engine hash and validation state
@@ -1888,7 +1918,7 @@ class UIController:
                     or phase4 is None
                     or spec_limits is None
                 ):
-                    ui.notify("Missing phase results", type="negative", duration=None)
+                    ui.notify("Missing phase results", type="negative", timeout=0)
                     return
 
                 inputs = {
@@ -1963,7 +1993,9 @@ class UIController:
                 ui.notify("Full report generated successfully", type="positive")
 
             except Exception as e:
-                ui.notify(f"Full report generation error: {e}", type="negative", duration=None)
+                ui.notify(
+                    f"Full report generation error: {e}", type="negative", timeout=0
+                )
 
         v_full_report_btn.on_click(handle_generate_v_full_report)
 
@@ -2773,7 +2805,7 @@ For additional assistance:
             run_button: Button to disable during validation
         """
         if not tester_name or not tester_name.strip():
-            ui.notify("Please enter tester name", type="warning", duration=None)
+            ui.notify("Please enter tester name", type="warning", timeout=0)
             return
 
         # Disable button during validation
@@ -2788,9 +2820,9 @@ For additional assistance:
         runner = ValidationRunner(progress_callback=progress_callback)
 
         try:
-            # Run validation (skip PQ tests since app is running)
+            # Run validation (include PQ tests)
             success, message, cert_path = await anyio.to_thread.run_sync(  # type: ignore[attr-defined]
-                runner.run_validation, tester_name.strip(), skip_pq=True
+                runner.run_validation, tester_name.strip(), False
             )
 
             # Log validation execution
@@ -2812,13 +2844,15 @@ For additional assistance:
             else:
                 result_label.text = f"⚠️ {message}"
                 result_label.classes("text-orange-600")
-                ui.notify("Validation completed with warnings", type="warning", duration=None)
+                ui.notify(
+                    "Validation completed with warnings", type="warning", timeout=0
+                )
 
         except Exception as e:
             error_msg = f"Validation error: {str(e)}"
             result_label.text = f"❌ {error_msg}"
             result_label.classes("text-red-600")
-            ui.notify(error_msg, type="negative", duration=None)
+            ui.notify(error_msg, type="negative", timeout=0)
 
             # Log error
             self.logger.log_validation_error(
