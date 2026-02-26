@@ -153,7 +153,8 @@ def anderson_darling_test(data: list[float]) -> tuple[float, list[float], list[f
 
     # Perform Anderson-Darling test using scipy
     # Returns AndersonResult with statistic, critical_values, significance_level
-    result = stats.anderson(data, dist="norm")
+    # methodes "MonteCarloMethod" or "interpolated"
+    result = stats.anderson(data, dist="norm", method="interpolated")
 
     # Handle NaN or invalid statistic
     statistic = float(result.statistic)
