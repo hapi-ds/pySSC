@@ -3265,6 +3265,7 @@ name = "sample-size-calculator"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "jupyterlab" },
     { name = "matplotlib" },
     { name = "nicegui" },
     { name = "numpy" },
@@ -3295,6 +3296,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "jupyterlab", specifier = ">=4.5.4" },
     { name = "matplotlib", specifier = ">=3.10.8" },
     { name = "nicegui", specifier = ">=3.7.1" },
     { name = "numpy", specifier = ">=2.4.2" },

@@ -25,6 +25,7 @@ from sample_size_calculator.audit_logger import AuditLogger
 from sample_size_calculator.calculations import CalculationEngine
 from sample_size_calculator.full_report_generator import FullReportGenerator
 from sample_size_calculator.hash_verifier import get_engine_hash, is_validated_state
+from sample_size_calculator.jupyter_manager import JupyterManager
 from sample_size_calculator.models import (
     AnalysisMethod,
     AttributeInputs,
@@ -152,6 +153,9 @@ class UIController:
 
         # Module A state
         self.module_a_results: dict[str, Any] | None = None
+        
+        # JupyterLab manager
+        self.jupyter_manager = JupyterManager()
 
     def _generate_session_id(self) -> str:
         """Generate unique session identifier using uuid4."""
@@ -179,6 +183,7 @@ class UIController:
         with ui.tabs().classes("w-full") as tabs:
             module_a_tab = ui.tab("Module A")
             module_v_tab = ui.tab("Module V")
+            examples_tab = ui.tab("Examples")
             help_tab = ui.tab("Help")
 
         with ui.tab_panels(tabs, value=module_a_tab).classes("w-full"):
@@ -187,6 +192,9 @@ class UIController:
 
             with ui.tab_panel(module_v_tab):
                 self.create_module_v_tab()
+                
+            with ui.tab_panel(examples_tab):
+                self.create_examples_tab()
 
             with ui.tab_panel(help_tab):
                 self.create_help_tab()
@@ -2291,6 +2299,145 @@ class UIController:
 
         img_base64 = base64.b64encode(buf.read()).decode("utf-8")
         return f"data:image/png;base64,{img_base64}"
+
+    def create_examples_tab(self) -> None:
+        """Create Examples tab with JupyterLab integration."""
+        ui.label("Examples").classes("text-h5")
+        ui.label("Launch JupyterLab to explore example notebooks").classes(
+            "text-subtitle2"
+        )
+        ui.separator()
+
+        with ui.card().classes("w-full"):
+            ui.label("JupyterLab Notebook Server").classes("text-h6")
+            
+            # Status indicator
+            status_label = ui.label(self.jupyter_manager.get_status()).classes(
+                "text-body2"
+            )
+            
+            # Control buttons
+            with ui.row().classes("gap-2"):
+                start_btn = ui.button(
+                    "Start JupyterLab",
+                    icon="play_arrow",
+                    on_click=lambda: self._start_jupyter(status_label),
+                ).props("color=positive")
+                
+                stop_btn = ui.button(
+                    "Stop JupyterLab",
+                    icon="stop",
+                    on_click=lambda: self._stop_jupyter(status_label),
+                ).props("color=negative")
+                
+                open_btn = ui.button(
+                    "Open JupyterLab",
+                    icon="open_in_new",
+                    on_click=lambda: self._open_jupyter(),
+                ).props("color=primary")
+            
+            ui.separator()
+            
+            # Information section
+            with ui.expansion("About JupyterLab Examples", icon="info").classes("w-full"):
+                ui.markdown("""
+### Available Notebooks
+
+The `notebooks/` directory contains interactive examples:
+
+- **Example.ipynb**
+  - Process Validation of a CNC lathe machining metal shafts. (normal, two-sided)
+  - Product Design Validation of a molded polymer bracket. (normal, one-sided)
+  - Validation of a sterilization. (log-normal, one-sided)
+  - Validation of lithium-ion battery capacities. (skewed, one-sided)
+  - Validation of an extrusion process where the machine heater cycles ON and OFF. (U-shaped, two-sided)
+  - Process Validation of a thermal curing plate. (quatratic, one-sided)
+  - 2-cavity injection mold. (bimodal, two-sided)
+  - Quality Validation of painted car panels. (poisson, one-sided)
+  - Design Validation of a titanium aerospace pressure vessel. (small sample size)
+  - Process Validation of a CNC milled component. (drift, two-sided)
+
+
+### Getting Started
+
+1. Click **Start JupyterLab** to launch the notebook server
+2. Wait for the "JupyterLab started successfully!" notification
+3. Click **Open JupyterLab** to access notebooks in a new tab
+4. Navigate to the desired notebook and run cells
+
+### Tips
+
+- JupyterLab runs on port 8888 by default
+- The token for authentication is automatically generated
+- Notebooks have access to the full calculation engine
+- Stop JupyterLab when done to free resources
+
+### Docker Usage
+
+When running in Docker, JupyterLab is accessible at the same URL. 
+The notebooks directory is mounted as a volume for persistence.
+                """)
+
+        with ui.card().classes("w-full"):
+            ui.label("Quick Examples (No JupyterLab Required)").classes("text-h6")
+            
+            with ui.expansion("Module A: Basic Calculation", icon="calculate").classes("w-full"):
+                ui.markdown("""
+```python
+Input confidence (e.g. 95.0) and reliability (e.g.95.0) and press "CALCULATE SAMPLE SIZE"
+Optional you can insert allowable failures or population size (to be implemented soon)
+
+# Output: Required sample size: 59
+# If allowable failures c=10 -> Required sample size: 336
+
+```
+                """)
+            
+            with ui.expansion("Module V: Variable Data Workflow", icon="trending_up").classes("w-full"):
+                ui.markdown("""
+```python
+# Phase 1: Analyze pilot data
+Two-Sided
+lsl: 9.9,
+usl: 10.1
+pilot_data: 10.015, 9.996, 10.019, 10.046, 9.993
+
+# Phase 2: Check normality and transform if needed
+--> is normal, no outliers
+# Phase 3: Calculate required sample size
+--> 7
+# Phase 4: Validate with final dataset
+Final Dataset: 10.022, 10.005, 9.997, 9.991, 9.956, 9.978, 9.986
+
+--> Pass
+--> Ppk: 1.4494
+
+# See notebooks for complete workflow examples
+```
+                """)
+
+    def _start_jupyter(self, status_label: ui.label) -> None:
+        """Start JupyterLab and update status.
+        
+        Args:
+            status_label: Label to update with status
+        """
+        self.jupyter_manager.start()
+        status_label.text = self.jupyter_manager.get_status()
+
+    def _stop_jupyter(self, status_label: ui.label) -> None:
+        """Stop JupyterLab and update status.
+        
+        Args:
+            status_label: Label to update with status
+        """
+        self.jupyter_manager.stop()
+        status_label.text = self.jupyter_manager.get_status()
+
+    def _open_jupyter(self) -> None:
+        """Open JupyterLab in a new browser tab using JavaScript."""
+        jupyter_url = self.jupyter_manager.get_url()
+        ui.run_javascript(f'window.open("{jupyter_url}", "_blank");')
 
     def create_help_tab(self) -> None:
         """Create Help tab with comprehensive documentation and guidance."""

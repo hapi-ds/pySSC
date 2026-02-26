@@ -1,0 +1,11 @@
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Temporary files
+*.tmp
+*.bak
+
+# User-created notebooks (keep examples)
+!module_a_example.ipynb
+!module_v_example.ipynb
+!README.md

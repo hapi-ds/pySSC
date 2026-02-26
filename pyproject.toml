@@ -20,6 +20,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "jupyterlab>=4.5.4",
     "matplotlib>=3.10.8",
     "nicegui>=3.7.1",
     "numpy>=2.4.2",

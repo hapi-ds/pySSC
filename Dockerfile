@@ -82,9 +82,9 @@ COPY --chown=appuser:appuser src/ /app/src/
 COPY --chown=appuser:appuser scripts/ /app/scripts/
 COPY --chown=appuser:appuser tests/ /app/tests/
 
-# Create directories for logs, reports, and pytest cache with correct permissions
-RUN mkdir -p /app/logs /app/reports /app/.pytest_cache /app/.hypothesis && \
-    chown -R appuser:appuser /app/logs /app/reports /app/.pytest_cache /app/.hypothesis /app
+# Create directories for logs, reports, notebooks, and pytest cache with correct permissions
+RUN mkdir -p /app/logs /app/reports /app/notebooks /app/.pytest_cache /app/.hypothesis && \
+    chown -R appuser:appuser /app/logs /app/reports /app/notebooks /app/.pytest_cache /app/.hypothesis /app
 
 # Switch to non-root user
 USER appuser
@@ -95,6 +95,8 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PLAYWRIGHT_BROWSERS_PATH="/home/appuser/.cache/ms-playwright"
 
 # Expose port 8080 for web interface
+# Note: JupyterLab (port 8888) is launched on-demand inside the container
+# and accessed through the web interface, not directly exposed
 EXPOSE 8080
 
 # Add healthcheck to verify application is running

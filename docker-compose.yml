@@ -29,6 +29,9 @@ services:
       
       # Reports directory - read/write for PDF report generation
       - ./reports:/app/reports
+      
+      # Notebooks directory - read/write for JupyterLab examples
+      - ./notebooks:/app/notebooks
     
     # Environment variables for application configuration
     environment:
