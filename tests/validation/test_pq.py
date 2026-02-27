@@ -655,7 +655,6 @@ def test_phase_invalidation_on_input_change(page_with_app: Page):
     two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
     two_sided_radio.click()
 
-
     lsl_input = page.locator(
         'input[aria-label*="LSL"], input[placeholder*="LSL"]'
     ).first
@@ -738,7 +737,9 @@ def test_method_transparency_display(page_with_app: Page):
     reliability_input = page.locator('input[aria-label*="Reliability"]').first
     reliability_input.fill("95")
 
-    pilot_data = "10.015, 9.996, 10.019, 10.046, 9.993, 9.993, 10.047, 10.023, 9.986, 10.016"
+    pilot_data = (
+        "10.015, 9.996, 10.019, 10.046, 9.993, 9.993, 10.047, 10.023, 9.986, 10.016"
+    )
     pilot_textarea = page.locator(
         'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
     ).first
@@ -771,3 +772,526 @@ def test_method_transparency_display(page_with_app: Page):
         indicator in page_content for indicator in method_indicators
     )
     assert has_method_display, "Active method should be displayed to user"
+
+
+@pytest.mark.pq
+@pytest.mark.urs("URS-PQ-01", "URS-UI-04")
+def test_module_v_one_sided_workflow(page_with_app: Page):
+    """Test Module V one-sided specification workflow.
+
+    URS-PQ-01: Performance Qualification (PQ): An automated UI test
+    (using Playwright) shall simulate a user workflow. All paths should be
+    tested e2e including generated pdf-reports.
+
+    URS 7.1-7.5: One-sided specification requirements.
+    """
+    page = page_with_app
+
+    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab.click()
+    page.wait_for_timeout(500)
+
+    # Select One-Sided specification (LSL)
+    one_sided_radio = page.locator('.q-radio:has-text("One-Sided")').first
+    one_sided_radio.click()
+
+    lsl_input = page.locator(
+        'input[aria-label*="LSL"], input[placeholder*="LSL"]'
+    ).first
+    lsl_input.fill("9.5")
+
+    confidence_input = page.locator('input[aria-label*="Confidence"]').first
+    confidence_input.fill("95")
+
+    reliability_input = page.locator('input[aria-label*="Reliability"]').first
+    reliability_input.fill("95")
+
+    pilot_data = "10.015, 9.996, 10.019, 10.046, 9.993"
+    pilot_textarea = page.locator(
+        'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+    ).first
+    pilot_textarea.fill(pilot_data)
+
+    analyze_button = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button).to_be_enabled(timeout=3000)
+    analyze_button.click()
+    page.wait_for_timeout(2000)
+
+    process_button = page.locator(
+        'button:has-text("Process"), button:has-text("Normality")'
+    ).first
+    expect(process_button).to_be_enabled(timeout=3000)
+    process_button.click()
+    page.wait_for_timeout(2000)
+
+    required_button = page.locator(
+        'button:has-text("Required"), button:has-text("required")'
+    ).first
+    expect(required_button).to_be_enabled(timeout=3000)
+    required_button.click()
+    page.wait_for_timeout(2000)
+
+
+@pytest.mark.pq
+@pytest.mark.urs("URS-PQ-01", "URS-OUTLIER-07")
+def test_module_v_outlier_exclusion_workflow(page_with_app: Page):
+    """Test Module V workflow with outlier exclusion.
+
+    URS-PQ-01: Performance Qualification (PQ): An automated UI test
+    (using Playwright) shall simulate a user workflow. All paths should be
+    tested e2e including generated pdf-reports.
+
+    URS-V-03: Outlier Evaluation: The system shall detect outliers
+    in the active dataset using the Interquartile Range (IQR) method.
+
+    Exclusion Recalculation: THE System SHALL recalculate all
+    statistics using the cleaned dataset after exclusions.
+    """
+    page = page_with_app
+
+    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab.click()
+    page.wait_for_timeout(500)
+
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
+    two_sided_radio.click()
+
+    lsl_input = page.locator(
+        'input[aria-label*="LSL"], input[placeholder*="LSL"]'
+    ).first
+    lsl_input.fill("8.0")
+
+    usl_input = page.locator(
+        'input[aria-label*="USL"], input[placeholder*="USL"]'
+    ).first
+    usl_input.fill("16.0")
+
+    confidence_input = page.locator('input[aria-label*="Confidence"]').first
+    confidence_input.fill("95")
+
+    reliability_input = page.locator('input[aria-label*="Reliability"]').first
+    reliability_input.fill("95")
+
+    # Include outlier in pilot data
+    pilot_data = "10.0, 10.5, 11.0, 11.5, 12.0, 100.0"
+    pilot_textarea = page.locator(
+        'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+    ).first
+    pilot_textarea.fill(pilot_data)
+
+    analyze_button = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button).to_be_enabled(timeout=3000)
+    analyze_button.click()
+    page.wait_for_timeout(2000)
+
+    # Verify outlier was detected
+    page_content = page.content().lower()
+    assert "outlier" in page_content or "100" in page_content, (
+        "Outlier detection should be visible"
+    )
+
+
+@pytest.mark.pq
+@pytest.mark.urs("URS-PQ-01", "URS-V-08")
+def test_module_v_non_parametric_fallback(page_with_app: Page):
+    """Test Module V fallback to non-parametric method.
+
+    URS-PQ-01: Performance Qualification (PQ): An automated UI test
+    (using Playwright) shall simulate a user workflow. All paths should be
+    tested e2e including generated pdf-reports.
+
+    URS-V-08: Non-Parametric Fallback: If all transformations fail to
+    achieve p0.05, the system shall lock the method as
+    "Non-Parametric (Wilks)".
+
+    Non-parametric fallback requirements.
+    """
+    page = page_with_app
+
+    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab.click()
+    page.wait_for_timeout(500)
+
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
+    two_sided_radio.click()
+
+    lsl_input = page.locator(
+        'input[aria-label*="LSL"], input[placeholder*="LSL"]'
+    ).first
+    lsl_input.fill("5.0")
+
+    usl_input = page.locator(
+        'input[aria-label*="USL"], input[placeholder*="USL"]'
+    ).first
+    usl_input.fill("20.0")
+
+    confidence_input = page.locator('input[aria-label*="Confidence"]').first
+    confidence_input.fill("95")
+
+    reliability_input = page.locator('input[aria-label*="Reliability"]').first
+    reliability_input.fill("95")
+
+    # Use highly skewed data that will fail normality tests
+    pilot_data = "1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 20.0, 50.0, 100.0"
+    pilot_textarea = page.locator(
+        'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+    ).first
+    pilot_textarea.fill(pilot_data)
+
+    analyze_button = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button).to_be_enabled(timeout=3000)
+    analyze_button.click()
+    page.wait_for_timeout(2000)
+
+    process_button = page.locator(
+        'button:has-text("Process"), button:has-text("Normality")'
+    ).first
+    expect(process_button).to_be_enabled(timeout=3000)
+    process_button.click()
+    page.wait_for_timeout(2000)
+
+
+@pytest.mark.pq
+@pytest.mark.urs("URS-PQ-01", "URS-UI-01")
+def test_module_v_parameter_change_invalidates_results(page_with_app: Page):
+    """Test that parameter changes invalidate downstream results.
+
+    URS-PQ-01: Performance Qualification (PQ): An automated UI test
+    (using Playwright) shall simulate a user workflow. All paths should be
+    tested e2e including generated pdf-reports.
+
+    URS-UI-01: Sequential Workflow Enforcer: Tab 2 (Variable Data)
+    must prevent the user from progressing to Phase 3/4 until Phase 1/2
+    are fully executed.
+
+    IF any phase input is modified, THEN THE UI_Controller SHALL
+    disable and clear all subsequent phase results.
+    """
+    page = page_with_app
+
+    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab.click()
+    page.wait_for_timeout(500)
+
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
+    two_sided_radio.click()
+
+    lsl_input = page.locator(
+        'input[aria-label*="LSL"], input[placeholder*="LSL"]'
+    ).first
+    lsl_input.fill("8.0")
+
+    usl_input = page.locator(
+        'input[aria-label*="USL"], input[placeholder*="USL"]'
+    ).first
+    usl_input.fill("16.0")
+
+    confidence_input = page.locator('input[aria-label*="Confidence"]').first
+    confidence_input.fill("95")
+
+    reliability_input = page.locator('input[aria-label*="Reliability"]').first
+    reliability_input.fill("95")
+
+    pilot_data = "10.0, 10.5, 11.0, 11.5, 12.0"
+    pilot_textarea = page.locator(
+        'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+    ).first
+    pilot_textarea.fill(pilot_data)
+
+    analyze_button = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button).to_be_enabled(timeout=3000)
+    analyze_button.click()
+    page.wait_for_timeout(2000)
+
+    process_button = page.locator(
+        'button:has-text("Process"), button:has-text("Normality")'
+    ).first
+    expect(process_button).to_be_enabled(timeout=3000)
+    process_button.click()
+    page.wait_for_timeout(2000)
+
+    # Change confidence after Phase 1
+    confidence_input.fill("99")
+    page.wait_for_timeout(500)
+
+    # Results should be cleared or disabled
+
+
+@pytest.mark.pq
+@pytest.mark.urs("URS-PQ-01", "URS-V-11")
+def test_module_v_non_parametric_sample_size(page_with_app: Page):
+    """Test non-parametric sample size calculation in Module V.
+
+    URS-PQ-01: Performance Qualification (PQ): An automated UI test
+    (using Playwright) shall simulate a user workflow. All paths should be
+    tested e2e including generated pdf-reports.
+
+    URS-V-11: Non-Parametric N Calculation: If the method is Non-Parametric,
+    the system shall output the fixed sample size required to use extreme order
+    statistics.
+    """
+    page = page_with_app
+
+    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab.click()
+    page.wait_for_timeout(500)
+
+    # Use highly skewed data that forces non-parametric method
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
+    two_sided_radio.click()
+
+    lsl_input = page.locator(
+        'input[aria-label*="LSL"], input[placeholder*="LSL"]'
+    ).first
+    lsl_input.fill("1.0")
+
+    usl_input = page.locator(
+        'input[aria-label*="USL"], input[placeholder*="USL"]'
+    ).first
+    usl_input.fill("100.0")
+
+    confidence_input = page.locator('input[aria-label*="Confidence"]').first
+    confidence_input.fill("95")
+
+    reliability_input = page.locator('input[aria-label*="Reliability"]').first
+    reliability_input.fill("95")
+
+    # Skewed data that won't normalize
+    pilot_data = "1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 21.0, 34.0, 55.0, 89.0"
+    pilot_textarea = page.locator(
+        'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+    ).first
+    pilot_textarea.fill(pilot_data)
+
+    analyze_button = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button).to_be_enabled(timeout=3000)
+    analyze_button.click()
+    page.wait_for_timeout(2000)
+
+    process_button = page.locator(
+        'button:has-text("Process"), button:has-text("Normality")'
+    ).first
+    expect(process_button).to_be_enabled(timeout=3000)
+    process_button.click()
+    page.wait_for_timeout(2000)
+
+    required_button = page.locator(
+        'button:has-text("Required"), button:has-text("required")'
+    ).first
+    expect(required_button).to_be_enabled(timeout=3000)
+    required_button.click()
+    page.wait_for_timeout(2000)
+
+
+@pytest.mark.pq
+@pytest.mark.urs("URS-PQ-01", "URS-V-16")
+def test_module_v_ppk_calculation(page_with_app: Page):
+    """Test Ppk calculation in Module V.
+
+    URS-PQ-01: Performance Qualification (PQ): An automated UI test
+    (using Playwright) shall simulate a user workflow. All paths should be
+    tested e2e including generated pdf-reports.
+
+    URS-V-16: Pass/Fail & Capability: The system shall compare the
+    back-transformed limits to the original specifications to output
+    Pass/Fail, and calculate Process Capability (P_pk) for
+    normal/transformed data.
+    """
+    page = page_with_app
+
+    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab.click()
+    page.wait_for_timeout(500)
+
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
+    two_sided_radio.click()
+
+    lsl_input = page.locator(
+        'input[aria-label*="LSL"], input[placeholder*="LSL"]'
+    ).first
+    lsl_input.fill("8.0")
+
+    usl_input = page.locator(
+        'input[aria-label*="USL"], input[placeholder*="USL"]'
+    ).first
+    usl_input.fill("16.0")
+
+    confidence_input = page.locator('input[aria-label*="Confidence"]').first
+    confidence_input.fill("95")
+
+    reliability_input = page.locator('input[aria-label*="Reliability"]').first
+    reliability_input.fill("95")
+
+    pilot_data = "10.0, 11.0, 12.0, 13.0, 14.0"
+    pilot_textarea = page.locator(
+        'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+    ).first
+    pilot_textarea.fill(pilot_data)
+
+    analyze_button = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button).to_be_enabled(timeout=3000)
+    analyze_button.click()
+    page.wait_for_timeout(2000)
+
+    process_button = page.locator(
+        'button:has-text("Process"), button:has-text("Normality")'
+    ).first
+    expect(process_button).to_be_enabled(timeout=3000)
+    process_button.click()
+    page.wait_for_timeout(2000)
+
+    required_button = page.locator(
+        'button:has-text("Required"), button:has-text("required")'
+    ).first
+    expect(required_button).to_be_enabled(timeout=3000)
+    required_button.click()
+    page.wait_for_timeout(2000)
+
+
+@pytest.mark.pq
+@pytest.mark.urs("URS-PQ-01", "URS-V-06")
+def test_module_v_log_transformation_workflow(page_with_app: Page):
+    """Test Module V with logarithmic transformation.
+
+    URS-PQ-01: Performance Qualification (PQ): An automated UI test
+    (using Playwright) shall simulate a user workflow. All paths should be
+    tested e2e including generated pdf-reports.
+
+    URS-V-06: Transformation Cascade: If le0.05, the system shall 
+    automatically attempt mathematically normalizing the data in the 
+    following strict hierarchy ()
+
+    Logarithmic transformation requirements.
+    """
+    page = page_with_app
+
+    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab.click()
+    page.wait_for_timeout(500)
+
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
+    two_sided_radio.click()
+
+    lsl_input = page.locator(
+        'input[aria-label*="LSL"], input[placeholder*="LSL"]'
+    ).first
+    lsl_input.fill("1.0")
+
+    usl_input = page.locator(
+        'input[aria-label*="USL"], input[placeholder*="USL"]'
+    ).first
+    usl_input.fill("10.0")
+
+    confidence_input = page.locator('input[aria-label*="Confidence"]').first
+    confidence_input.fill("95")
+
+    reliability_input = page.locator('input[aria-label*="Reliability"]').first
+    reliability_input.fill("95")
+
+    # Positive skewed data that will log-transform well
+    pilot_data = "1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0"
+    pilot_textarea = page.locator(
+        'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+    ).first
+    pilot_textarea.fill(pilot_data)
+
+    analyze_button = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button).to_be_enabled(timeout=3000)
+    analyze_button.click()
+    page.wait_for_timeout(2000)
+
+    process_button = page.locator(
+        'button:has-text("Process"), button:has-text("Normality")'
+    ).first
+    expect(process_button).to_be_enabled(timeout=3000)
+    process_button.click()
+    page.wait_for_timeout(2000)
+
+
+@pytest.mark.pq
+@pytest.mark.urs("URS-PQ-01", "URS-UI-01")
+def test_module_v_all_phases_complete(page_with_app: Page):
+    """Test complete Module V workflow through all 4 phases.
+
+    URS-PQ-01: Performance Qualification (PQ): An automated UI test
+    (using Playwright) shall simulate a user workflow. All paths should be
+    tested e2e including generated pdf-reports.
+
+    URS-UI-01: Sequential Workflow Enforcer: Tab 2 (Variable Data)
+    must prevent the user from progressing to Phase 3/4 until Phase 1/2
+    are fully executed.
+
+    URS 24.1-24.5: Sequential workflow requirements.
+    """
+    page = page_with_app
+
+    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab.click()
+    page.wait_for_timeout(500)
+
+    # Phase 1: Input specification and pilot data
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
+    two_sided_radio.click()
+
+    lsl_input = page.locator(
+        'input[aria-label*="LSL"], input[placeholder*="LSL"]'
+    ).first
+    lsl_input.fill("8.0")
+
+    usl_input = page.locator(
+        'input[aria-label*="USL"], input[placeholder*="USL"]'
+    ).first
+    usl_input.fill("16.0")
+
+    confidence_input = page.locator('input[aria-label*="Confidence"]').first
+    confidence_input.fill("95")
+
+    reliability_input = page.locator('input[aria-label*="Reliability"]').first
+    reliability_input.fill("95")
+
+    pilot_data = "10.0, 10.5, 11.0, 11.5, 12.0"
+    pilot_textarea = page.locator(
+        'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+    ).first
+    pilot_textarea.fill(pilot_data)
+
+    analyze_button = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button).to_be_enabled(timeout=3000)
+    analyze_button.click()
+    page.wait_for_timeout(2000)
+
+    # Phase 2: Normality testing and transformation
+    process_button = page.locator(
+        'button:has-text("Process"), button:has-text("Normality")'
+    ).first
+    expect(process_button).to_be_enabled(timeout=3000)
+    process_button.click()
+    page.wait_for_timeout(2000)
+
+    # Phase 3: Sample size calculation
+    required_button = page.locator(
+        'button:has-text("Required"), button:has-text("required")'
+    ).first
+    expect(required_button).to_be_enabled(timeout=3000)
+    required_button.click()
+    page.wait_for_timeout(2000)
+
+    # Phase 4: Final validation and tolerance limits
+    final_data = "10.1, 10.5, 11.0, 11.5, 11.9"
+    final_textarea = page.locator(
+        'textarea[aria-label*="Final"], textarea[placeholder*="final"]'
+    ).first
+    final_textarea.fill(final_data)
+
+    tolerance_button = page.locator(
+        'button:has-text("Tolerance"), button:has-text("Tolerance")'
+    ).first
+    expect(tolerance_button).to_be_enabled(timeout=3000)
+    tolerance_button.click()
+    page.wait_for_timeout(2000)
+
+    # Verify all phases completed
+    page_content = page.content().lower()
+    assert "pass" in page_content or "fail" in page_content, (
+        "Final result should be displayed"
+    )

@@ -45,10 +45,7 @@ def test_uv_sync_installs_without_conflicts():
     without conflicts.
     """
     result = subprocess.run(
-        ["uv", "sync", "--frozen"],
-        capture_output=True,
-        text=True,
-        timeout=120
+        ["uv", "sync", "--frozen"], capture_output=True, text=True, timeout=120
     )
 
     assert result.returncode == 0, (
@@ -77,11 +74,9 @@ def test_scipy_version():
     import scipy
 
     version = scipy.__version__
-    major_version = int(version.split('.')[0])
+    major_version = int(version.split(".")[0])
 
-    assert major_version >= 1, (
-        f"scipy version must be 1.x.x or higher, found {version}"
-    )
+    assert major_version >= 1, f"scipy version must be 1.x.x or higher, found {version}"
 
 
 @pytest.mark.iq
@@ -182,8 +177,136 @@ def test_pytest_markers_configured():
     content = pyproject_path.read_text()
 
     # Verify IQ/OQ/PQ markers are defined
-    assert 'markers = [' in content, "pytest markers section must exist"
+    assert "markers = [" in content, "pytest markers section must exist"
     assert '"iq:' in content, "IQ marker must be defined"
     assert '"oq:' in content, "OQ marker must be defined"
     assert '"pq:' in content, "PQ marker must be defined"
     assert '"urs(' in content or '"urs:' in content, "URS marker must be defined"
+
+
+@pytest.mark.iq
+@pytest.mark.urs("URS-REP-02")
+def test_hash_verifier_module_present():
+    """Verify hash verification module is present and importable.
+
+    URS-REP-02: Validation State Reference: The User Calculation Report must
+    display the SHA-256 Hash of the current calculation engine file
+    (calculations.py).
+    """
+    from sample_size_calculator.hash_verifier import (
+        HashVerifier,
+        get_engine_hash,
+        get_validated_hash,
+        is_validated_state,
+        set_validated_hash,
+    )
+
+    assert callable(get_engine_hash), "get_engine_hash should be callable"
+    assert callable(get_validated_hash), "get_validated_hash should be callable"
+    assert callable(set_validated_hash), "set_validated_hash should be callable"
+    assert callable(is_validated_state), "is_validated_state should be callable"
+
+
+@pytest.mark.iq
+@pytest.mark.urs("URS-REP-02")
+def test_engine_hash_calculation():
+    """Test that engine hash is calculated correctly.
+
+    URS-REP-02: Validation State Reference: The User Calculation Report must
+    display the SHA-256 Hash of the current calculation engine file
+    (calculations.py).
+    """
+    from sample_size_calculator.hash_verifier import get_engine_hash
+
+    hash_result = get_engine_hash()
+
+    assert isinstance(hash_result, str), "Hash should be a string"
+    assert len(hash_result) == 64, "SHA-256 hash should be 64 characters"
+    assert all(c in "0123456789abcdef" for c in hash_result), (
+        "Hash should contain only hexadecimal characters"
+    )
+
+
+@pytest.mark.iq
+@pytest.mark.urs("URS-REP-02")
+def test_hash_idempotence():
+    """Test that hash calculation is idempotent.
+
+    URS-REP-02: Validation State Reference: The User Calculation Report must
+    display the SHA-256 Hash of the current calculation engine file
+    (calculations.py).
+    """
+    from sample_size_calculator.hash_verifier import get_engine_hash
+
+    results = [get_engine_hash() for _ in range(5)]
+
+    assert all(r == results[0] for r in results), "Hash calculation must be idempotent"
+
+@pytest.mark.iq
+@pytest.mark.urs("URS-REP-01")
+def test_report_generator_module_present():
+    """Verify report generator module is present and importable.
+
+    URS-REP-01: User Calculation Report: The system shall generate
+    a downloadable PDF report summarizing the current session.
+
+    """
+    from sample_size_calculator.report_generator import (
+        CalculationReport,
+        ReportGenerator,
+        ValidationCertificate,
+    )
+
+    assert callable(CalculationReport), "CalculationReport should be a class"
+    assert callable(ValidationCertificate), "ValidationCertificate should be a class"
+
+
+@pytest.mark.iq
+@pytest.mark.urs("URS-VTM-01")
+def test_vtm_generator_module_present():
+    """Verify VTM generator module is present and importable.
+
+    URS-VTM-01: The VTM must include the URS ID AND corresponding text	
+
+    """
+    from sample_size_calculator.vtm_generator import (
+        VTMGenerator,
+    )
+
+    assert callable(VTMGenerator), "VTMGenerator should be a class"
+    assert callable(VTMGenerator.generate_vtm), "generate_vtm should be callable"
+
+
+@pytest.mark.iq
+@pytest.mark.urs("URS-IQ-01")
+def test_all_validation_modules_importable():
+    """Test that all validation framework modules are importable.
+
+    URS-IQ-01: Dependencies must be strictly version-locked using a
+    hash-based lockfile.
+    """
+    required_modules = [
+        "sample_size_calculator.calculations",
+        "sample_size_calculator.models",
+        "sample_size_calculator.transformations",
+        "sample_size_calculator.tolerance",
+        "sample_size_calculator.normality",
+        "sample_size_calculator.outliers",
+        "sample_size_calculator.hash_verifier",
+        "sample_size_calculator.audit_logger",
+        "sample_size_calculator.validation_runner",
+        "sample_size_calculator.report_generator",
+        "sample_size_calculator.vtm_generator",
+    ]
+
+    missing_modules = []
+
+    for module in required_modules:
+        try:
+            __import__(module)
+        except ImportError as e:
+            missing_modules.append(f"{module}: {e}")
+
+    assert not missing_modules, f"Missing required validation modules:\n" + "\n".join(
+        missing_modules
+    )
