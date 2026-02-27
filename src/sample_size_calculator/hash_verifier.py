@@ -77,11 +77,17 @@ class HashVerifier:
             return None
 
     @staticmethod
-    def set_validated_hash(hash_value: str) -> None:
+    def set_validated_hash(
+        hash_value: str,
+        validation_date: str | None = None,
+        validator: str | None = None,
+    ) -> None:
         """Store validated hash to configuration file.
 
         Args:
             hash_value: SHA-256 hash string to store as validated
+            validation_date: Optional date of validation (ISO format)
+            validator: Optional name of the validator
 
         Raises:
             IOError: If the configuration file cannot be written
@@ -91,8 +97,8 @@ class HashVerifier:
 
         config = {
             "validated_hash": hash_value,
-            "validation_date": None,  # To be set by validation suite
-            "validator": None,  # To be set by validation suite
+            "validation_date": validation_date,
+            "validator": validator,
         }
 
         try:
@@ -103,10 +109,15 @@ class HashVerifier:
 
     @staticmethod
     def is_validated_state() -> bool:
-        """Check if current engine hash matches validated hash.
+        """Check if current engine hash matches validated hash and validation is complete.
+
+        Validation is considered complete when:
+        1. Validated hash exists (not None)
+        2. Current engine hash matches validated hash
+        3. Both validation_date and validator are not null
 
         Returns:
-            True if current hash matches validated hash, False otherwise
+            True if current hash matches validated hash and validation is complete, False otherwise
         """
         current_hash = HashVerifier.get_engine_hash()
         validated_hash = HashVerifier.get_validated_hash()
@@ -114,7 +125,22 @@ class HashVerifier:
         if validated_hash is None:
             return False
 
-        return current_hash == validated_hash
+        if current_hash != validated_hash:
+            return False
+
+        # Check that validation_date and validator are not null
+        try:
+            with open(HashVerifier.VALIDATED_HASH_FILE) as f:
+                config = json.load(f)
+                if (
+                    config.get("validation_date") is None
+                    or config.get("validator") is None
+                ):
+                    return False
+        except (OSError, json.JSONDecodeError):
+            return False
+
+        return True
 
 
 # Convenience functions for direct import

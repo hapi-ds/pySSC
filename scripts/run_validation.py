@@ -348,7 +348,11 @@ def main():
         print("Storing Validated Hash...")
         print("=" * 60)
 
-        HashVerifier.set_validated_hash(engine_hash)
+        HashVerifier.set_validated_hash(
+                    engine_hash,
+                    validation_date=datetime.now().isoformat(),
+                    validator=args.tester,
+                )
         print(f"✅ Validated hash stored: {engine_hash}")
         print("\n🎉 VALIDATION COMPLETE - ALL TESTS PASSED")
     else:

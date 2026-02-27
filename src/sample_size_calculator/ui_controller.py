@@ -156,12 +156,26 @@ class UIController:
         
         # JupyterLab manager
         self.jupyter_manager = JupyterManager()
+        
+        # Validation button reference (will be set in create_app)
+        self.validation_button: ui.button | None = None
 
     def _generate_session_id(self) -> str:
         """Generate unique session identifier using uuid4."""
         return str(uuid.uuid4())
 
+    def _update_validation_button_color(self) -> None:
+        """Update validation button color based on validation state."""
+        if self.validation_button is None:
+            return
+        
+        if is_validated_state():
+            self.validation_button.props("color=green")
+        else:
+            self.validation_button.props("color=red")
+
     def create_app(self) -> None:
+        self._update_validation_button_color()
         """Create the main NiceGUI application with tabs."""
         ui.page_title("Sample Size Calculator")
 
@@ -173,11 +187,11 @@ class UIController:
                 ).classes("text-subtitle2")
 
             # Validation button in header
-            ui.button(
+            self.validation_button = ui.button(
                 "Run Full Validation (IQ/OQ/PQ)",
                 on_click=self._handle_validation_button_click,
                 icon="verified",
-                color="red",
+                color="green" if is_validated_state() else "red",
             ).props("outline")
 
         with ui.tabs().classes("w-full") as tabs:
@@ -2988,6 +3002,7 @@ For additional assistance:
                 result_label.text = f"✅ {message}"
                 result_label.classes("text-green-600")
                 ui.notify("Validation completed successfully!", type="positive")
+                self._update_validation_button_color()
             else:
                 result_label.text = f"⚠️ {message}"
                 result_label.classes("text-orange-600")

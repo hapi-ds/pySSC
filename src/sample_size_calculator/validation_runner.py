@@ -283,7 +283,11 @@ class ValidationRunner:
             # Store validated hash if all tests passed
             if self.all_passed:
                 self._report_progress("Storing validated hash...")
-                HashVerifier.set_validated_hash(engine_hash)
+                HashVerifier.set_validated_hash(
+                    engine_hash,
+                    validation_date=datetime.now().isoformat(),
+                    validator=tester_name,
+                )
                 self._report_progress("✅ VALIDATION COMPLETE - ALL TESTS PASSED")
                 return (
                     True,
