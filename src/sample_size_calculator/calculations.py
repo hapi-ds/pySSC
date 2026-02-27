@@ -137,6 +137,79 @@ class CalculationEngine:
             results.append((c, n))
         return results
 
+
+    @staticmethod
+    def finite_population_correction(n0: int, population_size: int) -> float:
+        """Apply finite population correction formula.
+
+        Formula: n = (N * n0) / (N - 1 + n0)
+        where N = population size and n0 = sample size for large populations
+
+        This correction is applied when the sample size is a significant fraction
+        of the population (typically >5%).
+
+        Args:
+            n0: Sample size for large populations (uncorrected)
+            population_size: Total population size (must be > 1)
+
+        Returns:
+            Corrected sample size (float)
+
+        Raises:
+            ValueError: If inputs are invalid
+
+        Example:
+            >>> CalculationEngine.finite_population_correction(59, 1000)
+            56.32...
+            >>> CalculationEngine.finite_population_correction(59, 100)
+            35.74...
+        """
+        if n0 < 1:
+            raise ValueError("Sample size must be at least 1")
+        if population_size <= 1:
+            raise ValueError("Population size must be greater than 1")
+
+        return (population_size * n0) / (population_size - 1 + n0)
+
+    @staticmethod
+    def sensitivity_analysis_with_correction(
+        confidence: float,
+        reliability: float,
+        population_size: int | None = None,
+    ) -> list[tuple[int, int, float | None]]:
+        """Calculate sample sizes with optional finite population correction.
+
+        Args:
+            confidence: Confidence level as percentage (0-100)
+            reliability: Reliability level as percentage (0-100)
+            population_size: Optional population size for correction
+
+        Returns:
+            List of (c, n_original, n_corrected) tuples
+            where n_corrected is None if no correction applied
+        """
+        results = []
+        for c in [0, 1, 2, 3]:
+            if c == 0:
+                n_original = CalculationEngine.success_run_theorem(
+                    confidence, reliability
+                )
+            else:
+                n_original = CalculationEngine.cumulative_binomial(
+                    confidence, reliability, c
+                )
+
+            if population_size is not None and population_size > 1:
+                n_corrected = CalculationEngine.finite_population_correction(
+                    n_original, population_size
+                )
+            else:
+                n_corrected = None
+
+            results.append((c, n_original, n_corrected))
+        return results
+
+    @staticmethod
     @staticmethod
     def one_sided_tolerance_factor(
         n: int, confidence: float, reliability: float

@@ -282,6 +282,26 @@ class UIController:
                     "text-caption"
                 )
 
+            # Population size input (optional)
+            with ui.row().classes("w-full items-center"):
+                population_size_input = (
+                    ui.number(
+                        label="Population Size (N)",
+                        value=None,
+                        min=1,
+                        step=1,
+                        precision=0,
+                    )
+                    .classes("w-64")
+                    .tooltip(
+                        "Total population size for finite population correction. "
+                        "Leave empty to skip correction.",
+                    )
+                )
+                ui.label("(Optional: leave empty to skip correction)").classes(
+                    "text-caption"
+                )
+
         # Calculate button
         with ui.row().classes("w-full"):
             calculate_btn = ui.button(
@@ -320,6 +340,7 @@ class UIController:
                 confidence = confidence_input.value
                 reliability = reliability_input.value
                 allowable_failures = allowable_failures_input.value
+                population_size = population_size_input.value
 
                 if confidence is None or reliability is None:
                     ui.notify(
@@ -343,10 +364,15 @@ class UIController:
 
                 # Perform calculation
                 if inputs.allowable_failures is None:
-                    # Sensitivity analysis
-                    results = CalculationEngine.sensitivity_analysis(
-                        confidence, reliability
-                    )
+                    # Sensitivity analysis with optional population correction
+                    if population_size is not None and population_size > 1:
+                        results = CalculationEngine.sensitivity_analysis_with_correction(
+                            confidence, reliability, int(population_size)
+                        )
+                    else:
+                        results = CalculationEngine.sensitivity_analysis_with_correction(
+                            confidence, reliability, None
+                        )
 
                     # Store results
                     self.module_a_results = {
@@ -363,17 +389,36 @@ class UIController:
                         ui.label("Method: Sensitivity Analysis").classes("text-body1")
                         ui.separator()
 
-                        # Create table
-                        table_data = {
-                            "columnDefs": [
+                        # Create table with original and corrected sample sizes
+                        if population_size is not None and population_size > 1:
+                            # Show both original and corrected values
+                            column_defs = [
+                                {"headerName": "Allowable Failures (c)", "field": "c"},
+                                {
+                                    "headerName": "Sample Size (Original)",
+                                    "field": "n_original",
+                                },
+                                {
+                                    "headerName": "Sample Size (Corrected for N={})".format(int(population_size)),
+                                    "field": "n_corrected",
+                                },
+                            ]
+                            row_data = [
+                                {"c": c, "n_original": n_orig, "n_corrected": round(n_corr, 2)}
+                                for c, n_orig, n_corr in results
+                            ]
+                        else:
+                            # Show only original values (no correction)
+                            column_defs = [
                                 {"headerName": "Allowable Failures (c)", "field": "c"},
                                 {
                                     "headerName": "Required Sample Size (n)",
                                     "field": "n",
                                 },
-                            ],
-                            "rowData": [{"c": c, "n": n} for c, n in results],
-                        }
+                            ]
+                            row_data = [{"c": c, "n": n} for c, n, _ in results]
+                        
+                        table_data = {"columnDefs": column_defs, "rowData": row_data}
                         ui.aggrid(table_data).classes("w-full")
 
                     # Log calculation
@@ -398,25 +443,44 @@ class UIController:
                         )
                         method = "Cumulative Binomial"
 
+                    # Apply finite population correction if applicable
+                    n_original = n
+                    if population_size is not None and population_size > 1:
+                        n_corrected = CalculationEngine.finite_population_correction(n, int(population_size))
+                        method_display = f"{method} (FPC applied)"
+                    else:
+                        n_corrected = None
+                        method_display = method
+
                     # Store results
                     self.module_a_results = {
                         "type": "single",
                         "confidence": confidence,
                         "reliability": reliability,
                         "allowable_failures": inputs.allowable_failures,
-                        "sample_size": n,
-                        "method": method,
+                        "sample_size_original": n_original,
+                        "sample_size_corrected": n_corrected,
+                        "population_size": int(population_size) if population_size is not None else None,
+                        "method": method_display,
                     }
 
                     # Display results
                     results_container.clear()
                     with results_container:
                         ui.label("Calculation Results").classes("text-h6")
-                        ui.label(f"Method: {method}").classes("text-body1")
+                        ui.label(f"Method: {method_display}").classes("text-body1")
                         ui.separator()
-                        ui.label(f"Required Sample Size (n): {n}").classes(
-                            "text-h4 text-primary"
+                        ui.label(f"Original Sample Size (for large populations): {n_original}").classes(
+                            "text-body2 text-secondary"
                         )
+                        if n_corrected is not None:
+                            ui.label(f"Corrected Sample Size (N={int(population_size)}): {round(n_corrected, 2)}").classes(
+                                "text-h4 text-primary"
+                            )
+                        else:
+                            ui.label(f"Required Sample Size (n): {n_original}").classes(
+                                "text-h4 text-primary"
+                            )
 
                     # Log calculation
                     self.logger.log_calculation(
@@ -476,9 +540,24 @@ class UIController:
                         "reliability": self.module_a_results["reliability"],
                         "allowable_failures": "Sensitivity Analysis (c=0,1,2,3)",
                     }
+                    results_list = self.module_a_results.get("results", [])
+                    
+                    # Format results to show both original and corrected
+                    formatted_results = []
+                    for item in results_list:
+                        if len(item) == 3:  # (c, n_original, n_corrected)
+                            c, n_orig, n_corr = item
+                            if n_corr is not None:
+                                formatted_results.append(f"c={c}: n_original={n_orig}, n_corrected={round(n_corr, 2)}")
+                            else:
+                                formatted_results.append(f"c={c}: n={n_orig}")
+                        else:  # (c, n)
+                            c, n = item
+                            formatted_results.append(f"c={c}: n={n}")
+                    
                     results = {
                         "method": "Sensitivity Analysis",
-                        "results": str(self.module_a_results["results"]),
+                        "results": "\n".join(formatted_results),
                     }
                     method_path = "Sensitivity Analysis: Success Run Theorem and Cumulative Binomial"
                 else:
@@ -489,10 +568,20 @@ class UIController:
                             "allowable_failures"
                         ],
                     }
+                    sample_size_original = self.module_a_results.get("sample_size_original")
+                    sample_size_corrected = self.module_a_results.get("sample_size_corrected")
+                    
                     results = {
                         "method": self.module_a_results["method"],
-                        "sample_size": self.module_a_results["sample_size"],
+                        "sample_size_original": sample_size_original,
+                        "sample_size_corrected": sample_size_corrected,
                     }
+                    
+                    # Include population size if correction was applied
+                    if self.module_a_results.get("population_size") is not None:
+                        results["population_size"] = self.module_a_results["population_size"]
+                        if sample_size_corrected is not None:
+                            method_path = f"{self.module_a_results['method']} (FPC: N={int(self.module_a_results['population_size'])})"
                     method_path = self.module_a_results["method"]
 
                 report_data = CalculationReport(
@@ -555,9 +644,24 @@ class UIController:
                         "reliability": self.module_a_results["reliability"],
                         "allowable_failures": "Sensitivity Analysis (c=0,1,2,3)",
                     }
+                    results_list = self.module_a_results.get("results", [])
+                    
+                    # Format results to show both original and corrected
+                    formatted_results = []
+                    for item in results_list:
+                        if len(item) == 3:  # (c, n_original, n_corrected)
+                            c, n_orig, n_corr = item
+                            if n_corr is not None:
+                                formatted_results.append(f"c={c}: n_original={n_orig}, n_corrected={round(n_corr, 2)}")
+                            else:
+                                formatted_results.append(f"c={c}: n={n_orig}")
+                        else:  # (c, n)
+                            c, n = item
+                            formatted_results.append(f"c={c}: n={n}")
+                    
                     results = {
                         "method": "Sensitivity Analysis",
-                        "results": str(self.module_a_results["results"]),
+                        "results": "\n".join(formatted_results),
                     }
                     method_path = "Sensitivity Analysis: Success Run Theorem and Cumulative Binomial"
                 else:
@@ -568,10 +672,20 @@ class UIController:
                             "allowable_failures"
                         ],
                     }
+                    sample_size_original = self.module_a_results.get("sample_size_original")
+                    sample_size_corrected = self.module_a_results.get("sample_size_corrected")
+                    
                     results = {
                         "method": self.module_a_results["method"],
-                        "sample_size": self.module_a_results["sample_size"],
+                        "sample_size_original": sample_size_original,
+                        "sample_size_corrected": sample_size_corrected,
                     }
+                    
+                    # Include population size if correction was applied
+                    if self.module_a_results.get("population_size") is not None:
+                        results["population_size"] = self.module_a_results["population_size"]
+                        if sample_size_corrected is not None:
+                            method_path = f"{self.module_a_results['method']} (FPC: N={int(self.module_a_results['population_size'])})"
                     method_path = self.module_a_results["method"]
 
                 report_data = CalculationReport(
@@ -2552,16 +2666,18 @@ It calculates the minimum sample size required to demonstrate product reliabilit
 ### Input Requirements
 - **Confidence Level (%)**: The statistical confidence that the true reliability exceeds the specified level (typically 90%, 95%, or 99%)
 - **Reliability Level (%)**: The minimum acceptable proportion of passing units (e.g., 95% means at most 5% failures allowed)
-- **Allowable Failures**: Maximum number of failures permitted in the sample while still demonstrating reliability
+- **[Optional] Allowable Failures**: Maximum number of failures permitted in the sample while still demonstrating reliability
+- **[Optional] Population Size**: Total number of population
 
 ### Calculation Methodology
 Module A uses binomial distribution theory to determine sample sizes. The calculation ensures that:
 - If you observe ≤ allowable failures in your sample, you can claim the specified reliability at the given confidence level
 - The method is conservative and provides one-sided confidence bounds
 - Larger confidence levels or higher reliability requirements increase the required sample size
+- If your sample is > 5% of the population, FPC (finite population correction) matters. If population size is provided, sample size is corrected with formula n = (N * n0) / (N - 1 + n0) with N=population size, n0=sample size of infinite population.
 
 ### Interpretation of Results
-- **Required Sample Size (n)**: The minimum number of units you must test
+- **Required Sample Size (n)**: The minimum number of units you must test (original and corrected)
 - **Decision Rule**: Test n units. If failures ≤ allowable failures, the product meets reliability requirements
 - **Example**: n=100, allowable failures=2 means "Test 100 units; if 0, 1, or 2 fail, accept the lot"
 
