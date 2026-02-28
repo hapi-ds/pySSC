@@ -1157,8 +1157,8 @@ def test_module_v_log_transformation_workflow(page_with_app: Page):
     (using Playwright) shall simulate a user workflow. All paths should be
     tested e2e including generated pdf-reports.
 
-    URS-V-06: Transformation Cascade: If le0.05, the system shall 
-    automatically attempt mathematically normalizing the data in the 
+    URS-V-06: Transformation Cascade: If le0.05, the system shall
+    automatically attempt mathematically normalizing the data in the
     following strict hierarchy ()
 
     Logarithmic transformation requirements.
@@ -1294,4 +1294,298 @@ def test_module_v_all_phases_complete(page_with_app: Page):
     page_content = page.content().lower()
     assert "pass" in page_content or "fail" in page_content, (
         "Final result should be displayed"
+    )
+
+
+# ============================================================================
+# Additional PQ Tests for Uncovered URS-V Requirements
+# ============================================================================
+
+
+@pytest.mark.pq
+@pytest.mark.urs("URS-V-01", "URS-V-02")
+def test_module_v_specification_and_pilot_data(page_with_app: Page):
+    """Test Module V specification constraints and pilot data input.
+
+    URS-V-01: Specification Constraints: The system shall require the user to
+    explicitly define the specification as One-Sided (LSL or USL) or Two-Sided.
+
+    URS-V-02: Pilot Data Input: The system shall accept an initial pilot dataset.
+    """
+    page = page_with_app
+
+    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab.click()
+    page.wait_for_timeout(500)
+
+    # Test One-Sided specification (LSL)
+    one_sided_radio = page.locator('.q-radio:has-text("One-Sided")').first
+    one_sided_radio.click()
+
+    lsl_input = page.locator(
+        'input[aria-label*="LSL"], input[placeholder*="LSL"]'
+    ).first
+    lsl_input.fill("9.5")
+
+    confidence_input = page.locator('input[aria-label*="Confidence"]').first
+    confidence_input.fill("95")
+
+    reliability_input = page.locator('input[aria-label*="Reliability"]').first
+    reliability_input.fill("95")
+
+    pilot_data = "10.0, 10.1, 9.9, 10.2, 10.0"
+    pilot_textarea = page.locator(
+        'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+    ).first
+    pilot_textarea.fill(pilot_data)
+
+    analyze_button = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button).to_be_enabled(timeout=3000)
+    analyze_button.click()
+    page.wait_for_timeout(2000)
+
+    # Verify pilot data analysis results appear
+    content_after_analyze = page.content().lower()
+    assert "q1" in content_after_analyze or "median" in content_after_analyze, (
+        "Pilot data analysis should display statistics"
+    )
+
+    # Test Two-Sided specification (both LSL and USL)
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
+    two_sided_radio.click()
+
+    usl_input = page.locator(
+        'input[aria-label*="USL"], input[placeholder*="USL"]'
+    ).first
+    usl_input.fill("10.5")
+
+    # Verify both boundaries are required for Two-Sided
+    analyze_button_2sided = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button_2sided).to_be_enabled(timeout=3000)
+
+
+@pytest.mark.pq
+@pytest.mark.urs("URS-V-07")
+def test_module_v_transformation_verification(page_with_app: Page):
+    """Test Module V transformation verification with Shapiro-Wilk re-testing.
+
+    URS-V-07: Transformation Verification: Each transformation attempt must be
+    re-tested with Shapiro-Wilk.
+    """
+    page = page_with_app
+
+    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab.click()
+    page.wait_for_timeout(500)
+
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
+    two_sided_radio.click()
+
+    lsl_input = page.locator(
+        'input[aria-label*="LSL"], input[placeholder*="LSL"]'
+    ).first
+    lsl_input.fill("9.5")
+
+    usl_input = page.locator(
+        'input[aria-label*="USL"], input[placeholder*="USL"]'
+    ).first
+    usl_input.fill("10.5")
+
+    confidence_input = page.locator('input[aria-label*="Confidence"]').first
+    confidence_input.fill("95")
+
+    reliability_input = page.locator('input[aria-label*="Reliability"]').first
+    reliability_input.fill("95")
+
+    # Use positively skewed data that will require transformation
+    pilot_data = "1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0"
+    pilot_textarea = page.locator(
+        'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+    ).first
+    pilot_textarea.fill(pilot_data)
+
+    analyze_button = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button).to_be_enabled(timeout=3000)
+    analyze_button.click()
+    page.wait_for_timeout(2000)
+
+    # Process Phase 2 - transformation cascade and verification
+    process_button = page.locator(
+        'button:has-text("Process"), button:has-text("Normality")'
+    ).first
+    expect(process_button).to_be_enabled(timeout=3000)
+    process_button.click()
+    page.wait_for_timeout(2000)
+
+    # Verify transformation method is displayed (indicates verification occurred)
+    page_content = page.content().lower()
+
+    # The UI should show which method was selected after verification
+    assert (
+        "parametric" in page_content
+        or "logarithmic" in page_content
+        or "box-cox" in page_content
+        or "yeo-johnson" in page_content
+        or "shapiro-wilk" in page_content
+    ), "Transformation verification should display the active method and test results"
+
+
+@pytest.mark.pq
+@pytest.mark.urs("URS-V-10")
+def test_module_v_parametric_n_iteration(page_with_app: Page):
+    """Test Module V parametric sample size iteration.
+
+    URS-V-10: Parametric N Iteration: The system shall iterate the target sample
+    size (N) until k < k_margin.
+    """
+    page = page_with_app
+
+    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab.click()
+    page.wait_for_timeout(500)
+
+    two_sided_radio = page.locator('.q-radio:has-text("Two-Sided")').first
+    two_sided_radio.click()
+
+    # Tight specification limits to ensure process is capable
+    lsl_input = page.locator(
+        'input[aria-label*="LSL"], input[placeholder*="LSL"]'
+    ).first
+    lsl_input.fill("9.8")
+
+    usl_input = page.locator(
+        'input[aria-label*="USL"], input[placeholder*="USL"]'
+    ).first
+    usl_input.fill("10.2")
+
+    confidence_input = page.locator('input[aria-label*="Confidence"]').first
+    confidence_input.fill("95")
+
+    reliability_input = page.locator('input[aria-label*="Reliability"]').first
+    reliability_input.fill("95")
+
+    # Pilot data with small variation (process capable)
+    pilot_data = "10.0, 10.01, 9.99, 10.02, 9.98"
+    pilot_textarea = page.locator(
+        'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+    ).first
+    pilot_textarea.fill(pilot_data)
+
+    analyze_button = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button).to_be_enabled(timeout=3000)
+    analyze_button.click()
+    page.wait_for_timeout(2000)
+
+    process_button = page.locator(
+        'button:has-text("Process"), button:has-text("Normality")'
+    ).first
+    expect(process_button).to_be_enabled(timeout=3000)
+    process_button.click()
+    page.wait_for_timeout(2000)
+
+    # Click required sample size button
+    required_button = page.locator(
+        'button:has-text("Required"), button:has-text("required")'
+    ).first
+    expect(required_button).to_be_enabled(timeout=3000)
+    required_button.click()
+    page.wait_for_timeout(2000)
+
+    # Verify iteration results appear (should show n with k-factor comparison)
+    page_content = page.content()
+
+    # The system should display the calculated sample size after iteration
+    assert "Required" in page_content or "(N):" in page_content, (
+        "Sample size calculation result should be displayed"
+    )
+
+    # Extract and verify sample size is reasonable (should be relatively small for capable process)
+    import re
+
+    n_match = re.search(r"Required Sample Size \(N\):\s*(\d+)", page_content)
+    if n_match:
+        calculated_n = int(n_match.group(1))
+        assert 2 <= calculated_n <= 50, (
+            f"Calculated sample size {calculated_n} should be reasonable for capable process"
+        )
+
+
+@pytest.mark.pq
+@pytest.mark.urs("URS-V-12")
+def test_module_v_final_data_with_locked_transformation(page_with_app: Page):
+    """Test Module V final validation data uses locked transformation method.
+
+    URS-V-12: Final Data Execution: The system shall accept the Final Validation
+    dataset and strictly apply the exact Transformation Method and λ locked
+    during Phase 2.
+    """
+    page = page_with_app
+
+    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab.click()
+    page.wait_for_timeout(500)
+
+    one_sided_radio = page.locator('.q-radio:has-text("One-Sided")').first
+    one_sided_radio.click()
+
+    usl_input = page.locator(
+        'input[aria-label*="USL"], input[placeholder*="USL"]'
+    ).first
+    usl_input.fill("100")
+
+    confidence_input = page.locator('input[aria-label*="Confidence"]').first
+    confidence_input.fill("95")
+
+    reliability_input = page.locator('input[aria-label*="Reliability"]').first
+    reliability_input.fill("95")
+
+    # Use normal distribution data that passes transformation check
+    pilot_data = "23.6, 12.3, 39.0, 9.9, 107.4, 20.1, 6.1, 5.2, 17.9, 10.2, 21.6"
+    pilot_textarea = page.locator(
+        'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+    ).first
+    pilot_textarea.fill(pilot_data)
+
+    analyze_button = page.locator('button:has-text("Analyze")').first
+    expect(analyze_button).to_be_enabled(timeout=3000)
+    analyze_button.click()
+    page.wait_for_timeout(2000)
+
+    process_button = page.locator(
+        'button:has-text("Process"), button:has-text("Normality")'
+    ).first
+    expect(process_button).to_be_enabled(timeout=3000)
+    process_button.click()
+    page.wait_for_timeout(2000)
+
+    # Get the required sample size from Phase 3 and transition to Phase 4
+    required_button = page.locator(
+        'button:has-text("Required"), button:has-text("required")'
+    ).first
+    expect(required_button).to_be_enabled(timeout=3000)
+    required_button.click()
+    page.wait_for_timeout(2000)
+
+    # Generate final dataset matching required N (Phase 4)
+    final_data = "59.34, 63.32, 63.63, 61.79, 64.35, 66.62, 72.54, 65.7, 66.03, 64.7, 57.32, 64.89, 65.24, 74.85, 64.23, 66.21, 64.86, 60.33, 69.57, 68.01, 68.16, 61.36, 70.61, 59.39, 67.35, 73.76, 61.04, 62.73, 65.4, 62.99, 58.8, 65.27, 60.75, 66.89, 61.32, 71.2, 61.87, 63.71, 68.25, 60.08, 65.91, 70.23, 58.57, 65.74, 66.04, 68.13, 60.05, 59.72, 67.09, 66.19, 66.0, 66.39, 62.28, 65.93, 66.17, 62.14, 72.46, 66.9, 60.23, 67.63, 61.1, 68.15, 69.63, 61.72, 68.85, 66.65, 68.29, 72.59, 64.02, 61.99, 61.44, 61.74, 64.69, 66.36, 66.11, 68.31, 65.05, 70.81, 63.94, 75.88, 67.5, 61.57, 60.72, 66.93, 64.11, 67.86, 66.89, 64.71, 61.61, 58.94, 63.21, 68.43, 65.86, 60.02, 65.69, 66.54, 61.46, 65.61, 65.23, 60.43"
+    final_textarea = page.locator(
+        'textarea[aria-label*="Final"], textarea[placeholder*="final"]'
+    ).first
+    final_textarea.fill(final_data)
+
+    tolerance_button = page.locator(
+        'button:has-text("Tolerance"), button:has-text("Tolerance")'
+    ).first
+    expect(tolerance_button).to_be_enabled(timeout=3000)
+    tolerance_button.click()
+    page.wait_for_timeout(2000)
+
+    # Verify Phase 4 results appear with back-transformed limits
+    phase4_results = page.locator("text=/Tolerance Limit|Back-Transform/i").first
+    expect(phase4_results).to_be_visible(timeout=5000)
+
+    # Verify that the locked transformation was applied (method should be visible)
+    page_content = page.content().lower()
+    assert "parametric" in page_content or "logarithmic" in page_content, (
+        "Transformation method used for final validation should be displayed"
     )

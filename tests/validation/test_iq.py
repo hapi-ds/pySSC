@@ -242,6 +242,7 @@ def test_hash_idempotence():
 
     assert all(r == results[0] for r in results), "Hash calculation must be idempotent"
 
+
 @pytest.mark.iq
 @pytest.mark.urs("URS-REP-01")
 def test_report_generator_module_present():
@@ -266,7 +267,7 @@ def test_report_generator_module_present():
 def test_vtm_generator_module_present():
     """Verify VTM generator module is present and importable.
 
-    URS-VTM-01: The VTM must include the URS ID AND corresponding text	
+    URS-VTM-01: The VTM must include the URS ID AND corresponding text
 
     """
     from sample_size_calculator.vtm_generator import (
@@ -310,3 +311,67 @@ def test_all_validation_modules_importable():
     assert not missing_modules, f"Missing required validation modules:\n" + "\n".join(
         missing_modules
     )
+
+
+# ============================================================================
+# URS-VTM Tests (Verification Traceability Matrix) - IQ
+# ============================================================================
+
+
+@pytest.mark.iq
+@pytest.mark.urs("URS-VTM-01", "URS-VTM-02", "URS-VTM-03")
+def test_vtm_structure_requirements():
+    """Test that VTM meets URS-VTM-01, URS-VTM-02, and URS-VTM-03 requirements.
+
+    URS-VTM-01: The VTM must include the URS ID AND corresponding text
+    URS-VTM-02: The VTM must include the test id
+    URS-VTM-03: The VTM must include the test result
+
+    SRS 28.1: THE Verification_Traceability_Matrix SHALL include the URS_ID field
+    SRS 28.2: THE Verification_Traceability_Matrix SHALL include the Requirement text
+    SRS 28.3: THE Verification_Traceability_Matrix SHALL include the Test_ID field
+    SRS 28.4: THE Verification_Traceability_Matrix SHALL include the Result field
+    """
+    from sample_size_calculator.vtm_generator import VTMGenerator
+
+    # Create test results with required fields
+    test_results = [
+        {
+            "urs_id": "URS-IQ-01",
+            "requirement": "Installation Qualification (IQ): Dependencies must be strictly version-locked using a hash-based lockfile.",
+            "test_id": "tests/validation/test_iq.py::test_uv_lock_exists_and_valid",
+            "result": "PASSED",
+        },
+        {
+            "urs_id": "URS-VTM-02",
+            "requirement": "The VTM must include the test id",
+            "test_id": "tests/validation/test_iq.py::test_vtm_structure_requirements",
+            "result": "PASSED",
+        },
+    ]
+
+    # Generate VTM
+    vtm = VTMGenerator.generate_vtm(test_results, {})
+
+    # Verify required columns exist
+    required_columns = ["URS_ID", "Requirement", "Test_ID", "Result"]
+    for col in required_columns:
+        assert col in vtm.columns, f"VTM must contain column: {col}"
+
+    # Verify URS IDs are present
+    urs_ids = vtm["URS_ID"].tolist()
+    assert "URS-IQ-01" in urs_ids, "VTM must include URS-IQ-01"
+    assert "URS-VTM-02" in urs_ids, "VTM must include URS-VTM-02"
+
+    # Verify Test_IDs are present
+    test_ids = vtm["Test_ID"].tolist()
+    assert "tests/validation/test_iq.py::test_uv_lock_exists_and_valid" in test_ids, (
+        "VTM must include test IDs"
+    )
+    assert "tests/validation/test_iq.py::test_vtm_structure_requirements" in test_ids, (
+        "VTM must include this test's ID"
+    )
+
+    # Verify Results are present
+    results = vtm["Result"].tolist()
+    assert "PASSED" in results, "VTM must include test results"
