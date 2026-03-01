@@ -54,23 +54,30 @@ class JupyterManager:
             return False
 
         try:
-            # Check if running in Docker
-            in_docker = os.path.exists("/.dockerenv")
+            # Check if running in Docker (more reliable detection)
+            in_docker = (
+                os.path.exists("/.dockerenv")
+                or os.environ.get("DOCKER_CONTAINER", "false").lower() == "true"
+            )
 
             cmd = [
                 "jupyter",
                 "lab",
                 f"--port={self.port}",
-                f"--NotebookApp.token={self.token}",
+                "--port-retries=0",  # Don't retry on port conflict
+                f"--ServerApp.token={self.token}",
                 "--no-browser",
                 f"--notebook-dir={self.notebook_dir}",
-                "--NotebookApp.allow_origin='*'",
-                "--NotebookApp.disable_check_xsrf=True",
+                "--ServerApp.allow_origin='*'",
+                "--ServerApp.disable_check_xsrf=True",
             ]
 
             # Add --allow-root only if in Docker
             if in_docker:
                 cmd.append("--allow-root")
+                # Bind to all interfaces for container port mapping to work
+                # Use ServerApp.* instead of NotebookApp.* for JupyterLab 4.x
+                cmd.append("--ServerApp.ip=0.0.0.0")
 
             self.process = subprocess.Popen(
                 cmd,
@@ -86,7 +93,12 @@ class JupyterManager:
                 ui.notify("JupyterLab started successfully!", type="positive")
                 return True
             else:
-                ui.notify("Failed to start JupyterLab", type="negative")
+                # Get error output for debugging
+                stdout, stderr = (
+                    self.process.communicate() if self.process else ("", "")
+                )
+                error_msg = stderr.strip() or stdout.strip() or "Unknown error"
+                ui.notify(f"Failed to start JupyterLab: {error_msg}", type="negative")
                 return False
 
         except FileNotFoundError:
@@ -131,10 +143,21 @@ class JupyterManager:
     def get_url(self) -> str:
         """Get JupyterLab URL with token.
 
+        On Windows Docker, use 127.0.0.1 instead of localhost since
+        localhost resolves to the Windows host, not the container.
+
         Returns:
             Full URL to access JupyterLab
         """
-        return f"http://localhost:{self.port}/lab?token={self.token}"
+        # Detect if running in Docker on Windows
+        in_docker = (
+            os.path.exists("/.dockerenv")
+            or os.environ.get("DOCKER_CONTAINER", "false").lower() == "true"
+        )
+        is_windows = os.name == "nt"
+
+        host = "127.0.0.1" if (in_docker and is_windows) else "localhost"
+        return f"http://{host}:{self.port}/lab?token={self.token}"
 
     def get_status(self) -> str:
         """Get current status message.

@@ -14,9 +14,10 @@ services:
       context: .
       dockerfile: Dockerfile
     
-    # Map configurable port (default 8080) to container port 8080
+    # Map ports for web interface and JupyterLab
     ports:
-      - "${PORT:-8080}:8080"
+      - "${PORT:-8080}:8080"     # Web interface
+      - "8888:8888"               # JupyterLab (required for Windows Docker)
     
     # Volume mounts for data persistence and configuration
     volumes:
@@ -41,6 +42,10 @@ services:
       
       # Application port (internal)
       - PORT=8080
+      
+      # JupyterLab configuration (improved Docker detection for Windows)
+      - DOCKER_CONTAINER=true
+      - JUPYTER_PORT=8888
       
       # Python environment
       - PYTHONUNBUFFERED=1
