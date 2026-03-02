@@ -262,9 +262,17 @@ class ReportGenerator:
 
         # Save to reports directory (Requirement 27.1, 30.1)
         report_path = get_calculation_report_path()
-        save_report(pdf_bytes, report_path)
+        saved_path = save_report(pdf_bytes, report_path)
+        
+        # Sign the PDF with hash for tamper detection
+        try:
+            signature = PDFSignature.sign_pdf(pdf_bytes, report_data.engine_hash)
+            PDFSignature.save_signature(saved_path, signature)
+        except Exception:
+            # Signature failure should not prevent report generation
+            pass
 
-        return pdf_bytes, report_path
+        return pdf_bytes, saved_path
 
     @staticmethod
     def generate_validation_certificate(

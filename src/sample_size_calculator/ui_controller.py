@@ -723,6 +723,14 @@ class UIController:
                 # Save to reports/full/ directory
                 report_path = get_full_report_path()
                 saved_path = save_report(full_report_bytes, report_path)
+                
+                # Sign the PDF with hash for tamper detection
+                try:
+                    from sample_size_calculator.pdf_signature import PDFSignature
+                    signature = PDFSignature.sign_pdf(full_report_bytes, engine_hash)
+                    PDFSignature.save_signature(saved_path, signature)
+                except Exception:
+                    pass
 
                 # Log report generation
                 self.logger.log_report_generation(
@@ -2139,6 +2147,14 @@ class UIController:
                 # Save to reports/full/ directory
                 report_path = get_full_report_path()
                 saved_path = save_report(full_report_bytes, report_path)
+                
+                # Sign the PDF with hash for tamper detection
+                try:
+                    from sample_size_calculator.pdf_signature import PDFSignature
+                    signature = PDFSignature.sign_pdf(full_report_bytes, engine_hash)
+                    PDFSignature.save_signature(saved_path, signature)
+                except Exception:
+                    pass
 
                 # Log report generation
                 self.logger.log_report_generation(
