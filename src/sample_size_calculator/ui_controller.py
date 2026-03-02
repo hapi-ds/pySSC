@@ -524,6 +524,7 @@ class UIController:
         # Report generation handler
         def handle_generate_report() -> None:
             """Generate PDF report for Module A."""
+            ui.notify("📝 Generating Module A PDF report...", type="info")
             self.logger.log_button_click(
                 "generate_report_module_a", "Module_A", None, self.session_id
             )
@@ -618,7 +619,15 @@ class UIController:
                     pdf_bytes,
                     f"sample_size_report_module_a_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                 )
-                ui.notify("Report generated successfully", type="positive")
+                
+                # Log PDF generation
+                self.logger.log_report_generation(
+                    "Module A PDF Report",
+                    report_path,
+                    validation_state,
+                    self.session_id
+                )
+                ui.notify("✅ Module A PDF report saved and logged", type="positive")
 
             except Exception as e:
                 ui.notify(f"Report generation error: {e}", type="negative", timeout=0)
@@ -628,6 +637,7 @@ class UIController:
         # Full report generation handler
         def handle_generate_full_report() -> None:
             """Generate comprehensive full report for Module A."""
+            ui.notify("📝 Generating Module A full report...", type="info")
             self.logger.log_button_click(
                 "generate_full_report_module_a", "Module_A", None, self.session_id
             )
@@ -732,7 +742,15 @@ class UIController:
                     full_report_bytes,
                     f"full_report_module_a_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                 )
-                ui.notify("Full report generated successfully", type="positive")
+                
+                # Log PDF generation
+                self.logger.log_report_generation(
+                    "Module A Full Report",
+                    saved_path,
+                    validation_state,
+                    self.session_id
+                )
+                ui.notify("✅ Module A full report generated successfully", type="positive")
 
             except Exception as e:
                 ui.notify(
@@ -1928,6 +1946,7 @@ class UIController:
         # Report generation handler
         def handle_generate_v_report() -> None:
             """Generate PDF report for Module V."""
+            ui.notify("📝 Generating Module V PDF report...", type="info")
             self.logger.log_button_click(
                 "generate_report_module_v", "Module_V", "Phase_4", self.session_id
             )
@@ -2019,7 +2038,15 @@ class UIController:
                     pdf_bytes,
                     f"sample_size_report_module_v_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                 )
-                ui.notify("Report generated successfully", type="positive")
+                
+                # Log PDF generation
+                self.logger.log_report_generation(
+                    "Module V PDF Report",
+                    report_path,
+                    validation_state,
+                    self.session_id
+                )
+                ui.notify("✅ Module V PDF report saved and logged", type="positive")
 
             except Exception as e:
                 ui.notify(f"Report generation error: {e}", type="negative", timeout=0)
@@ -2029,6 +2056,7 @@ class UIController:
         # Full report generation handler for Module V
         def handle_generate_v_full_report() -> None:
             """Generate comprehensive full report for Module V."""
+            ui.notify("📝 Generating Module V full report...", type="info")
             self.logger.log_button_click(
                 "generate_full_report_module_v", "Module_V", "Phase_4", self.session_id
             )
@@ -2130,7 +2158,15 @@ class UIController:
                     full_report_bytes,
                     f"full_report_module_v_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                 )
-                ui.notify("Full report generated successfully", type="positive")
+                
+                # Log PDF generation
+                self.logger.log_report_generation(
+                    "Module V Full Report",
+                    saved_path,
+                    validation_state,
+                    self.session_id
+                )
+                ui.notify("✅ Module V full report generated successfully", type="positive")
 
             except Exception as e:
                 ui.notify(

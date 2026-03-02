@@ -224,3 +224,4 @@ class ValidationCertificate(BaseModel):
     system_info: dict
     test_results: list[dict]  # [{"urs_id": "...", "test_id": "...", "status": "..."}]
     validated_hash: str
+    pdf_test_results: list[dict] = []  # PDF validation test results

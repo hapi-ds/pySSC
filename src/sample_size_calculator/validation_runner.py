@@ -29,6 +29,7 @@ class ValidationRunner:
         """
         self.progress_callback = progress_callback
         self.test_results: list[dict] = []
+        self.pdf_test_results: list[dict] = []  # PDF validation test results
         self.all_passed = True
 
     def _report_progress(self, message: str) -> None:
@@ -108,7 +109,6 @@ class ValidationRunner:
 
             if "::" in test_id:
                 # Parse the marker directly from the source file
-                import re
 
                 test_file_path = test_id.split("::")[0]
                 try:
@@ -205,11 +205,12 @@ class ValidationRunner:
                 HashVerifier.VALIDATED_HASH_FILE.unlink()
                 self._report_progress("Removed previous validation hash")
             
-            self._report_progress("Starting validation suite...")
-            self._report_progress(
-                f"Tester: {tester_name}, Date: {datetime.now().isoformat()}"
-            )
-
+            self._report_progress("=" * 60)
+            self._report_progress("🚀 VALIDATION PROCESS STARTED")
+            self._report_progress(f"👤 Tester: {tester_name}")
+            self._report_progress(f"📅 Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            self._report_progress("=" * 60)
+            
             # Run IQ tests
             self._report_progress("Running IQ (Installation Qualification) tests...")
             iq_data = self._run_test_suite("tests/validation/test_iq.py", "iq")
@@ -248,6 +249,63 @@ class ValidationRunner:
                     self._report_progress("✅ PQ Tests PASSED")
             else:
                 self._report_progress("⚠️  Skipping PQ tests (app is running)")
+            
+            # Run PDF validation tests
+            self._report_progress("")
+            self._report_progress("=" * 60)
+            self._report_progress("📊 Running PDF Validation Tests...")
+            self._report_progress("=" * 60)
+            
+            try:
+                import subprocess
+                pdf_result = subprocess.run(
+                    ["uv", "run", "pytest", "tests/validation/test_pq_pdf_validation.py::TestModuleVPDFValidation", "-v"],
+                    capture_output=True,
+                    text=True,
+                    timeout=300,
+                )
+                
+                # Count passed/failed from output
+                stdout = pdf_result.stdout + "\n" + pdf_result.stderr
+                
+                # Parse pytest summary to extract actual test results
+                import re
+                passed_count = 0
+                failed_count = 0
+                
+                # Extract PDF test results by scanning each line
+                for line in stdout.split('\n'):
+                    if 'test_module_v_pdf_contains_confidence_reliability' in line and 'test_pq_pdf_validation' in line:
+                        if 'PASSED' in line and 'FAILED' not in line:
+                            status = "PASSED"
+                        elif 'FAILED' in line:
+                            status = "FAILED"
+                        else:
+                            continue
+                        
+                        self.pdf_test_results.append({
+                            "urs_id": "URS-REP-01",
+                            "test_id": "test_pq_pdf_validation.py::TestModuleVPDFValidation::test_module_v_pdf_contains_confidence_reliability",
+                            "status": status
+                        })
+                        
+                        if status == "PASSED":
+                            passed_count += 1
+                        else:
+                            failed_count += 1
+
+                # Calculate total tests
+                total_tests = passed_count + failed_count
+                
+                self._report_progress(f"📊 PDF Test Results: {total_tests} tests, {passed_count} passed, {failed_count} failed")
+                
+                if pdf_result.returncode == 0 and failed_count == 0:
+                    self._report_progress("✅ PDF Validation Tests PASSED")
+                else:
+                    self._report_progress("❌ PDF Validation Tests FAILED")
+                    self.all_passed = False
+            except Exception as e:
+                self._report_progress(f"⚠️  PDF validation check failed: {str(e)}")
 
             # Generate VTM
             self._report_progress("Generating Verification Traceability Matrix...")
@@ -276,6 +334,7 @@ class ValidationRunner:
                 },
                 test_results=self.test_results,
                 validated_hash=engine_hash,
+                pdf_test_results=self.pdf_test_results,
             )
 
             # Generate PDF and save to reports directory
@@ -293,14 +352,23 @@ class ValidationRunner:
                     validation_date=datetime.now().isoformat(),
                     validator=tester_name,
                 )
+                self._report_progress("=" * 60)
                 self._report_progress("✅ VALIDATION COMPLETE - ALL TESTS PASSED")
+                self._report_progress(f"📄 Certificate: {report_path}")
+                self._report_progress(f"🔍 Engine Hash: {engine_hash[:16]}...")
+                self._report_progress("=" * 60)
+                
                 return (
                     True,
                     f"Validation successful! Certificate saved to {report_path}",
                     report_path,
                 )
             else:
-                self._report_progress("⚠️  VALIDATION INCOMPLETE - SOME TESTS FAILED")
+                self._report_progress("=" * 60)
+                self._report_progress("❌ VALIDATION FAILED - SOME TESTS DID NOT PASS")
+                self._report_progress(f"📄 Certificate: {report_path}")
+                self._report_progress(f"🔍 Engine Hash: {engine_hash[:16]}...")
+                self._report_progress("=" * 60)
                 
                 # Remove validated hash so button shows red
                 if HashVerifier.VALIDATED_HASH_FILE.exists():

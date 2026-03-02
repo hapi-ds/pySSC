@@ -685,6 +685,92 @@ class ReportGenerator:
         else:
             story.append(Paragraph("No PQ tests found.", normal_style))
 
+        # Page break before PDF validation results
+        story.append(PageBreak())
+        
+        # ===== CHAPTER 3.5: PDF VALIDATION RESULTS =====
+        story.append(Paragraph("CHAPTER 3.5: PDF VALIDATION RESULTS", heading_style))
+        story.append(Spacer(1, 0.2 * inch))
+        
+        # Check if we have PDF test results (from validation_runner)
+        pdf_test_results = cert_data.pdf_test_results if hasattr(cert_data, 'pdf_test_results') and cert_data.pdf_test_results else []
+        
+        if pdf_test_results:
+            story.append(Paragraph("PDF Report Content Validation Tests", heading3_style))
+            story.append(Spacer(1, 0.1 * inch))
+            
+            # Extract PDF test results
+            pdf_iq = [r for r in pdf_test_results if "test_iq" in r.get("test_id", "")]
+            pdf_oq = [r for r in pdf_test_results if "test_oq" in r.get("test_id", "")]
+            pdf_pq_pdf = [r for r in pdf_test_results if "test_pq" in r.get("test_id", "") and "pdf" in r.get("test_id", "").lower()]
+            
+            total_pdf_tests = len(pdf_iq) + len(pdf_oq) + len(pdf_pq_pdf)
+            pdf_passed = sum(1 for r in pdf_test_results if r.get("status", "").upper() in ["PASS", "PASSED"])
+            pdf_failed = total_pdf_tests - pdf_passed
+            
+            story.append(Paragraph(f"<b>PDF Test Summary:</b>", normal_style))
+            story.append(Spacer(1, 0.1 * inch))
+            story.append(Paragraph(f"Total Tests: {total_pdf_tests}", normal_style))
+            story.append(Paragraph(f"Passed: {pdf_passed}", normal_style))
+            story.append(Paragraph(f"Failed: {pdf_failed}", normal_style))
+            
+            if total_pdf_tests > 0:
+                # PDF test results table
+                pdf_data = [
+                    [
+                        Paragraph("<b>Test ID</b>", normal_style),
+                        Paragraph("<b>URS ID</b>", normal_style),
+                        Paragraph("<b>Status</b>", normal_style),
+                    ]
+                ]
+                
+                for result in pdf_test_results:
+                    test_id = result.get("test_id", "N/A")
+                    urs_id = result.get("urs_id", "N/A")
+                    status = result.get("status", "N/A")
+                    
+                    # Color code the status
+                    if str(status).upper() in ["PASS", "PASSED"]:
+                        status_text = f'<font color="green"><b>{status}</b></font>'
+                    elif str(status).upper() in ["FAIL", "FAILED"]:
+                        status_text = f'<font color="red"><b>{status}</b></font>'
+                    else:
+                        status_text = status
+                    
+                    pdf_data.append(
+                        [
+                            Paragraph(str(test_id), normal_style),
+                            Paragraph(str(urs_id), normal_style),
+                            Paragraph(status_text, normal_style),
+                        ]
+                    )
+                
+                pdf_table = Table(pdf_data, colWidths=[3 * inch, 2 * inch, 1.5 * inch])
+                pdf_table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 9),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            (
+                                "ROWBACKGROUNDS",
+                                (0, 1),
+                                (-1, -1),
+                                [colors.white, colors.lightgrey],
+                            ),
+                        ]
+                    )
+                )
+                story.append(pdf_table)
+        else:
+            story.append(Paragraph("No PDF validation tests were run.", normal_style))
+        
+        story.append(Spacer(1, 0.3 * inch))
+        
         # Page break before summary chapter
         story.append(PageBreak())
 
