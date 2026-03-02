@@ -384,6 +384,7 @@ class UIController:
                         "confidence": confidence,
                         "reliability": reliability,
                         "results": results,
+                        "population_size": int(population_size) if population_size is not None else None,
                     }
 
                     # Display results
@@ -560,9 +561,13 @@ class UIController:
                             c, n = item
                             formatted_results.append(f"c={c}: n={n}")
                     
+                    # Get population size
+                    population_size = self.module_a_results.get("population_size")
+                    
                     results = {
                         "method": "Sensitivity Analysis",
                         "results": "\n".join(formatted_results),
+                        "population_size": int(population_size) if population_size is not None else None,
                     }
                     method_path = "Sensitivity Analysis: Success Run Theorem and Cumulative Binomial"
                 else:
@@ -673,9 +678,13 @@ class UIController:
                             c, n = item
                             formatted_results.append(f"c={c}: n={n}")
                     
+                    # Get population size
+                    population_size = self.module_a_results.get("population_size")
+                    
                     results = {
                         "method": "Sensitivity Analysis",
                         "results": "\n".join(formatted_results),
+                        "population_size": int(population_size) if population_size is not None else None,
                     }
                     method_path = "Sensitivity Analysis: Success Run Theorem and Cumulative Binomial"
                 else:
