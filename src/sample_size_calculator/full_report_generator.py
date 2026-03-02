@@ -249,25 +249,28 @@ class FullReportGenerator:
             [
                 Paragraph("<b>Parameter</b>", bold_style),
                 Paragraph("<b>Value</b>", bold_style),
-                Paragraph("<b>Unit</b>", bold_style),
             ]
         ]
 
         for key, value in calculation_report.results.items():
             formatted_key = key.replace("_", " ").title()
-            value_str = str(value)
-            unit = ""
+
+            if isinstance(value, float):
+                value_str = f"{value:.4f}".rstrip("0").rstrip(".")
+            elif isinstance(value, dict):
+                value_str = ", ".join(f"{k}: {v}" for k, v in value.items())
+            else:
+                value_str = str(value)
 
             result_data.append(
                 [
                     Paragraph(formatted_key, normal_style),
                     Paragraph(value_str, normal_style),
-                    Paragraph(unit, normal_style),
                 ]
             )
 
         if len(result_data) > 1:
-            result_table = Table(result_data, colWidths=[200, 150, 100])
+            result_table = Table(result_data, colWidths=[250, 200])
             result_table.setStyle(
                 TableStyle(
                     [
@@ -281,7 +284,6 @@ class FullReportGenerator:
                         ("TEXTCOLOR", (0, 1), (-1, -1), colors.black),
                         ("ALIGN", (0, 1), (0, -1), "LEFT"),
                         ("ALIGN", (1, 1), (1, -1), "RIGHT"),
-                        ("ALIGN", (2, 1), (2, -1), "LEFT"),
                         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                         ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
                         ("FONTSIZE", (0, 1), (-1, -1), 10),

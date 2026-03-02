@@ -126,8 +126,8 @@ def extract_text_from_pdf(pdf_bytes: bytes) -> str:
 
 
 @pytest.mark.pq
+@pytest.mark.urs("URS-REP-01")
 class TestModuleAPDFValidation:
-
     @pytest.mark.parametrize("test_case", MODULE_A_TEST_CASES)
     def test_module_a_pdf_contains_correct_sample_size(
         self,
@@ -137,7 +137,7 @@ class TestModuleAPDFValidation:
     ):
         """Test Module A PDF report contains the correct sample size."""
         base_url = "http://localhost:8080"
-        
+
         page.goto(base_url)
         page.wait_for_load_state("networkidle")
 
@@ -145,19 +145,13 @@ class TestModuleAPDFValidation:
         module_a_tab.click()
         page.wait_for_timeout(500)
 
-        confidence_input = page.locator(
-            'input[aria-label*="Confidence"]'
-        ).first
+        confidence_input = page.locator('input[aria-label*="Confidence"]').first
         confidence_input.fill(str(test_case["confidence"]))
 
-        reliability_input = page.locator(
-            'input[aria-label*="Reliability"]'
-        ).first
+        reliability_input = page.locator('input[aria-label*="Reliability"]').first
         reliability_input.fill(str(test_case["reliability"]))
 
-        allowable_failures_input = page.locator(
-            'input[aria-label*="Allowable"]'
-        ).first
+        allowable_failures_input = page.locator('input[aria-label*="Allowable"]').first
         allowable_failures_input.fill(str(test_case["allowable_failures"]))
 
         calculate_button = page.locator('button:has-text("Calculate")').first
@@ -198,7 +192,7 @@ MODULE_V_TEST_CASES = [
             "pilot_data": [10.015, 9.996, 10.019, 10.046, 9.993],
             "final_data": [10.022, 10.005, 9.997, 9.991, 9.956, 9.978, 9.986],
             "Required Sample Size": 7,
-            "Pass_Fail": "Pass"
+            "Pass_Fail": "Pass",
         },
         id="module_v_normal_two_sided_pass",
     ),
@@ -212,13 +206,13 @@ MODULE_V_TEST_CASES = [
             "pilot_data": [10.015, 9.996, 10.019, 10.046, 9.993],
             "final_data": [10.122, 10.005, 9.997, 9.891, 9.956, 9.978, 9.986],
             "Required Sample Size": 7,
-            "Pass_Fail": "Fail"
+            "Pass_Fail": "Fail",
         },
         id="module_v_normal_two_sided_fail",
     ),
     pytest.param(
         {
-            "spec_type": "One-Sided", 
+            "spec_type": "One-Sided",
             "lsl": 9.5,
             "usl": None,
             "confidence": 95.0,
@@ -226,7 +220,7 @@ MODULE_V_TEST_CASES = [
             "pilot_data": [10.015, 9.996, 10.019, 10.046, 9.993],
             "final_data": [10.022, 10.005, 9.997, 9.991, 9.956],
             "Required Sample Size": 3,
-            "Pass_Fail": "Pass"
+            "Pass_Fail": "Pass",
         },
         id="module_v_normal_one_sided",
     ),
@@ -234,8 +228,8 @@ MODULE_V_TEST_CASES = [
 
 
 @pytest.mark.pq
+@pytest.mark.urs("URS-REP-01")
 class TestModuleVPDFValidation:
-
     @pytest.mark.parametrize("test_case", MODULE_V_TEST_CASES)
     def test_module_v_pdf_contains_confidence_reliability(
         self,
@@ -245,55 +239,72 @@ class TestModuleVPDFValidation:
     ):
         """Test Module V PDF report contains input parameters."""
         base_url = "http://localhost:8080"
-        
+
         page.goto(base_url)
         page.wait_for_load_state("networkidle")
         module_v_tab = page.locator('text="Module V"').first
         module_v_tab.click()
         page.wait_for_timeout(500)
 
-        spec_type_radio = page.locator(f'.q-radio:has-text("{test_case["spec_type"]}")').first
+        spec_type_radio = page.locator(
+            f'.q-radio:has-text("{test_case["spec_type"]}")'
+        ).first
         spec_type_radio.click()
 
         page.locator('input[aria-label*="LSL"]').fill(str(test_case["lsl"]))
         if test_case["usl"] is not None:
             page.locator('input[aria-label*="USL"]').fill(str(test_case["usl"]))
 
-        page.locator('input[aria-label*="Confidence"]').fill(str(test_case["confidence"]))
-        page.locator('input[aria-label*="Reliability"]').fill(str(test_case["reliability"]))
+        page.locator('input[aria-label*="Confidence"]').fill(
+            str(test_case["confidence"])
+        )
+        page.locator('input[aria-label*="Reliability"]').fill(
+            str(test_case["reliability"])
+        )
 
         pilot_data_str = ", ".join(str(x) for x in test_case["pilot_data"])
-        page.locator('textarea[aria-label*="Pilot"], textarea[placeholder*="data"]').first.fill(pilot_data_str)
+        page.locator(
+            'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
+        ).first.fill(pilot_data_str)
 
         page.locator('button:has-text("Analyze")').first.click()
         page.wait_for_timeout(2000)
-        page.locator('button:has-text("Process"), button:has-text("Normality")').first.click()
+        page.locator(
+            'button:has-text("Process"), button:has-text("Normality")'
+        ).first.click()
         page.wait_for_timeout(2000)
-        page.locator('button:has-text("Required"), button:has-text("required")').first.click()
+        page.locator(
+            'button:has-text("Required"), button:has-text("required")'
+        ).first.click()
         page.wait_for_timeout(2000)
 
         final_data_str = ", ".join(str(x) for x in test_case["final_data"])
-        page.locator('textarea[aria-label*="Final"], textarea[placeholder*="final"]').first.fill(final_data_str)
-        page.locator('button:has-text("Tolerance"), button:has-text("Tolerance")').first.click()
+        page.locator(
+            'textarea[aria-label*="Final"], textarea[placeholder*="final"]'
+        ).first.fill(final_data_str)
+        page.locator(
+            'button:has-text("Tolerance"), button:has-text("Tolerance")'
+        ).first.click()
         page.wait_for_timeout(2000)
 
         with page.expect_download(timeout=10000) as download_info:
-            page.locator('button:has-text("Generate"), button:has-text("Report")').first.click()
+            page.locator(
+                'button:has-text("Generate"), button:has-text("Report")'
+            ).first.click()
 
         download = download_info.value
         pdf_path = tmp_path / "report_v_params.pdf"
         download.save_as(pdf_path)
-        
+
         reader = PdfReader(BytesIO(pdf_path.read_bytes()))
         pdf_text = "".join(page.extract_text() or "" for page in reader.pages)
 
         # Verify PDF contains Pass/Fail result
-        #assert any(x in pdf_text for x in ["Pass", "Fail"]), (
-        #    "PDF should contain Pass/Fail determination"
-        #)
-        assert str(test_case["Pass_Fail"]) in pdf_text, (
-            f"PDF should contain confidence {test_case['Pass_Fail']}"
+        pass_fail = test_case.get("Pass_Fail")
+        assert f"Pass Fail\n{pass_fail}" in pdf_text, (
+            f"PDF should contain pass/fail result {test_case['Pass_Fail']}"
         )
+
         # Verify PDF contains confidence and reliability values
         assert str(test_case["confidence"]) in pdf_text, (
             f"PDF should contain confidence {test_case['confidence']}"
@@ -301,3 +312,10 @@ class TestModuleVPDFValidation:
         assert str(test_case["reliability"]) in pdf_text, (
             f"PDF should contain reliability {test_case['reliability']}"
         )
+
+        # Verify specific values from Calculated Results table
+        required_sample_size = test_case.get("Required Sample Size")
+        if required_sample_size is not None:
+            assert f"Required Sample Size\n{required_sample_size}" in pdf_text, (
+                f"PDF should contain 'Required Sample Size' with value {required_sample_size}"
+            )
