@@ -247,15 +247,11 @@ def main():
         print("\n✅ OQ Tests PASSED")
 
     # Run PQ tests (optional, requires running app)
-    #if not args.skip_pq:
-    #    print("\n⚠️  PQ tests require the application to be running.")
-    #    print("Please ensure the app is running at http://localhost:8080")
-    #    print("Press Enter to continue or Ctrl+C to skip PQ tests...")
-    #    try:
-    #        input()
-    #    except KeyboardInterrupt:
-    #        print("\nSkipping PQ tests")
-    #        args.skip_pq = True
+    if not args.skip_pq:
+        print("\n" + "=" * 60)
+        print("PQ Tests require the application to be running.")
+        print("Please ensure the app is running at http://localhost:8080")
+        print("=" * 60)
 
     if not args.skip_pq:
         pq_data = run_test_suite("tests/validation/test_pq.py", "pq")
@@ -267,6 +263,17 @@ def main():
             print("\n❌ PQ Tests FAILED")
         else:
             print("\n✅ PQ Tests PASSED")
+
+        # Run PDF validation tests (new E2E tests with PDF content verification)
+        pq_pdf_data = run_test_suite("tests/validation/test_pq_pdf_validation.py", "pq")
+        pq_pdf_results = extract_test_results(pq_pdf_data, "PQ-PDF")
+        all_test_results.extend(pq_pdf_results)
+
+        if pq_pdf_data.get("exitcode", 1) != 0:
+            all_passed = False
+            print("\n❌ PQ PDF Validation Tests FAILED")
+        else:
+            print("\n✅ PQ PDF Validation Tests PASSED")
 
     # Generate VTM
     print("\n" + "=" * 60)
@@ -284,6 +291,7 @@ def main():
             "tests/validation/test_iq.py",
             "tests/validation/test_oq.py",
             "tests/validation/test_pq.py",
+            "tests/validation/test_pq_pdf_validation.py",
         ],
     )
 
@@ -349,10 +357,10 @@ def main():
         print("=" * 60)
 
         HashVerifier.set_validated_hash(
-                    engine_hash,
-                    validation_date=datetime.now().isoformat(),
-                    validator=args.tester,
-                )
+            engine_hash,
+            validation_date=datetime.now().isoformat(),
+            validator=args.tester,
+        )
         print(f"✅ Validated hash stored: {engine_hash}")
         print("\n🎉 VALIDATION COMPLETE - ALL TESTS PASSED")
     else:
