@@ -200,6 +200,11 @@ class ValidationRunner:
             Tuple of (success, message, certificate_path)
         """
         try:
+            # Remove existing validated hash file at start for fresh validation
+            if HashVerifier.VALIDATED_HASH_FILE.exists():
+                HashVerifier.VALIDATED_HASH_FILE.unlink()
+                self._report_progress("Removed previous validation hash")
+            
             self._report_progress("Starting validation suite...")
             self._report_progress(
                 f"Tester: {tester_name}, Date: {datetime.now().isoformat()}"
@@ -296,6 +301,12 @@ class ValidationRunner:
                 )
             else:
                 self._report_progress("⚠️  VALIDATION INCOMPLETE - SOME TESTS FAILED")
+                
+                # Remove validated hash so button shows red
+                if HashVerifier.VALIDATED_HASH_FILE.exists():
+                    HashVerifier.VALIDATED_HASH_FILE.unlink()
+                    self._report_progress("Removed invalid validation hash")
+                
                 return (
                     False,
                     f"Validation failed. Some tests did not pass. Certificate saved to {report_path}",

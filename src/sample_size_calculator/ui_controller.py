@@ -170,12 +170,11 @@ class UIController:
             return
         
         if is_validated_state():
-            self.validation_button.props("color=green")
+            self.validation_button.props("color=positive text-color=white")
         else:
-            self.validation_button.props("color=red")
+            self.validation_button.props("color=negative text-color=white")
 
     def create_app(self) -> None:
-        self._update_validation_button_color()
         """Create the main NiceGUI application with tabs."""
         ui.page_title("Sample Size Calculator")
 
@@ -186,13 +185,18 @@ class UIController:
                     "Medical Device Design Verification & Process Validation"
                 ).classes("text-subtitle2")
 
-            # Validation button in header
+            # Validation button in header - solid background with white text
             self.validation_button = ui.button(
                 "Run Full Validation (IQ/OQ/PQ)",
                 on_click=self._handle_validation_button_click,
                 icon="verified",
-                color="green" if is_validated_state() else "red",
-            ).props("outline")
+            )
+            # Set background color and white text using Quasar classes
+            self.validation_button.classes('rounded')
+            if is_validated_state():
+                self.validation_button.classes('bg-green-6 text-white')
+            else:
+                self.validation_button.classes('bg-red-6 text-white')
 
         with ui.tabs().classes("w-full") as tabs:
             module_a_tab = ui.tab("Module A")
@@ -3118,19 +3122,23 @@ For additional assistance:
                 result_label.text = f"✅ {message}"
                 result_label.classes("text-green-600")
                 ui.notify("Validation completed successfully!", type="positive")
-                self._update_validation_button_color()
             else:
                 result_label.text = f"⚠️ {message}"
                 result_label.classes("text-orange-600")
                 ui.notify(
                     "Validation completed with warnings", type="warning", timeout=0
                 )
+            # Always update button color regardless of success/failure
+            self._update_validation_button_color()
 
         except Exception as e:
             error_msg = f"Validation error: {str(e)}"
             result_label.text = f"❌ {error_msg}"
             result_label.classes("text-red-600")
             ui.notify(error_msg, type="negative", timeout=0)
+            
+            # Update button color on exception
+            self._update_validation_button_color()
 
             # Log error
             self.logger.log_validation_error(
