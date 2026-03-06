@@ -120,37 +120,37 @@ To illustrate the application of ISO/TR 80002-2 principles, consider a Python-ba
 
 Defining the intended use of the Python sample size calculator app is crucial to establish the boundaries and objectives for its validation. This involves specifying how the app will be employed within medical device or process validation workflows, the critical calculations it performs, and the decisions it supports. Clear articulation of intended use guides risk assessment, validation depth, and assurance activities, ensuring that validation efforts focus on features impacting study design accuracy and regulatory compliance. Properly defining intended use also facilitates traceability and effective change management throughout the software lifecycle (U.S. Department of Health and Human Services Food and Drug Administration).
 
-Realised via: see ./IntendedUse.md
+#### Realised via: see ./requirements/01\_IntendedUse.md
 
 ## **Gathering and Documenting User Requirements**
 
 Gathering and documenting user requirements is a critical step to ensure the Python sample size calculator app meets its intended use and regulatory expectations. This involves eliciting detailed user needs, functional requirements, and performance criteria that directly impact the accuracy and reliability of sample size calculations. Clear, structured documentation facilitates traceability throughout the software lifecycle, supporting effective risk assessment, validation planning, and change management. Engaging stakeholders early and continuously helps align the software with clinical and regulatory demands while minimizing potential risks (U.S. Department of Health and Human Services Food and Drug Administration).
 
-Realised via: see ./URS\_SampleSizeCalculator.md
+#### Realised via: see ./requirements/02\_URS\_SampleSizeCalculator.md
 
 ## **Risk Assessment for the Sample Size Calculator**
 
 Risk assessment for the Python sample size calculator involves identifying potential hazards associated with incorrect calculations or input handling that could lead to flawed study designs or invalid validation outcomes. Manufacturers should evaluate the likelihood and severity of errors, focusing on critical functions such as confidence level computations, reliability metrics, and allowable failure thresholds. By applying a risk-based approach, validation activities can prioritize testing scenarios that address these high-impact areas, ensuring accuracy, reliability, and compliance throughout the software lifecycle (U.S. Department of Health and Human Services Food and Drug Administration).
 
-Realised via: see ./RiskAssessment.md
+#### Realised via: see ./requirements/03\_RiskAssessment.md
 
 ## **Verification of Calculations and Logic Implementation**
 
 Verification of calculations and logic implementation is a critical phase in validating the Python sample size calculator app according to ISO/TR 80002-2. This step involves systematically testing the mathematical accuracy of sample size computations and ensuring that the logic correctly handles user inputs, boundary conditions, and error scenarios. Manufacturers should employ both automated and manual testing methods to confirm that the software consistently produces reliable and traceable results aligned with predefined acceptance criteria. Proper documentation of these verification activities supports compliance and facilitates future audits and revalidation efforts (U.S. Department of Health and Human Services Food and Drug Administration).
 
-Realised via: unit tests (uv run pytest \-q), e2e tests with playwrite
+#### Realised via: unit tests (uv run pytest \-q), e2e tests with playwrite (validate button)
 
 ## **User Acceptance Testing and Documentation**
 
 User Acceptance Testing (UAT) is a pivotal phase in validating the Python sample size calculator app, ensuring it meets user needs and performs reliably in real-world scenarios. This phase involves end-users executing test cases based on typical workflows to confirm that the software behaves as expected and supports decision-making processes accurately. Comprehensive documentation of UAT results, including feedback, issues encountered, and resolutions, is essential to demonstrate compliance with ISO/TR 80002-2 and to support future maintenance and revalidation efforts. Engaging users early and thoroughly enhances confidence in the software’s readiness for deployment (U.S. Department of Health and Human Services Food and Drug Administration).
 
-Realised via: This is an essential mechanism and will (hopefully) be implemented over time through the creation of open-source software and the review/comment options offered by GitHub. In the meantime, each user must do this themselves.
+#### Realised via: This is an essential mechanism and will (hopefully) be implemented over time through the creation of open-source software and the review/comment options offered by GitHub. In the meantime, each user must do this themselves.
 
 ## **Change Management During Maintenance and Updates**
 
 Effective change management is essential to maintain the validated state of software throughout its lifecycle, ensuring continued compliance with ISO/TR 80002-2. Manufacturers must implement formal change control procedures that include impact assessments, documentation updates, and approval workflows to evaluate modifications rigorously. Revalidation should be performed as necessary, particularly after significant changes, to confirm that software continues to meet its intended use and regulatory requirements. This proactive approach mitigates risks associated with software updates and supports sustained product quality and patient safety (U.S. Department of Health and Human Services Food and Drug Administration).
 
-Realised via: Git/Github and complete revalidation after update
+#### Realised via: Git/Github and complete revalidation after update
 
 # **Challenges, Best Practices, and Common Pitfalls in CSV Implementation**
 

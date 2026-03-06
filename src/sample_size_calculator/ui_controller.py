@@ -199,8 +199,8 @@ class UIController:
                 self.validation_button.classes("bg-red-6 text-white")
 
         with ui.tabs().classes("w-full") as tabs:
-            module_a_tab = ui.tab("Module A")
-            module_v_tab = ui.tab("Module V")
+            module_a_tab = ui.tab("Module Attribute")
+            module_v_tab = ui.tab("Module Variable")
             examples_tab = ui.tab("Examples")
             help_tab = ui.tab("Help")
 
@@ -233,11 +233,12 @@ class UIController:
             with ui.row().classes("w-full items-center"):
                 confidence_input = (
                     ui.number(
-                        label="Confidence Level (%)",
+                        label="Reliability Level (%)",
                         value=95.0,
-                        min=0.01,
-                        max=99.99,
+                        min=50.00,
+                        max=99.95,
                         step=0.1,
+                        precision=2,
                     )
                     .classes("w-64")
                     .tooltip(
@@ -252,9 +253,10 @@ class UIController:
                     ui.number(
                         label="Reliability Level (%)",
                         value=95.0,
-                        min=0.01,
-                        max=99.99,
+                        min=50.00,
+                        max=99.95,
                         step=0.1,
+                        precision=2,
                     )
                     .classes("w-64")
                     .tooltip(
@@ -857,6 +859,43 @@ class UIController:
             self.phase4_expansion = phase4_expansion
             self._create_phase4_ui()
 
+        # Reset button for Module V
+        with ui.row().classes("w-full mt-4"):
+            reset_btn = ui.button("Reset All", icon="refresh").classes(
+                "bg-warning text-dark"
+            )
+
+        # Reset button handler - must be defined before _enforce_sequential_workflow to capture expansion vars
+        def handle_reset_v() -> None:
+            """Reset Module V to initial state."""
+            self.logger.log_button_click(
+                "reset_module_v", "Module_V", None, self.session_id
+            )
+
+            # Clear all inputs
+            self.lsl_input.value = None
+            self.usl_input.value = None
+            self.v_confidence_input.value = 95.0
+            self.v_reliability_input.value = 95.0
+            self.input_method_radio.value = "Enter Pilot Dataset"
+            self.pilot_data_input.value = ""
+            if hasattr(self, "estimated_mean_input"):
+                self.estimated_mean_input.value = None
+            if hasattr(self, "estimated_std_input"):
+                self.estimated_std_input.value = None
+
+            # Clear all results cards
+            self.phase1_results_card.set_visibility(False)
+
+            # Reset phase expansion states
+            phase2_expansion.close()
+            phase3_expansion.close()
+            phase4_expansion.close()
+
+            ui.notify("Module V reset to initial state", type="info")
+
+        reset_btn.on_click(handle_reset_v)
+
         # Initially disable phases 2, 3, 4
         self._enforce_sequential_workflow()
 
@@ -910,9 +949,10 @@ class UIController:
                     ui.number(
                         label="Confidence Level (%)",
                         value=95.0,
-                        min=0.01,
-                        max=99.99,
+                        min=50.00,
+                        max=99.95,
                         step=0.1,
+                        precision=2,
                     )
                     .classes("w-64")
                     .tooltip(
@@ -925,9 +965,10 @@ class UIController:
                     ui.number(
                         label="Reliability Level (%)",
                         value=95.0,
-                        min=0.01,
-                        max=99.99,
+                        min=50.00,
+                        max=99.95,
                         step=0.1,
+                        precision=2,
                     )
                     .classes("w-64")
                     .tooltip(
@@ -964,7 +1005,7 @@ class UIController:
                     .classes("w-full")
                     .tooltip(
                         "Enter pilot data measurements separated by commas. "
-                        "Minimum 3 values required. Recommended: 12-30 samples.",
+                        "Minimum 3 values required. Recommended: 12-30 samples. Format: 10.5, ...",
                     )
                 )
 
@@ -975,6 +1016,7 @@ class UIController:
                         ui.number(
                             label="Estimated Mean",
                             value=None,
+                            min=0.0001,
                             step=0.1,
                         )
                         .classes("w-64")
@@ -3126,10 +3168,10 @@ START: Do you have attribute (Pass/Fail) or variable (numerical) data?
 10. **Iterate if Needed**: If results are unexpected, review earlier phases
                 """)
 
-
-
         # Section 5: About Reports
-        with ui.expansion("Reports, and where you can find them", icon="help").classes("w-full"):
+        with ui.expansion("Reports, and where you can find them", icon="menu").classes(
+            "w-full"
+        ):
             with ui.card().classes("w-full"):
                 ui.markdown("""
 ### Validation Reports & Certificates
@@ -3159,14 +3201,15 @@ After running calculations, you can also generate a full report that combines th
 
 You can find the generated full reports in the `reports/full/` directory.
                 """)
-                
 
-        ## Section 6: About Validation
-        #with ui.expansion("Reports, and where you can find them", icon="help").classes("w-full"):
-        #    with ui.card().classes("w-full"):
-        #        ui.markdown().load_from_file('./requirements/00_ComputerSoftwareValidation.md')
-
-
+        # Section 6: About Validation
+        with ui.expansion(
+            "Computer Software Validation ISO TR 80002-2", icon="search"
+        ).classes("w-full"):
+            with ui.card().classes("w-full"):
+                with open("./requirements/00_ComputerSoftwareValidation.md", "r") as f:
+                    md_content = f.read()
+                ui.markdown(md_content)
 
         ui.separator()
         with ui.card().classes("w-full"):
