@@ -153,10 +153,10 @@ class UIController:
 
         # Module A state
         self.module_a_results: dict[str, Any] | None = None
-        
+
         # JupyterLab manager
         self.jupyter_manager = JupyterManager()
-        
+
         # Validation button reference (will be set in create_app)
         self.validation_button: ui.button | None = None
 
@@ -168,7 +168,7 @@ class UIController:
         """Update validation button color based on validation state."""
         if self.validation_button is None:
             return
-        
+
         if is_validated_state():
             self.validation_button.props("color=positive text-color=white")
         else:
@@ -192,11 +192,11 @@ class UIController:
                 icon="verified",
             )
             # Set background color and white text using Quasar classes
-            self.validation_button.classes('rounded')
+            self.validation_button.classes("rounded")
             if is_validated_state():
-                self.validation_button.classes('bg-green-6 text-white')
+                self.validation_button.classes("bg-green-6 text-white")
             else:
-                self.validation_button.classes('bg-red-6 text-white')
+                self.validation_button.classes("bg-red-6 text-white")
 
         with ui.tabs().classes("w-full") as tabs:
             module_a_tab = ui.tab("Module A")
@@ -210,7 +210,7 @@ class UIController:
 
             with ui.tab_panel(module_v_tab):
                 self.create_module_v_tab()
-                
+
             with ui.tab_panel(examples_tab):
                 self.create_examples_tab()
 
@@ -238,7 +238,6 @@ class UIController:
                         min=0.01,
                         max=99.99,
                         step=0.1,
-                        precision=2,
                     )
                     .classes("w-64")
                     .tooltip(
@@ -256,7 +255,6 @@ class UIController:
                         min=0.01,
                         max=99.99,
                         step=0.1,
-                        precision=2,
                     )
                     .classes("w-64")
                     .tooltip(
@@ -370,12 +368,16 @@ class UIController:
                 if inputs.allowable_failures is None:
                     # Sensitivity analysis with optional population correction
                     if population_size is not None and population_size > 1:
-                        results = CalculationEngine.sensitivity_analysis_with_correction(
-                            confidence, reliability, int(population_size)
+                        results = (
+                            CalculationEngine.sensitivity_analysis_with_correction(
+                                confidence, reliability, int(population_size)
+                            )
                         )
                     else:
-                        results = CalculationEngine.sensitivity_analysis_with_correction(
-                            confidence, reliability, None
+                        results = (
+                            CalculationEngine.sensitivity_analysis_with_correction(
+                                confidence, reliability, None
+                            )
                         )
 
                     # Store results
@@ -384,7 +386,9 @@ class UIController:
                         "confidence": confidence,
                         "reliability": reliability,
                         "results": results,
-                        "population_size": int(population_size) if population_size is not None else None,
+                        "population_size": int(population_size)
+                        if population_size is not None
+                        else None,
                     }
 
                     # Display results
@@ -404,12 +408,18 @@ class UIController:
                                     "field": "n_original",
                                 },
                                 {
-                                    "headerName": "Sample Size (Corrected for N={})".format(int(population_size)),
+                                    "headerName": "Sample Size (Corrected for N={})".format(
+                                        int(population_size)
+                                    ),
                                     "field": "n_corrected",
                                 },
                             ]
                             row_data = [
-                                {"c": c, "n_original": n_orig, "n_corrected": round(n_corr, 2)}
+                                {
+                                    "c": c,
+                                    "n_original": n_orig,
+                                    "n_corrected": round(n_corr, 2),
+                                }
                                 for c, n_orig, n_corr in results
                             ]
                         else:
@@ -422,7 +432,7 @@ class UIController:
                                 },
                             ]
                             row_data = [{"c": c, "n": n} for c, n, _ in results]
-                        
+
                         table_data = {"columnDefs": column_defs, "rowData": row_data}
                         ui.aggrid(table_data).classes("w-full")
 
@@ -451,7 +461,9 @@ class UIController:
                     # Apply finite population correction if applicable
                     n_original = n
                     if population_size is not None and population_size > 1:
-                        n_corrected = CalculationEngine.finite_population_correction(n, int(population_size))
+                        n_corrected = CalculationEngine.finite_population_correction(
+                            n, int(population_size)
+                        )
                         method_display = f"{method} (FPC applied)"
                     else:
                         n_corrected = None
@@ -465,7 +477,9 @@ class UIController:
                         "allowable_failures": inputs.allowable_failures,
                         "sample_size_original": n_original,
                         "sample_size_corrected": n_corrected,
-                        "population_size": int(population_size) if population_size is not None else None,
+                        "population_size": int(population_size)
+                        if population_size is not None
+                        else None,
                         "method": method_display,
                     }
 
@@ -475,13 +489,13 @@ class UIController:
                         ui.label("Calculation Results").classes("text-h6")
                         ui.label(f"Method: {method_display}").classes("text-body1")
                         ui.separator()
-                        ui.label(f"Original Sample Size (for large populations): {n_original}").classes(
-                            "text-body2 text-secondary"
-                        )
+                        ui.label(
+                            f"Original Sample Size (for large populations): {n_original}"
+                        ).classes("text-body2 text-secondary")
                         if n_corrected is not None:
-                            ui.label(f"Corrected Sample Size (N={int(population_size)}): {round(n_corrected, 2)}").classes(
-                                "text-h4 text-primary"
-                            )
+                            ui.label(
+                                f"Corrected Sample Size (N={int(population_size)}): {round(n_corrected, 2)}"
+                            ).classes("text-h4 text-primary")
                         else:
                             ui.label(f"Required Sample Size (n): {n_original}").classes(
                                 "text-h4 text-primary"
@@ -547,27 +561,31 @@ class UIController:
                         "allowable_failures": "Sensitivity Analysis (c=0,1,2,3)",
                     }
                     results_list = self.module_a_results.get("results", [])
-                    
+
                     # Format results to show both original and corrected
                     formatted_results = []
                     for item in results_list:
                         if len(item) == 3:  # (c, n_original, n_corrected)
                             c, n_orig, n_corr = item
                             if n_corr is not None:
-                                formatted_results.append(f"c={c}: n_original={n_orig}, n_corrected={round(n_corr, 2)}")
+                                formatted_results.append(
+                                    f"c={c}: n_original={n_orig}, n_corrected={round(n_corr, 2)}"
+                                )
                             else:
                                 formatted_results.append(f"c={c}: n={n_orig}")
                         else:  # (c, n)
                             c, n = item
                             formatted_results.append(f"c={c}: n={n}")
-                    
+
                     # Get population size
                     population_size = self.module_a_results.get("population_size")
-                    
+
                     results = {
                         "method": "Sensitivity Analysis",
                         "results": "\n".join(formatted_results),
-                        "population_size": int(population_size) if population_size is not None else None,
+                        "population_size": int(population_size)
+                        if population_size is not None
+                        else None,
                     }
                     method_path = "Sensitivity Analysis: Success Run Theorem and Cumulative Binomial"
                 else:
@@ -578,18 +596,24 @@ class UIController:
                             "allowable_failures"
                         ],
                     }
-                    sample_size_original = self.module_a_results.get("sample_size_original")
-                    sample_size_corrected = self.module_a_results.get("sample_size_corrected")
-                    
+                    sample_size_original = self.module_a_results.get(
+                        "sample_size_original"
+                    )
+                    sample_size_corrected = self.module_a_results.get(
+                        "sample_size_corrected"
+                    )
+
                     results = {
                         "method": self.module_a_results["method"],
                         "sample_size_original": sample_size_original,
                         "sample_size_corrected": sample_size_corrected,
                     }
-                    
+
                     # Include population size if correction was applied
                     if self.module_a_results.get("population_size") is not None:
-                        results["population_size"] = self.module_a_results["population_size"]
+                        results["population_size"] = self.module_a_results[
+                            "population_size"
+                        ]
                         if sample_size_corrected is not None:
                             method_path = f"{self.module_a_results['method']} (FPC: N={int(self.module_a_results['population_size'])})"
                     method_path = self.module_a_results["method"]
@@ -624,13 +648,13 @@ class UIController:
                     pdf_bytes,
                     f"sample_size_report_module_a_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                 )
-                
+
                 # Log PDF generation
                 self.logger.log_report_generation(
                     "Module A PDF Report",
                     report_path,
                     validation_state,
-                    self.session_id
+                    self.session_id,
                 )
                 ui.notify("✅ Module A PDF report saved and logged", type="positive")
 
@@ -664,27 +688,31 @@ class UIController:
                         "allowable_failures": "Sensitivity Analysis (c=0,1,2,3)",
                     }
                     results_list = self.module_a_results.get("results", [])
-                    
+
                     # Format results to show both original and corrected
                     formatted_results = []
                     for item in results_list:
                         if len(item) == 3:  # (c, n_original, n_corrected)
                             c, n_orig, n_corr = item
                             if n_corr is not None:
-                                formatted_results.append(f"c={c}: n_original={n_orig}, n_corrected={round(n_corr, 2)}")
+                                formatted_results.append(
+                                    f"c={c}: n_original={n_orig}, n_corrected={round(n_corr, 2)}"
+                                )
                             else:
                                 formatted_results.append(f"c={c}: n={n_orig}")
                         else:  # (c, n)
                             c, n = item
                             formatted_results.append(f"c={c}: n={n}")
-                    
+
                     # Get population size
                     population_size = self.module_a_results.get("population_size")
-                    
+
                     results = {
                         "method": "Sensitivity Analysis",
                         "results": "\n".join(formatted_results),
-                        "population_size": int(population_size) if population_size is not None else None,
+                        "population_size": int(population_size)
+                        if population_size is not None
+                        else None,
                     }
                     method_path = "Sensitivity Analysis: Success Run Theorem and Cumulative Binomial"
                 else:
@@ -695,18 +723,24 @@ class UIController:
                             "allowable_failures"
                         ],
                     }
-                    sample_size_original = self.module_a_results.get("sample_size_original")
-                    sample_size_corrected = self.module_a_results.get("sample_size_corrected")
-                    
+                    sample_size_original = self.module_a_results.get(
+                        "sample_size_original"
+                    )
+                    sample_size_corrected = self.module_a_results.get(
+                        "sample_size_corrected"
+                    )
+
                     results = {
                         "method": self.module_a_results["method"],
                         "sample_size_original": sample_size_original,
                         "sample_size_corrected": sample_size_corrected,
                     }
-                    
+
                     # Include population size if correction was applied
                     if self.module_a_results.get("population_size") is not None:
-                        results["population_size"] = self.module_a_results["population_size"]
+                        results["population_size"] = self.module_a_results[
+                            "population_size"
+                        ]
                         if sample_size_corrected is not None:
                             method_path = f"{self.module_a_results['method']} (FPC: N={int(self.module_a_results['population_size'])})"
                     method_path = self.module_a_results["method"]
@@ -732,10 +766,11 @@ class UIController:
                 # Save to reports/full/ directory
                 report_path = get_full_report_path()
                 saved_path = save_report(full_report_bytes, report_path)
-                
+
                 # Sign the PDF with hash for tamper detection
                 try:
                     from sample_size_calculator.pdf_signature import PDFSignature
+
                     signature = PDFSignature.sign_pdf(full_report_bytes, engine_hash)
                     PDFSignature.save_signature(saved_path, signature)
                 except Exception:
@@ -759,15 +794,17 @@ class UIController:
                     full_report_bytes,
                     f"full_report_module_a_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                 )
-                
+
                 # Log PDF generation
                 self.logger.log_report_generation(
                     "Module A Full Report",
                     saved_path,
                     validation_state,
-                    self.session_id
+                    self.session_id,
                 )
-                ui.notify("✅ Module A full report generated successfully", type="positive")
+                ui.notify(
+                    "✅ Module A full report generated successfully", type="positive"
+                )
 
             except Exception as e:
                 ui.notify(
@@ -876,7 +913,6 @@ class UIController:
                         min=0.01,
                         max=99.99,
                         step=0.1,
-                        precision=2,
                     )
                     .classes("w-64")
                     .tooltip(
@@ -892,7 +928,6 @@ class UIController:
                         min=0.01,
                         max=99.99,
                         step=0.1,
-                        precision=2,
                     )
                     .classes("w-64")
                     .tooltip(
@@ -2055,13 +2090,13 @@ class UIController:
                     pdf_bytes,
                     f"sample_size_report_module_v_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                 )
-                
+
                 # Log PDF generation
                 self.logger.log_report_generation(
                     "Module V PDF Report",
                     report_path,
                     validation_state,
-                    self.session_id
+                    self.session_id,
                 )
                 ui.notify("✅ Module V PDF report saved and logged", type="positive")
 
@@ -2156,10 +2191,11 @@ class UIController:
                 # Save to reports/full/ directory
                 report_path = get_full_report_path()
                 saved_path = save_report(full_report_bytes, report_path)
-                
+
                 # Sign the PDF with hash for tamper detection
                 try:
                     from sample_size_calculator.pdf_signature import PDFSignature
+
                     signature = PDFSignature.sign_pdf(full_report_bytes, engine_hash)
                     PDFSignature.save_signature(saved_path, signature)
                 except Exception:
@@ -2183,15 +2219,17 @@ class UIController:
                     full_report_bytes,
                     f"full_report_module_v_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                 )
-                
+
                 # Log PDF generation
                 self.logger.log_report_generation(
                     "Module V Full Report",
                     saved_path,
                     validation_state,
-                    self.session_id
+                    self.session_id,
                 )
-                ui.notify("✅ Module V full report generated successfully", type="positive")
+                ui.notify(
+                    "✅ Module V full report generated successfully", type="positive"
+                )
 
             except Exception as e:
                 ui.notify(
@@ -2503,12 +2541,12 @@ class UIController:
 
         with ui.card().classes("w-full"):
             ui.label("JupyterLab Notebook Server").classes("text-h6")
-            
+
             # Status indicator
             status_label = ui.label(self.jupyter_manager.get_status()).classes(
                 "text-body2"
             )
-            
+
             # Control buttons
             with ui.row().classes("gap-2"):
                 start_btn = ui.button(
@@ -2516,23 +2554,25 @@ class UIController:
                     icon="play_arrow",
                     on_click=lambda: self._start_jupyter(status_label),
                 ).props("color=positive")
-                
+
                 stop_btn = ui.button(
                     "Stop JupyterLab",
                     icon="stop",
                     on_click=lambda: self._stop_jupyter(status_label),
                 ).props("color=negative")
-                
+
                 open_btn = ui.button(
                     "Open JupyterLab",
                     icon="open_in_new",
                     on_click=lambda: self._open_jupyter(),
                 ).props("color=primary")
-            
+
             ui.separator()
-            
+
             # Information section
-            with ui.expansion("About JupyterLab Examples", icon="info").classes("w-full"):
+            with ui.expansion("About JupyterLab Examples", icon="info").classes(
+                "w-full"
+            ):
                 ui.markdown("""
 ### Available Notebooks
 
@@ -2573,8 +2613,10 @@ The notebooks directory is mounted as a volume for persistence.
 
         with ui.card().classes("w-full"):
             ui.label("Quick Examples (No JupyterLab Required)").classes("text-h6")
-            
-            with ui.expansion("Module A: Basic Calculation", icon="calculate").classes("w-full"):
+
+            with ui.expansion("Module A: Basic Calculation", icon="calculate").classes(
+                "w-full"
+            ):
                 ui.markdown("""
 ```python
 Input confidence (e.g. 95.0) and reliability (e.g.95.0) and press "CALCULATE SAMPLE SIZE"
@@ -2585,8 +2627,10 @@ Optional you can insert allowable failures or population size (to be implemented
 
 ```
                 """)
-            
-            with ui.expansion("Module V: Variable Data Workflow", icon="trending_up").classes("w-full"):
+
+            with ui.expansion(
+                "Module V: Variable Data Workflow", icon="trending_up"
+            ).classes("w-full"):
                 ui.markdown("""
 ```python
 # Phase 1: Analyze pilot data
@@ -2611,7 +2655,7 @@ Final Dataset: 10.022, 10.005, 9.997, 9.991, 9.956, 9.978, 9.986
 
     def _start_jupyter(self, status_label: ui.label) -> None:
         """Start JupyterLab and update status.
-        
+
         Args:
             status_label: Label to update with status
         """
@@ -2620,7 +2664,7 @@ Final Dataset: 10.022, 10.005, 9.997, 9.991, 9.956, 9.978, 9.986
 
     def _stop_jupyter(self, status_label: ui.label) -> None:
         """Stop JupyterLab and update status.
-        
+
         Args:
             status_label: Label to update with status
         """
@@ -3197,7 +3241,7 @@ For additional assistance:
             result_label.text = f"❌ {error_msg}"
             result_label.classes("text-red-600")
             ui.notify(error_msg, type="negative", timeout=0)
-            
+
             # Update button color on exception
             self._update_validation_button_color()
 
