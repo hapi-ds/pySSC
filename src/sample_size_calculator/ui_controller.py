@@ -3126,6 +3126,48 @@ START: Do you have attribute (Pass/Fail) or variable (numerical) data?
 10. **Iterate if Needed**: If results are unexpected, review earlier phases
                 """)
 
+
+
+        # Section 5: About Reports
+        with ui.expansion("Reports, and where you can find them", icon="help").classes("w-full"):
+            with ui.card().classes("w-full"):
+                ui.markdown("""
+### Validation Reports & Certificates
+                            
+After running the validation suite, a comprehensive report is generated that includes:
+
+- Who and when the validation was performed
+- System information where validation was executed
+- The Hash of the code version used for validation (=a fingerprint of the exact code that was run, to ensure validity of the report)
+- Detailed results of IQ, OQ, and PQ tests
+
+You can find the generated validation report in the `reports/validation/` directory. Each report is saved as a PDF file named with validation_certificate and the timestamp.
+
+### Calculation Reports
+
+After running calculations you can generate a calculation report that includes:
+
+- Validation state with Hash (Fingerprint) of the code version used for calculation
+- Modul and statistical method used for calculation
+- Input parameters and results
+
+You can find the generated calculation reports in the `reports/calculations/` directory.
+
+### Full Report
+
+After running calculations, you can also generate a full report that combines the validation report and the calculation report. This provides a complete record of both the testing and analysis performed.
+
+You can find the generated full reports in the `reports/full/` directory.
+                """)
+                
+
+        ## Section 6: About Validation
+        #with ui.expansion("Reports, and where you can find them", icon="help").classes("w-full"):
+        #    with ui.card().classes("w-full"):
+        #        ui.markdown().load_from_file('./requirements/00_ComputerSoftwareValidation.md')
+
+
+
         ui.separator()
         with ui.card().classes("w-full"):
             ui.label("Need More Help?").classes("text-h6")
@@ -3190,6 +3232,7 @@ For additional assistance:
             result_label: UI label for final result message
             run_button: Button to disable during validation
         """
+
         if not tester_name or not tester_name.strip():
             ui.notify("Please enter tester name", type="warning", timeout=0)
             return
