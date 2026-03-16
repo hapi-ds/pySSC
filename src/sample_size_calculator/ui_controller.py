@@ -233,7 +233,7 @@ class UIController:
             with ui.row().classes("w-full items-center"):
                 confidence_input = (
                     ui.number(
-                        label="Reliability Level (%)",
+                        label="Confidence Level (%)",
                         value=95.0,
                         min=50.00,
                         max=99.95,
