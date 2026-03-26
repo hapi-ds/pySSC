@@ -410,16 +410,18 @@ def test_concurrent_user_sessions(page: Page, base_url: str):
         calc2.click()
         page2.wait_for_timeout(1000)
 
-        # Verify User 1 sees n=59
-        content1 = page1.content()
-        assert "59" in content1, "User 1 should see n=59"
+        # Verify User 1 sees n=59 in the Required Sample Size column
+        cell1 = page1.locator('.ag-cell[col-id="n"]').first
+        cell1.wait_for(timeout=2000)
+        assert "59" in cell1.inner_text(), "User 1 should see n=59 in the results table"
 
-        # Verify User 2 sees n=90 (not 90 - this is also in css or somewhere else. Use 198 of c=3)
-        content2 = page2.content()
-        assert "1001" in content2, "User 2 should see n=1001"
+        # Verify User 2 sees n=459 in the Required Sample Size column
+        cell2 = page2.locator('.ag-cell[col-id="n"]').first
+        cell2.wait_for(timeout=2000)
+        assert "459" in cell2.inner_text(), "User 2 should see n=459 in the results table"
 
-        # Verify sessions are independent (User 1 should NOT see 90 --> now 198)
-        assert "1001" not in content1 or content1.count("1001") == 0, (
+        # Verify sessions are independent (User 1 should NOT see 459)
+        assert "459" not in cell1.inner_text(), (
             "User 1 should not see User 2's results"
         )
 
