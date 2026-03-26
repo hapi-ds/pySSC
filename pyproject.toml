@@ -1,6 +1,6 @@
 [project]
 name = "sample-size-calculator"
-version = "0.1.0"
+version = "0.0.0"
 description = "Medical device design verification and process validation sample size calculator"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -27,6 +27,7 @@ dependencies = [
     "pandas>=2.2.3",
     "pydantic>=2.12.5",
     "pypdf>=6.7.2",
+    "python-semantic-release>=10.5.3",
     "reportlab>=4.4.10",
     "scipy>=1.17.0",
 ]
@@ -87,3 +88,18 @@ ignore = ["E501"]
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.semantic_release]
+# Wo soll die Version aktualisiert werden?
+version_variables = ["src/sample_size_calculator/version.py:__version__"]
+version_toml = ["pyproject.toml:project.version"]
+
+# Variante A: KEIN Zurückschreiben in den Branch
+commit_version_number = false 
+
+# Welche Commits lösen was aus? (Standard: Conventional Commits)
+major_on_zero = false
+
+[tool.semantic_release.branches.main]
+match = "main"
+order = 0
