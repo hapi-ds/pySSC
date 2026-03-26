@@ -1810,6 +1810,27 @@ class UIController:
                 # Update method transparency
                 self._display_method_transparency()
 
+                # Populate Phase 4 info check based on pilot data length
+                self.phase4_info_container.clear()
+                with self.phase4_info_container:
+                    available_data = phase2_results.cleaned_data if phase2_results and phase2_results.cleaned_data else []
+                    available_count = len(available_data)
+                    required_count = phase3_results.required_sample_size
+                    
+                    if available_count >= required_count:
+                        ui.label("Validation Data Status").classes("text-h6")
+                        ui.label(f"✓ Sufficient data available (Have: {available_count}, Need: {required_count})").classes("text-body1 text-positive")
+                        if available_count > 0:
+                            mean_val = sum(available_data) / available_count
+                            ui.label(f"Data Summary: Mean = {mean_val:.4f}, Count = {available_count}").classes("text-body2")
+                        self.calculate_phase4_btn.set_visibility(True)
+                    else:
+                        missing = required_count - available_count
+                        ui.label("Validation Data Status").classes("text-h6 text-warning")
+                        ui.label(f"⚠ Insufficient data! (Have: {available_count}, Need: {required_count})").classes("text-body1 text-negative")
+                        ui.label(f"Please return to Phase 1 and enter at least {missing} more data point{'s' if missing != 1 else ''}.").classes("text-body1 text-negative")
+                        self.calculate_phase4_btn.set_visibility(False)
+
                 # Log calculation
                 engine_hash = get_engine_hash()
                 self.logger.log_calculation(
@@ -1856,24 +1877,10 @@ class UIController:
 
     def _create_phase4_ui(self) -> None:
         """Create Phase 4 UI (final validation data and tolerance limits)."""
-        with ui.card().classes("w-full"):
-            ui.label("Final Validation Dataset").classes("text-h6")
+        self.phase4_info_container = ui.column().classes("w-full")
 
-            self.final_data_input = (
-                ui.textarea(
-                    label="Final Validation Dataset (comma-separated values)",
-                    placeholder="Enter N measurements as calculated in Phase 3",
-                )
-                .classes("w-full")
-                .tooltip(
-                    "Enter final validation measurements. "
-                    "Must match the required sample size from Phase 3.",
-                )
-            )
-
-        # Calculate button
         with ui.row().classes("w-full"):
-            calculate_phase4_btn = ui.button(
+            self.calculate_phase4_btn = ui.button(
                 "Calculate Tolerance Limits", icon="rule"
             ).classes("bg-primary")
 
@@ -1912,20 +1919,6 @@ class UIController:
                     )
                     return
 
-                # Parse final data
-                final_data_str = self.final_data_input.value
-                if not final_data_str:
-                    ui.notify(
-                        "Please enter final validation data",
-                        type="warning",
-                        timeout=0,
-                    )
-                    return
-
-                final_data = [
-                    float(x.strip()) for x in final_data_str.split(",") if x.strip()
-                ]
-
                 phase2_results = self.module_v_state.phase2_results
                 phase3_results = self.module_v_state.phase3_results
                 spec_limits = self.module_v_state.spec_limits
@@ -1937,6 +1930,16 @@ class UIController:
                 ):
                     ui.notify(
                         "Missing required data from previous phases",
+                        type="negative",
+                        timeout=0,
+                    )
+                    return
+
+                final_data = phase2_results.cleaned_data if phase2_results.cleaned_data else []
+
+                if len(final_data) < phase3_results.required_sample_size:
+                    ui.notify(
+                        f"Insufficient data for final validation. Have {len(final_data)}, need {phase3_results.required_sample_size}.",
                         type="negative",
                         timeout=0,
                     )
@@ -2028,14 +2031,14 @@ class UIController:
                     "phase4_validation",
                     str(e),
                     "phase4_inputs",
-                    {"final_data": self.final_data_input.value},
+                    {"final_data_used_from_phase2": True},
                     self.session_id,
                 )
                 ui.notify(f"Validation error: {e}", type="negative", timeout=0)
             except Exception as e:
                 ui.notify(f"Calculation error: {e}", type="negative", timeout=0)
 
-        calculate_phase4_btn.on_click(handle_calculate_phase4)
+        self.calculate_phase4_btn.on_click(handle_calculate_phase4)
 
         # Report generation handler
         def handle_generate_v_report() -> None:
@@ -2903,14 +2906,15 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
 - **Coverage**: What percentage of the population falls within the limits
 
 ### Phase 4: Final Validation & Tolerance Limit Calculation
-**Objective**: Collect final sample and calculate tolerance limits
+**Objective**: Calculate tolerance limits
 
 **Steps**:
-1. Collect the required sample size (n) or more data points
-2. Enter final validation data (comma-separated values)
-3. Enter specification limits (LSL = Lower Spec Limit, USL = Upper Spec Limit)
-4. Click "Calculate Tolerance Limits" to perform final analysis
-5. Review results:
+1. App takes required sample from Phase 1
+    - if enough data points are available,
+    - else system shows how many you need.
+    - You have to run all Phases again to make sure new data are normal and no outlier
+2. Click "Calculate Tolerance Limits" to perform final analysis
+3. Review results:
    - **Tolerance Limits**: Calculated statistical bounds
    - **Pass/Fail**: Whether tolerance limits fall within specification limits
    - **Ppk**: Process performance index (higher is better, ≥1.33 is typical target)

@@ -41,7 +41,7 @@ def test_module_a_complete_workflow(page_with_app: Page):
     page = page_with_app
 
     # Navigate to Module A tab
-    module_a_tab = page.locator('text="Module A"').first
+    module_a_tab = page.locator('text="Module Attribute"').first
     module_a_tab.click()
     page.wait_for_timeout(500)
 
@@ -100,7 +100,7 @@ def test_module_a_report_generation(page_with_app: Page):
     page = page_with_app
 
     # Navigate to Module A and perform calculation
-    module_a_tab = page.locator('text="Module A"').first
+    module_a_tab = page.locator('text="Module Attribute"').first
     module_a_tab.click()
     page.wait_for_timeout(500)
 
@@ -155,7 +155,7 @@ def test_module_v_complete_workflow(page_with_app: Page):
     page = page_with_app
 
     # Navigate to Module V tab
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -210,13 +210,7 @@ def test_module_v_complete_workflow(page_with_app: Page):
     required_button.click()
     page.wait_for_timeout(2000)
 
-    # Phase 4: Input final data and calculate tolerance limits
-    # Generate final dataset matching required N
-    final_data = "10.015, 9.996, 10.019, 10.046"
-    final_textarea = page.locator(
-        'textarea[aria-label*="Final"], textarea[placeholder*="final"]'
-    ).first
-    final_textarea.fill(final_data)
+    # Phase 4: Calculate tolerance limits
 
     tolerance_button = page.locator(
         'button:has-text("Tolerance"), button:has-text("Tolerance")'
@@ -245,7 +239,7 @@ def test_calculated_values_appear_in_ui(page_with_app: Page):
     page = page_with_app
 
     # Navigate to Module A
-    module_a_tab = page.locator('text="Module A"').first
+    module_a_tab = page.locator('text="Module Attribute"').first
     module_a_tab.click()
     page.wait_for_timeout(500)
 
@@ -299,7 +293,7 @@ def test_pdf_report_content_verification(page_with_app: Page, tmp_path: Path):
     page = page_with_app
 
     # Navigate to Module A and perform calculation
-    module_a_tab = page.locator('text="Module A"').first
+    module_a_tab = page.locator('text="Module Attribute"').first
     module_a_tab.click()
     page.wait_for_timeout(500)
 
@@ -377,12 +371,12 @@ def test_concurrent_user_sessions(page: Page, base_url: str):
         page2.wait_for_load_state("networkidle")
 
         # User 1: Navigate to Module A
-        module_a_tab1 = page1.locator('text="Module A"').first
+        module_a_tab1 = page1.locator('text="Module Attribute"').first
         module_a_tab1.click()
         page1.wait_for_timeout(500)
 
         # User 2: Navigate to Module A
-        module_a_tab2 = page2.locator('text="Module A"').first
+        module_a_tab2 = page2.locator('text="Module Attribute"').first
         module_a_tab2.click()
         page2.wait_for_timeout(500)
 
@@ -404,7 +398,7 @@ def test_concurrent_user_sessions(page: Page, base_url: str):
         rel2 = page2.locator(
             'input[aria-label*="Reliability"], input[placeholder*="Reliability"]'
         ).first
-        rel2.fill("95")
+        rel2.fill("99")
 
         # User 1: Calculate
         calc1 = page1.locator('button:has-text("Calculate")').first
@@ -422,10 +416,10 @@ def test_concurrent_user_sessions(page: Page, base_url: str):
 
         # Verify User 2 sees n=90 (not 90 - this is also in css or somewhere else. Use 198 of c=3)
         content2 = page2.content()
-        assert "198" in content2, "User 2 should see n=198"
+        assert "1001" in content2, "User 2 should see n=1001"
 
         # Verify sessions are independent (User 1 should NOT see 90 --> now 198)
-        assert "198" not in content1 or content1.count("198") == 0, (
+        assert "1001" not in content1 or content1.count("1001") == 0, (
             "User 1 should not see User 2's results"
         )
 
@@ -450,7 +444,7 @@ def test_module_v_sequential_workflow_enforcement(page_with_app: Page):
     page = page_with_app
 
     # Navigate to Module V tab
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -517,7 +511,7 @@ def test_validation_state_display(page_with_app: Page):
     page = page_with_app
 
     # Navigate to Module A and perform calculation
-    module_a_tab = page.locator('text="Module A"').first
+    module_a_tab = page.locator('text="Module Attribute"').first
     module_a_tab.click()
     page.wait_for_timeout(500)
 
@@ -569,7 +563,7 @@ def test_tooltips_present(page_with_app: Page):
     page = page_with_app
 
     # Navigate to Module A
-    module_a_tab = page.locator('text="Module A"').first
+    module_a_tab = page.locator('text="Module Attribute"').first
     module_a_tab.click()
     page.wait_for_timeout(500)
 
@@ -606,7 +600,7 @@ def test_input_validation_feedback(page_with_app: Page):
     page = page_with_app
 
     # Navigate to Module A
-    module_a_tab = page.locator('text="Module A"').first
+    module_a_tab = page.locator('text="Module Attribute"').first
     module_a_tab.click()
     page.wait_for_timeout(500)
 
@@ -647,7 +641,7 @@ def test_phase_invalidation_on_input_change(page_with_app: Page):
     page = page_with_app
 
     # Navigate to Module V
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -711,7 +705,7 @@ def test_method_transparency_display(page_with_app: Page):
     page = page_with_app
 
     # Navigate to Module V
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -787,7 +781,7 @@ def test_module_v_one_sided_workflow(page_with_app: Page):
     """
     page = page_with_app
 
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -849,7 +843,7 @@ def test_module_v_outlier_exclusion_workflow(page_with_app: Page):
     """
     page = page_with_app
 
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -908,7 +902,7 @@ def test_module_v_non_parametric_fallback(page_with_app: Page):
     """
     page = page_with_app
 
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -969,7 +963,7 @@ def test_module_v_parameter_change_invalidates_results(page_with_app: Page):
     """
     page = page_with_app
 
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -1032,7 +1026,7 @@ def test_module_v_non_parametric_sample_size(page_with_app: Page):
     """
     page = page_with_app
 
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -1099,7 +1093,7 @@ def test_module_v_ppk_calculation(page_with_app: Page):
     """
     page = page_with_app
 
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -1165,7 +1159,7 @@ def test_module_v_log_transformation_workflow(page_with_app: Page):
     """
     page = page_with_app
 
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -1225,7 +1219,7 @@ def test_module_v_all_phases_complete(page_with_app: Page):
     """
     page = page_with_app
 
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -1249,7 +1243,7 @@ def test_module_v_all_phases_complete(page_with_app: Page):
     reliability_input = page.locator('input[aria-label*="Reliability"]').first
     reliability_input.fill("95")
 
-    pilot_data = "10.0, 10.5, 11.0, 11.5, 12.0"
+    pilot_data = "10.0, 10.5, 11.0, 11.5, 10.0, 10.1, 11.0, 10.6, 10.8"
     pilot_textarea = page.locator(
         'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
     ).first
@@ -1277,11 +1271,6 @@ def test_module_v_all_phases_complete(page_with_app: Page):
     page.wait_for_timeout(2000)
 
     # Phase 4: Final validation and tolerance limits
-    final_data = "10.1, 10.5, 11.0, 11.5, 11.9"
-    final_textarea = page.locator(
-        'textarea[aria-label*="Final"], textarea[placeholder*="final"]'
-    ).first
-    final_textarea.fill(final_data)
 
     tolerance_button = page.locator(
         'button:has-text("Tolerance"), button:has-text("Tolerance")'
@@ -1314,7 +1303,7 @@ def test_module_v_specification_and_pilot_data(page_with_app: Page):
     """
     page = page_with_app
 
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -1374,7 +1363,7 @@ def test_module_v_transformation_verification(page_with_app: Page):
     """
     page = page_with_app
 
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -1440,7 +1429,7 @@ def test_module_v_parametric_n_iteration(page_with_app: Page):
     """
     page = page_with_app
 
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -1521,7 +1510,7 @@ def test_module_v_final_data_with_locked_transformation(page_with_app: Page):
     """
     page = page_with_app
 
-    module_v_tab = page.locator('text="Module V"').first
+    module_v_tab = page.locator('text="Module Variable"').first
     module_v_tab.click()
     page.wait_for_timeout(500)
 
@@ -1540,7 +1529,7 @@ def test_module_v_final_data_with_locked_transformation(page_with_app: Page):
     reliability_input.fill("95")
 
     # Use normal distribution data that passes transformation check
-    pilot_data = "23.6, 12.3, 39.0, 9.9, 107.4, 20.1, 6.1, 5.2, 17.9, 10.2, 21.6"
+    pilot_data = "59.34, 63.32, 63.63, 61.79, 64.35, 66.62, 72.54, 65.7, 66.03, 64.7, 57.32, 64.89, 65.24, 74.85, 64.23, 66.21, 64.86, 60.33, 69.57, 68.01, 68.16, 61.36, 70.61, 59.39, 67.35, 73.76, 61.04, 62.73, 65.4, 62.99, 58.8, 65.27, 60.75, 66.89, 61.32, 71.2, 61.87, 63.71, 68.25, 60.08, 65.91, 70.23, 58.57, 65.74, 66.04, 68.13, 60.05, 59.72, 67.09, 66.19, 66.0, 66.39, 62.28, 65.93, 66.17, 62.14, 72.46, 66.9, 60.23, 67.63, 61.1, 68.15, 69.63, 61.72, 68.85, 66.65, 68.29, 72.59, 64.02, 61.99, 61.44, 61.74, 64.69, 66.36, 66.11, 68.31, 65.05, 70.81, 63.94, 75.88, 67.5, 61.57, 60.72, 66.93, 64.11, 67.86, 66.89, 64.71, 61.61, 58.94, 63.21, 68.43, 65.86, 60.02, 65.69, 66.54, 61.46, 65.61, 65.23, 60.43"
     pilot_textarea = page.locator(
         'textarea[aria-label*="Pilot"], textarea[placeholder*="data"]'
     ).first
@@ -1566,12 +1555,7 @@ def test_module_v_final_data_with_locked_transformation(page_with_app: Page):
     required_button.click()
     page.wait_for_timeout(2000)
 
-    # Generate final dataset matching required N (Phase 4)
-    final_data = "59.34, 63.32, 63.63, 61.79, 64.35, 66.62, 72.54, 65.7, 66.03, 64.7, 57.32, 64.89, 65.24, 74.85, 64.23, 66.21, 64.86, 60.33, 69.57, 68.01, 68.16, 61.36, 70.61, 59.39, 67.35, 73.76, 61.04, 62.73, 65.4, 62.99, 58.8, 65.27, 60.75, 66.89, 61.32, 71.2, 61.87, 63.71, 68.25, 60.08, 65.91, 70.23, 58.57, 65.74, 66.04, 68.13, 60.05, 59.72, 67.09, 66.19, 66.0, 66.39, 62.28, 65.93, 66.17, 62.14, 72.46, 66.9, 60.23, 67.63, 61.1, 68.15, 69.63, 61.72, 68.85, 66.65, 68.29, 72.59, 64.02, 61.99, 61.44, 61.74, 64.69, 66.36, 66.11, 68.31, 65.05, 70.81, 63.94, 75.88, 67.5, 61.57, 60.72, 66.93, 64.11, 67.86, 66.89, 64.71, 61.61, 58.94, 63.21, 68.43, 65.86, 60.02, 65.69, 66.54, 61.46, 65.61, 65.23, 60.43"
-    final_textarea = page.locator(
-        'textarea[aria-label*="Final"], textarea[placeholder*="final"]'
-    ).first
-    final_textarea.fill(final_data)
+    # Phase 4
 
     tolerance_button = page.locator(
         'button:has-text("Tolerance"), button:has-text("Tolerance")'

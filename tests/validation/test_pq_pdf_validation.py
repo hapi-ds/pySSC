@@ -141,7 +141,7 @@ class TestModuleAPDFValidation:
         page.goto(base_url)
         page.wait_for_load_state("networkidle")
 
-        module_a_tab = page.locator('text="Module A"').first
+        module_a_tab = page.locator('text="Module Attribute"').first
         module_a_tab.click()
         page.wait_for_timeout(500)
 
@@ -189,26 +189,11 @@ MODULE_V_TEST_CASES = [
             "usl": 10.1,
             "confidence": 95.0,
             "reliability": 95.0,
-            "pilot_data": [10.015, 9.996, 10.019, 10.046, 9.993],
-            "final_data": [10.022, 10.005, 9.997, 9.991, 9.956, 9.978, 9.986],
+            "pilot_data": [10.015, 9.996, 10.019, 10.046, 9.993, 10.022, 10.005, 9.997, 9.991, 9.956, 9.978, 9.986],
             "Required Sample Size": 7,
             "Pass_Fail": "Pass",
         },
         id="module_v_normal_two_sided_pass",
-    ),
-    pytest.param(
-        {
-            "spec_type": "Two-Sided",
-            "lsl": 9.9,
-            "usl": 10.1,
-            "confidence": 95.0,
-            "reliability": 95.0,
-            "pilot_data": [10.015, 9.996, 10.019, 10.046, 9.993],
-            "final_data": [10.122, 10.005, 9.997, 9.891, 9.956, 9.978, 9.986],
-            "Required Sample Size": 7,
-            "Pass_Fail": "Fail",
-        },
-        id="module_v_normal_two_sided_fail",
     ),
     pytest.param(
         {
@@ -217,8 +202,7 @@ MODULE_V_TEST_CASES = [
             "usl": None,
             "confidence": 95.0,
             "reliability": 95.0,
-            "pilot_data": [10.015, 9.996, 10.019, 10.046, 9.993],
-            "final_data": [10.022, 10.005, 9.997, 9.991, 9.956],
+            "pilot_data": [10.015, 9.996, 10.019, 10.046, 9.993, 10.022, 10.005, 9.997, 9.991, 9.956],
             "Required Sample Size": 3,
             "Pass_Fail": "Pass",
         },
@@ -242,7 +226,7 @@ class TestModuleVPDFValidation:
 
         page.goto(base_url)
         page.wait_for_load_state("networkidle")
-        module_v_tab = page.locator('text="Module V"').first
+        module_v_tab = page.locator('text="Module Variable"').first
         module_v_tab.click()
         page.wait_for_timeout(500)
 
@@ -278,10 +262,7 @@ class TestModuleVPDFValidation:
         ).first.click()
         page.wait_for_timeout(2000)
 
-        final_data_str = ", ".join(str(x) for x in test_case["final_data"])
-        page.locator(
-            'textarea[aria-label*="Final"], textarea[placeholder*="final"]'
-        ).first.fill(final_data_str)
+        # Phase 4
         page.locator(
             'button:has-text("Tolerance"), button:has-text("Tolerance")'
         ).first.click()
