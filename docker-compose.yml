@@ -2,8 +2,7 @@
 # Requirements: 35.1, 35.2, 35.4
 # 
 # This configuration deploys the Sample Size Calculator application with:
-# - Persistent storage for logs and reports
-# - Read-only config mounting
+# - Internal storage for logs and reports (no host mounts to avoid permission issues)
 # - Configurable environment variables
 # - Health checks for reliability
 # - Automatic restart policy
@@ -19,20 +18,20 @@ services:
       - "${PORT:-8080}:8080"     # Web interface
       - "8888:8888"               # JupyterLab (required for Windows Docker)
     
-    # Volume mounts for data persistence and configuration
+    # Volume mounts for development/debugging only
+    # Production use: remove these to avoid permission issues
     volumes:
-      # Logs directory - read/write for audit trail persistence
-      - ./logs:/app/logs
+      # Uncomment to persist logs to host (requires permission handling)
+      # - ./logs:/app/logs
       
-      # Config directory - read/write for validation script
-      # Contains validated_hash.json and other configuration files
-      - ./config:/app/config
+      # Uncomment to persist config to host (requires permission handling)
+      # - ./config:/app/config
       
-      # Reports directory - read/write for PDF report generation
-      - ./reports:/app/reports
+      # Uncomment to persist reports to host (requires permission handling)
+      # - ./reports:/app/reports
       
-      # Notebooks directory - read/write for JupyterLab examples
-      - ./notebooks:/app/notebooks
+      # Uncomment to persist notebooks to host (requires permission handling)
+      # - ./notebooks:/app/notebooks
     
     # Environment variables for application configuration
     environment:

@@ -208,7 +208,7 @@ The application includes a built-in validation runner accessible from the UI:
    - **OQ (Operational Qualification)**: Tests all calculation formulas against known values
    - **PQ (Performance Qualification)**: Runs end-to-end UI tests (skipped when app is running)
 5. Review validation results
-6. Download the validation certificate from `./reports/validation/`
+6. Download the validation certificate using `docker compose cp sample-size-calculator:/app/reports/validation ./validation`
 
 **Note**: PQ tests are automatically skipped when running validation from the UI since they require the application to be stopped. For complete validation including PQ tests, use the command-line approach below.
 
@@ -217,13 +217,17 @@ The application includes a built-in validation runner accessible from the UI:
 For complete validation including PQ tests:
 
 ```bash
-# Stop the application first
+# The application must run!
+docker compose up -d
+
 # Then run the validation script
+# Recommended: Launch it via the UI, but be patient—the PQ tests in particular take a while.
+# or
 uv run python scripts/run_validation.py --tester "Your Name"
 ```
 
 This generates:
-- Validation certificate PDF in `./reports/validation/`
+- Validation certificate PDF in `./reports/validation/` (copy from container after completion)
 - Verification Traceability Matrix (VTM) CSV
 - Updates validated hash in `config/validated_hash.json`
 
@@ -244,6 +248,21 @@ docker compose down
 
 The application will be available at **http://localhost:8080** (or custom port via PORT environment variable).
 
+### Accessing Logs and Reports
+
+Since the default configuration uses internal storage, you can copy logs and reports from the container:
+
+```bash
+# Copy all logs
+docker compose cp sample-size-calculator:/app/logs ./logs
+
+# Copy all reports
+docker compose cp sample-size-calculator:/app/reports ./reports
+
+# Copy config files
+docker compose cp sample-size-calculator:/app/config ./config
+```
+
 ### Configuration
 
 Create a `.env` file in the project root to customize deployment:
@@ -254,15 +273,44 @@ LOG_LEVEL=INFO
 LOG_RETENTION_DAYS=90
 ```
 
-### Volume Mounts
+### Data Storage
 
-The docker-compose configuration automatically mounts:
+**Internal Storage (Default)**: All data stays inside the Docker container:
+- Audit logs in `/app/logs/`
+- Configuration in `/app/config/`  
+- Reports in `/app/reports/`
 
-- `./logs`: Audit trail logs (read/write)
-- `./config`: Configuration files including validated_hash.json (read-only)
-- `./reports`: Generated PDF reports (read/write)
+This approach avoids permission issues across all platforms (Linux, macOS, Windows).
 
-All reports and logs persist across container restarts.
+To retrieve data from a running container:
+
+```bash
+# Copy logs from container to host
+docker compose cp sample-size-calculator:/app/logs ./logs
+
+# Copy reports from container to host
+docker compose cp sample-size-calculator:/app/reports ./reports
+
+# Copy config from container to host
+docker compose cp sample-size-calculator:/app/config ./config
+```
+
+**Host Volume Mounts (Alternative)**: If you need data persistence on the host filesystem, uncomment the volume mounts in `docker-compose.yml` and ensure proper permissions are set for your host user.
+
+### Volume Mounts (Alternative)
+
+If you prefer host-mounted volumes for persistence, uncomment the volume mounts in `docker-compose.yml`. When using bind mounts:
+
+- On **Linux**: Ensure your user has write permissions to the mounted directories
+- On **macOS/Windows**: Use Docker Desktop's file sharing or ensure directories exist before starting
+
+Example (uncomment in docker-compose.yml):
+```yaml
+volumes:
+  - ./logs:/app/logs
+  - ./config:/app/config
+  - ./reports:/app/reports
+```
 
 ### Health Checks
 
@@ -477,9 +525,6 @@ docker compose logs
 docker compose down
 docker compose build --no-cache
 docker compose up -d
-
-# Verify volume permissions
-ls -la ./logs ./reports ./config
 ```
 
 ### Validation State Shows "NO"
@@ -501,6 +546,8 @@ This indicates the calculation engine has been modified since the last validatio
 **Issue**: PDF reports fail to generate or save
 
 **Solution**:
+In the default configuration (internal storage), report directories are created with correct permissions during build. If you switch to host volume mounts:
+
 ```bash
 # Check reports directory permissions
 ls -la ./reports
@@ -508,8 +555,8 @@ ls -la ./reports
 # Ensure subdirectories exist
 mkdir -p ./reports/validation ./reports/calculations ./reports/full
 
-# Check disk space
-df -h  # On Unix/Linux/Mac
+# On Linux, ensure proper ownership (replace 1000:1000 with your UID/GID)
+sudo chown -R 1000:1000 ./reports
 ```
 
 ### Transformation Cascade Issues
@@ -540,14 +587,20 @@ docker compose build --no-cache
 
 **Issue**: Log directory consuming excessive disk space
 
-**Solution**:
+**Solution (Internal Storage)**:
 - Logs automatically rotate at 10MB per file
 - Retention is 90 days by default
 - Adjust retention in `.env` file:
   ```env
   LOG_RETENTION_DAYS=30
   ```
-- Manually clean old logs:
+- Copy logs to host for inspection:
+  ```bash
+  docker compose cp sample-size-calculator:/app/logs ./logs
+  ```
+
+**Solution (Host Volume Mounts)**:
+- Manually clean old logs after copying:
   ```bash
   find ./logs -name "*.log.*" -mtime +30 -delete
   ```
