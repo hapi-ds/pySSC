@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.0.2 (2026-03-27)
+
+### Bug Fixes
+
+- Remove "volumes keyword in docker compose
+  ([`1bc4168`](https://github.com/hapi-ds/pySSC/commit/1bc4168e6496f17e025db7a3485ba878acf8bc43))
+
+
 ## v1.0.1 (2026-03-27)
 
 ### Bug Fixes
