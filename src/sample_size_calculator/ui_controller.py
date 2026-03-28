@@ -26,6 +26,7 @@ from sample_size_calculator.calculations import CalculationEngine
 from sample_size_calculator.full_report_generator import FullReportGenerator
 from sample_size_calculator.hash_verifier import get_engine_hash, is_validated_state
 from sample_size_calculator.jupyter_manager import JupyterManager
+from sample_size_calculator.version import __version__
 from sample_size_calculator.models import (
     AnalysisMethod,
     AttributeInputs,
@@ -181,6 +182,9 @@ class UIController:
         with ui.header().classes("items-center justify-between w-full"):
             with ui.row().classes("items-center gap-4"):
                 ui.label("Sample Size Calculator").classes("text-h4")
+                ui.label(f"v{__version__}").classes(
+                    "text-caption bg-secondary text-secondary-contrast px-2 rounded"
+                )
                 ui.label(
                     "Medical Device Design Verification & Process Validation"
                 ).classes("text-subtitle2")
@@ -1813,22 +1817,36 @@ class UIController:
                 # Populate Phase 4 info check based on pilot data length
                 self.phase4_info_container.clear()
                 with self.phase4_info_container:
-                    available_data = phase2_results.cleaned_data if phase2_results and phase2_results.cleaned_data else []
+                    available_data = (
+                        phase2_results.cleaned_data
+                        if phase2_results and phase2_results.cleaned_data
+                        else []
+                    )
                     available_count = len(available_data)
                     required_count = phase3_results.required_sample_size
-                    
+
                     if available_count >= required_count:
                         ui.label("Validation Data Status").classes("text-h6")
-                        ui.label(f"✓ Sufficient data available (Have: {available_count}, Need: {required_count})").classes("text-body1 text-positive")
+                        ui.label(
+                            f"✓ Sufficient data available (Have: {available_count}, Need: {required_count})"
+                        ).classes("text-body1 text-positive")
                         if available_count > 0:
                             mean_val = sum(available_data) / available_count
-                            ui.label(f"Data Summary: Mean = {mean_val:.4f}, Count = {available_count}").classes("text-body2")
+                            ui.label(
+                                f"Data Summary: Mean = {mean_val:.4f}, Count = {available_count}"
+                            ).classes("text-body2")
                         self.calculate_phase4_btn.set_visibility(True)
                     else:
                         missing = required_count - available_count
-                        ui.label("Validation Data Status").classes("text-h6 text-warning")
-                        ui.label(f"⚠ Insufficient data! (Have: {available_count}, Need: {required_count})").classes("text-body1 text-negative")
-                        ui.label(f"Please return to Phase 1 and enter at least {missing} more data point{'s' if missing != 1 else ''}.").classes("text-body1 text-negative")
+                        ui.label("Validation Data Status").classes(
+                            "text-h6 text-warning"
+                        )
+                        ui.label(
+                            f"⚠ Insufficient data! (Have: {available_count}, Need: {required_count})"
+                        ).classes("text-body1 text-negative")
+                        ui.label(
+                            f"Please return to Phase 1 and enter at least {missing} more data point{'s' if missing != 1 else ''}."
+                        ).classes("text-body1 text-negative")
                         self.calculate_phase4_btn.set_visibility(False)
 
                 # Log calculation
@@ -1935,7 +1953,9 @@ class UIController:
                     )
                     return
 
-                final_data = phase2_results.cleaned_data if phase2_results.cleaned_data else []
+                final_data = (
+                    phase2_results.cleaned_data if phase2_results.cleaned_data else []
+                )
 
                 if len(final_data) < phase3_results.required_sample_size:
                     ui.notify(
