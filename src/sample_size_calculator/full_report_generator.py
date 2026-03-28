@@ -16,8 +16,6 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
@@ -29,8 +27,8 @@ from reportlab.platypus import (
 
 from sample_size_calculator.hash_verifier import HashVerifier
 from sample_size_calculator.models import CalculationReport
-from sample_size_calculator.version import __version__
 from sample_size_calculator.pdf_report import NumberedCanvas
+from sample_size_calculator.version import __version__
 
 
 class FullReportGenerator:

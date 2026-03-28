@@ -26,7 +26,6 @@ from sample_size_calculator.calculations import CalculationEngine
 from sample_size_calculator.full_report_generator import FullReportGenerator
 from sample_size_calculator.hash_verifier import get_engine_hash, is_validated_state
 from sample_size_calculator.jupyter_manager import JupyterManager
-from sample_size_calculator.version import __version__
 from sample_size_calculator.models import (
     AnalysisMethod,
     AttributeInputs,
@@ -49,6 +48,7 @@ from sample_size_calculator.tolerance import (
 )
 from sample_size_calculator.transformations import transformation_cascade
 from sample_size_calculator.validation_runner import ValidationRunner
+from sample_size_calculator.version import __version__
 
 
 class ModuleVState:
@@ -414,9 +414,7 @@ class UIController:
                                     "field": "n_original",
                                 },
                                 {
-                                    "headerName": "Sample Size (Corrected for N={})".format(
-                                        int(population_size)
-                                    ),
+                                    "headerName": f"Sample Size (Corrected for N={int(population_size)})",
                                     "field": "n_corrected",
                                 },
                             ]
@@ -3231,7 +3229,7 @@ You can find the generated full reports in the `reports/full/` directory.
             "Computer Software Validation ISO TR 80002-2", icon="search"
         ).classes("w-full"):
             with ui.card().classes("w-full"):
-                with open("./requirements/00_ComputerSoftwareValidation.md", "r") as f:
+                with open("./requirements/00_ComputerSoftwareValidation.md") as f:
                     md_content = f.read()
                 ui.markdown(md_content)
 

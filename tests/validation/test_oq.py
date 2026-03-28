@@ -11,8 +11,6 @@ import pytest
 
 from sample_size_calculator.calculations import CalculationEngine
 from sample_size_calculator.models import (
-    AnalysisMethod,
-    OutlierInfo,
     Phase1Results,
     SpecificationLimits,
     SpecificationType,
@@ -1513,7 +1511,6 @@ def test_parametric_n_iteration_one_sided():
     SRS 14.1: FOR one-sided specifications, THE System SHALL iterate N until
     k1(N) <= k_margin.
     """
-    from sample_size_calculator.models import SpecificationType
 
     # Calculate capability margin for pilot data
     pilot_data = [10.015, 9.996, 10.019, 10.046, 9.993]
@@ -1562,7 +1559,6 @@ def test_parametric_n_iteration_two_sided():
     SRS 14.2: FOR two-sided specifications, THE System SHALL iterate N until
     k2(N) <= k_margin.
     """
-    from sample_size_calculator.models import SpecificationType
 
     # Calculate capability margin for pilot data
     pilot_data = [10.015, 9.996, 10.019, 10.046, 9.993]
@@ -1615,7 +1611,6 @@ def test_final_data_execution_with_locked_transformation():
     validation data than was locked in Phase 2.
     """
     from sample_size_calculator.models import (
-        AnalysisMethod,
         TransformationMethod,
     )
 

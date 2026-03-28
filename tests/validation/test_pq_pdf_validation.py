@@ -13,7 +13,6 @@ import pytest
 from playwright.sync_api import Page, expect
 from pypdf import PdfReader
 
-
 MODULE_A_TEST_CASES = [
     pytest.param(
         {

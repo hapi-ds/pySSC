@@ -15,8 +15,8 @@ from pathlib import Path
 from sample_size_calculator.hash_verifier import HashVerifier
 from sample_size_calculator.models import ValidationCertificate
 from sample_size_calculator.report_generator import ReportGenerator
-from sample_size_calculator.vtm_generator import VTMGenerator
 from sample_size_calculator.version import __version__
+from sample_size_calculator.vtm_generator import VTMGenerator
 
 
 class ValidationRunner:
@@ -279,7 +279,6 @@ class ValidationRunner:
                 stdout = pdf_result.stdout + "\n" + pdf_result.stderr
 
                 # Parse pytest summary to extract actual test results
-                import re
 
                 passed_count = 0
                 failed_count = 0
