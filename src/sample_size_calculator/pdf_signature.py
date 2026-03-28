@@ -42,7 +42,7 @@ class PDFSignature:
             "engine_hash": engine_hash,  # Hash of calculation engine that generated it
             "timestamp": datetime.now().isoformat(),
             "integrity_verified": True,
-            "signature_type": "SHA-256 hash verification"
+            "signature_type": "SHA-256 hash verification",
         }
 
         return signature
@@ -57,18 +57,18 @@ class PDFSignature:
 
         Returns:
             Tuple of (verification_passed, signature_metadata)
-            
+
         The verification checks if:
             1. A signature file exists (.sig.json)
             2. The current PDF hash matches the stored hash
-            
+
         Note: This provides integrity verification but not cryptographic authentication
-              (since no private key is used). For true digital signatures, use 
+              (since no private key is used). For true digital signatures, use
               cryptographic libraries like cryptography with PKCS#7.
         """
         try:
             # Load signature metadata if it exists
-            sig_path = pdf_path.with_suffix('.sig.json')
+            sig_path = pdf_path.with_suffix(".sig.json")
             if not sig_path.exists():
                 return False, None
 
@@ -99,9 +99,9 @@ class PDFSignature:
         Returns:
             Path to the saved signature file (.sig.json)
         """
-        sig_path = pdf_path.with_suffix('.sig.json')
+        sig_path = pdf_path.with_suffix(".sig.json")
 
-        with open(sig_path, 'w') as f:
+        with open(sig_path, "w") as f:
             json.dump(signature, f, indent=2)
 
         return sig_path
@@ -117,7 +117,7 @@ class PDFSignature:
         Returns:
             Signature metadata dictionary if it exists and is valid, None otherwise
         """
-        sig_path = pdf_path.with_suffix('.sig.json')
+        sig_path = pdf_path.with_suffix(".sig.json")
 
         try:
             with open(sig_path) as f:

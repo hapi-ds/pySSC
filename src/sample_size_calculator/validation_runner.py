@@ -6,6 +6,7 @@ from within the UI and report progress and results.
 
 import json
 import platform
+import re
 import subprocess
 import sys
 from collections.abc import Callable

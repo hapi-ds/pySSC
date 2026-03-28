@@ -422,7 +422,7 @@ class UIController:
                                 {
                                     "c": c,
                                     "n_original": n_orig,
-                                    "n_corrected": round(n_corr, 2),
+                                    "n_corrected": round(n_corr or 0.0, 2),
                                 }
                                 for c, n_orig, n_corr in results
                             ]
@@ -656,7 +656,7 @@ class UIController:
                 # Log PDF generation
                 self.logger.log_report_generation(
                     "Module A PDF Report",
-                    report_path,
+                    str(report_path),
                     validation_state,
                     self.session_id,
                 )
@@ -802,7 +802,7 @@ class UIController:
                 # Log PDF generation
                 self.logger.log_report_generation(
                     "Module A Full Report",
-                    saved_path,
+                    str(saved_path),
                     validation_state,
                     self.session_id,
                 )
@@ -2157,7 +2157,7 @@ class UIController:
                 # Log PDF generation
                 self.logger.log_report_generation(
                     "Module V PDF Report",
-                    report_path,
+                    str(report_path),
                     validation_state,
                     self.session_id,
                 )
@@ -2286,7 +2286,7 @@ class UIController:
                 # Log PDF generation
                 self.logger.log_report_generation(
                     "Module V Full Report",
-                    saved_path,
+                    str(saved_path),
                     validation_state,
                     self.session_id,
                 )
@@ -2612,19 +2612,19 @@ class UIController:
 
             # Control buttons
             with ui.row().classes("gap-2"):
-                start_btn = ui.button(
+                ui.button(
                     "Start JupyterLab",
                     icon="play_arrow",
                     on_click=lambda: self._start_jupyter(status_label),
                 ).props("color=positive")
 
-                stop_btn = ui.button(
+                ui.button(
                     "Stop JupyterLab",
                     icon="stop",
                     on_click=lambda: self._stop_jupyter(status_label),
                 ).props("color=negative")
 
-                open_btn = ui.button(
+                ui.button(
                     "Open JupyterLab",
                     icon="open_in_new",
                     on_click=lambda: self._open_jupyter(),
@@ -2670,7 +2670,7 @@ The `notebooks/` directory contains interactive examples:
 
 ### Docker Usage
 
-When running in Docker, JupyterLab is accessible at the same URL. 
+When running in Docker, JupyterLab is accessible at the same URL.
 The notebooks directory is mounted as a volume for persistence.
                 """)
 
@@ -3197,7 +3197,7 @@ START: Do you have attribute (Pass/Fail) or variable (numerical) data?
             with ui.card().classes("w-full"):
                 ui.markdown("""
 ### Validation Reports & Certificates
-                            
+
 After running the validation suite, a comprehensive report is generated that includes:
 
 - Who and when the validation was performed

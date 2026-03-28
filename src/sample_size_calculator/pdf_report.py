@@ -17,8 +17,8 @@ class NumberedCanvas(canvas.Canvas):
         canvas.Canvas.__init__(self, *args, **kwargs)
         self._codes = []
 
-    def showPage(self):
-        self._codes.append({'code': self._code, 'stack': self._codeStack})
+    def showPage(self):  # noqa: N802
+        self._codes.append({"code": self._code, "stack": self._codeStack})
         self._startPage()
 
     def save(self):
@@ -28,8 +28,8 @@ class NumberedCanvas(canvas.Canvas):
         width, height = A4
         for code in self._codes:
             # Recall saved page
-            self._code = code['code']
-            self._codeStack = code['stack']
+            self._code = code["code"]
+            self._codeStack = code["stack"]
             self.setFont("Helvetica", 7)
             self.setLineWidth(0.8)
             # header
@@ -40,38 +40,41 @@ class NumberedCanvas(canvas.Canvas):
             # self.drawImage(im, 20*mm, height - 20 * mm, width=10*mm,height=10*mm,mask=None)
             # self.drawCentredString(width/2, height - 15 * mm, "powered by HApi")
 
-
             # footer
             self.line(20 * mm, 25 * mm, width - 20 * mm, 25 * mm)
-            #self.rect(20 * mm, 15 * mm, width - 40 * mm, 10 * mm, fill=0, stroke=1)
+            # self.rect(20 * mm, 15 * mm, width - 40 * mm, 10 * mm, fill=0, stroke=1)
             self.drawString(20 * mm, 20 * mm, f"printed on {date.today():%Y-%m-%d}")
-            self.drawCentredString(width/2, 20 * mm , "confidential")
-            self.drawRightString(190 * mm, 20 * mm,
-                "page %(this)i of %(total)i" % {
-                   'this': self._pageNumber + 1,
-                   'total': len(self._codes),
-                }
+            self.drawCentredString(width / 2, 20 * mm, "confidential")
+            self.drawRightString(
+                190 * mm,
+                20 * mm,
+                f"page {self._pageNumber + 1} of {len(self._codes)}",
             )
 
-            canvas.Canvas.showPage(self)
+            super().showPage()
         canvas.Canvas.save(self)
 
 
 class PDFReportTemplate:
     """Template for generating consistent PDF reports."""
 
-    def __init__(self, title="Sample Size Calculator", subtitle="", author="Sample Size Calculator"):
+    def __init__(
+        self,
+        title="Sample Size Calculator",
+        subtitle="",
+        author="Sample Size Calculator",
+    ):
         self.title = title
         self.subtitle = subtitle
         self.author = author
 
     def generate_report(self, elements, output_path):
         """Generate a PDF report with numbered pages.
-        
+
         Args:
             elements: List of ReportLab Flowable elements to include in the report
             output_path: Path where the PDF should be saved
-            
+
         Returns:
             Tuple of (PDF bytes, output path)
         """
@@ -88,7 +91,7 @@ class PDFReportTemplate:
         doc.build(elements, canvasmaker=NumberedCanvas)
 
         # Return PDF bytes and path
-        with open(output_path, 'rb') as f:
+        with open(output_path, "rb") as f:
             pdf_bytes = f.read()
 
         return pdf_bytes, output_path
@@ -97,15 +100,15 @@ class PDFReportTemplate:
         """Create standard report header."""
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle(
-            'ReportTitle',
-            parent=styles['Heading1'],
+            "ReportTitle",
+            parent=styles["Heading1"],
             fontSize=14,
             spaceAfter=6 * mm,
         )
 
         subtitle_style = ParagraphStyle(
-            'ReportSubtitle',
-            parent=styles['Normal'],
+            "ReportSubtitle",
+            parent=styles["Normal"],
             fontSize=9,
             textColor=colors.grey,
             spaceAfter=12 * mm,
@@ -128,5 +131,5 @@ class PDFReportTemplate:
 
         return [
             Spacer(1, 6 * mm),
-            Paragraph(footer_text, styles['BodyText']),
+            Paragraph(footer_text, styles["BodyText"]),
         ]
