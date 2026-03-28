@@ -20,7 +20,7 @@ services:
     
     # Volume mounts for development/debugging only
     # Production use: remove these to avoid permission issues
-    # volumes:
+    volumes:
       # Uncomment to persist logs to host (requires permission handling)
       # - ./logs:/app/logs
       
@@ -31,7 +31,7 @@ services:
       # - ./reports:/app/reports
       
       # Uncomment to persist notebooks to host (requires permission handling)
-      # - ./notebooks:/app/notebooks
+      - ./notebooks:/app/notebooks
     
     # Environment variables for application configuration
     environment:

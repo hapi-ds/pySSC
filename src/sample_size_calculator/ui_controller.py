@@ -2915,7 +2915,7 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
 
 **Steps**:
 1. Review the calculated sample size, capability margins and tolerance factor
-2. If you have enough data from Phase 1, you can proceed to Phase 4 - if not, 
+2. If you have enough data from Phase 1, you can proceed to Phase 4 - if not,
     you have to collect more data and start from beginning (outlier detection and normality
     tests have to be checked also on new data)
 3. Click "Calculate tolerance limits"
