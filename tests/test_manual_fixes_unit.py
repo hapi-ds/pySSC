@@ -979,8 +979,8 @@ class TestBug4HelpTab:
 
         # Verify: Should have 3 ui.tab() calls
         tab_count = create_app_source.count('ui.tab(')
-        assert tab_count == 3, (
-            f"Expected 3 tabs (Module A, Module V, Help), but found {tab_count} tab creations"
+        assert tab_count == 4, (
+            f"Expected 3 tabs (Module A, Module V, Examples, Help), but found {tab_count} tab creations"
         )
 
         # Verify: "Help" string should appear in tab creation
