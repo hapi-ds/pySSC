@@ -13,9 +13,11 @@ from io import BytesIO
 from pathlib import Path
 
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import inch
+from reportlab.lib.units import mm
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 from reportlab.platypus import (
     PageBreak,
     Paragraph,
@@ -28,6 +30,36 @@ from reportlab.platypus import (
 from sample_size_calculator.hash_verifier import HashVerifier
 from sample_size_calculator.models import CalculationReport
 from sample_size_calculator.version import __version__
+
+
+
+
+class NumberedCanvas(canvas.Canvas):
+    """Canvas subclass that tracks pages and displays 'page x of y' format."""
+
+    def __init__(self, *args, **kwargs):
+        canvas.Canvas.__init__(self, *args, **kwargs)
+        self._codes = []
+
+    def showPage(self):
+        self._codes.append({"code": self._code, "stack": self._codeStack})
+        self._startPage()
+
+    def save(self):
+        """Add page info to each page (page x of y)"""
+        self._pageNumber = 0
+        for code in self._codes:
+            self._code = code["code"]
+            self._codeStack = code["stack"]
+            self.setFont("Helvetica", 7)
+            self.drawRightString(200 * mm, 20 * mm,
+                "page %(this)i of %(total)i" % {
+                   'this': self._pageNumber + 1,
+                   'total': len(self._codes),
+                }
+            )
+            canvas.Canvas.showPage(self)
+        canvas.Canvas.save(self)
 
 
 class FullReportGenerator:
@@ -66,11 +98,11 @@ class FullReportGenerator:
         # Create the PDF document
         doc = SimpleDocTemplate(
             buffer,
-            pagesize=letter,
-            rightMargin=0.75 * inch,
-            leftMargin=0.75 * inch,
-            topMargin=1 * inch,
-            bottomMargin=0.75 * inch,
+            pagesize=A4,
+            rightMargin=20 * mm,
+            leftMargin=20 * mm,
+            topMargin=25 * mm,
+            bottomMargin=20 * mm,
         )
 
         # Container for the 'Flowable' objects
@@ -93,7 +125,7 @@ class FullReportGenerator:
         # ===== TITLE PAGE =====
         story.append(Paragraph("Sample Size Calculator", title_style))
         story.append(Paragraph("Comprehensive Full Report", heading_style))
-        story.append(Spacer(1, 0.3 * inch))
+        story.append(Spacer(1, 8 * mm))
 
         # Report metadata
         story.append(
@@ -103,11 +135,11 @@ class FullReportGenerator:
             )
         )
         story.append(Paragraph(f"<b>Session ID:</b> {session_id}", normal_style))
-        story.append(Spacer(1, 0.2 * inch))
+        story.append(Spacer(1, 5 * mm))
 
         # ===== TABLE OF CONTENTS =====
         story.append(Paragraph("Table of Contents", heading2_style))
-        story.append(Spacer(1, 0.1 * inch))
+        story.append(Spacer(1, 0.25 * mm))
 
         toc_items = [
             "1. Calculator Signature",
@@ -118,29 +150,29 @@ class FullReportGenerator:
 
         for item in toc_items:
             story.append(Paragraph(item, normal_style))
-            story.append(Spacer(1, 0.05 * inch))
+            story.append(Spacer(1, 2 * mm))
 
         story.append(PageBreak())
 
         # ===== SECTION 1: CALCULATOR SIGNATURE =====
         story.append(Paragraph("1. Calculator Signature", heading_style))
-        story.append(Spacer(1, 0.2 * inch))
+        story.append(Spacer(1, 5 * mm))
 
         # Engine hash and validation state
         engine_hash = HashVerifier.get_engine_hash()
         validation_state = HashVerifier.is_validated_state()
 
         story.append(Paragraph("Engine Integrity Verification", heading2_style))
-        story.append(Spacer(1, 0.1 * inch))
+        story.append(Spacer(1, 0.25 * mm))
 
         # Version (Requirement 27.6 - Software Configuration Management)
         story.append(
             Paragraph(f"<b>Software Version:</b> v{__version__}", normal_style)
         )
-        story.append(Spacer(1, 0.05 * inch))
+        story.append(Spacer(1, 2 * mm))
 
         story.append(Paragraph(f"<b>Engine Hash:</b> {engine_hash}", normal_style))
-        story.append(Spacer(1, 0.05 * inch))
+        story.append(Spacer(1, 2 * mm))
 
         # Display validation state prominently
         validation_text = (
@@ -154,7 +186,7 @@ class FullReportGenerator:
             bold_style,
         )
         story.append(validation_para)
-        story.append(Spacer(1, 0.1 * inch))
+        story.append(Spacer(1, 0.25 * mm))
 
         # Validated hash comparison
         validated_hash = HashVerifier.get_validated_hash()
@@ -188,7 +220,7 @@ class FullReportGenerator:
 
         # ===== SECTION 2: CURRENT CALCULATION REPORT =====
         story.append(Paragraph("2. Current Calculation Report", heading_style))
-        story.append(Spacer(1, 0.2 * inch))
+        story.append(Spacer(1, 5 * mm))
 
         # Module and timestamp
         story.append(
@@ -202,17 +234,17 @@ class FullReportGenerator:
                 normal_style,
             )
         )
-        story.append(Spacer(1, 0.2 * inch))
+        story.append(Spacer(1, 5 * mm))
 
         # Statistical method
         story.append(Paragraph("Statistical Method", heading2_style))
-        story.append(Spacer(1, 0.1 * inch))
+        story.append(Spacer(1, 0.25 * mm))
         story.append(Paragraph(calculation_report.method_path, normal_style))
-        story.append(Spacer(1, 0.2 * inch))
+        story.append(Spacer(1, 5 * mm))
 
         # Input parameters
         story.append(Paragraph("Input Parameters", heading2_style))
-        story.append(Spacer(1, 0.1 * inch))
+        story.append(Spacer(1, 0.25 * mm))
 
         input_data = []
         for key, value in calculation_report.inputs.items():
@@ -225,7 +257,7 @@ class FullReportGenerator:
             )
 
         if input_data:
-            input_table = Table(input_data, colWidths=[2.5 * inch, 4 * inch])
+            input_table = Table(input_data, colWidths=[60 * mm, 90 * mm])
             input_table.setStyle(
                 TableStyle(
                     [
@@ -246,11 +278,11 @@ class FullReportGenerator:
                 )
             )
             story.append(input_table)
-        story.append(Spacer(1, 0.2 * inch))
+        story.append(Spacer(1, 5 * mm))
 
         # Calculated results
         story.append(Paragraph("Calculated Results", heading2_style))
-        story.append(Spacer(1, 0.1 * inch))
+        story.append(Spacer(1, 0.25 * mm))
 
         result_data = [
             [
@@ -310,7 +342,7 @@ class FullReportGenerator:
 
         # ===== SECTION 3: VALIDATION STATUS =====
         story.append(Paragraph("3. Validation Status", heading_style))
-        story.append(Spacer(1, 0.2 * inch))
+        story.append(Spacer(1, 5 * mm))
 
         # Check for latest validation certificate
         validation_cert_info = FullReportGenerator._get_latest_validation_info(
@@ -330,7 +362,7 @@ class FullReportGenerator:
                     normal_style,
                 )
             )
-            story.append(Spacer(1, 0.1 * inch))
+            story.append(Spacer(1, 0.25 * mm))
             story.append(
                 Paragraph(
                     "The system has been validated according to IQ/OQ/PQ protocols. "
@@ -346,7 +378,7 @@ class FullReportGenerator:
                     normal_style,
                 )
             )
-            story.append(Spacer(1, 0.1 * inch))
+            story.append(Spacer(1, 0.25 * mm))
             story.append(
                 Paragraph(
                     "No validation certificates were found in the reports/validation/ directory. "
@@ -359,7 +391,7 @@ class FullReportGenerator:
 
         # ===== SECTION 4: AUDIT TRAIL =====
         story.append(Paragraph("4. Audit Trail (Session Logs)", heading_style))
-        story.append(Spacer(1, 0.2 * inch))
+        story.append(Spacer(1, 5 * mm))
 
         story.append(
             Paragraph(
@@ -367,7 +399,7 @@ class FullReportGenerator:
                 normal_style,
             )
         )
-        story.append(Spacer(1, 0.1 * inch))
+        story.append(Spacer(1, 0.25 * mm))
 
         # Retrieve session logs
         session_logs = FullReportGenerator._get_session_logs(session_id, log_dir)
@@ -379,7 +411,7 @@ class FullReportGenerator:
                     normal_style,
                 )
             )
-            story.append(Spacer(1, 0.1 * inch))
+            story.append(Spacer(1, 0.25 * mm))
 
             # Create log table
             log_data = [
@@ -399,7 +431,7 @@ class FullReportGenerator:
                     ]
                 )
 
-            log_table = Table(log_data, colWidths=[1.5 * inch, 1.5 * inch, 3.5 * inch])
+            log_table = Table(log_data, colWidths=[35 * mm, 35 * mm, 80 * mm])
             log_table.setStyle(
                 TableStyle(
                     [
@@ -428,7 +460,7 @@ class FullReportGenerator:
             story.append(log_table)
 
             if len(session_logs) > 50:
-                story.append(Spacer(1, 0.1 * inch))
+                story.append(Spacer(1, 0.25 * mm))
                 story.append(
                     Paragraph(
                         f"<i>Note: Showing first 50 of {len(session_logs)} log entries. "
@@ -443,7 +475,7 @@ class FullReportGenerator:
                     normal_style,
                 )
             )
-            story.append(Spacer(1, 0.1 * inch))
+            story.append(Spacer(1, 0.25 * mm))
             story.append(
                 Paragraph(
                     "No audit log entries were found for this session ID. "
@@ -454,7 +486,7 @@ class FullReportGenerator:
             )
 
         # Footer
-        story.append(Spacer(1, 0.3 * inch))
+        story.append(Spacer(1, 8 * mm))
         footer_text = (
             "This comprehensive report combines the current calculation, validation status, "
             "and audit trail for complete QMS documentation. All sections are timestamped "
@@ -463,11 +495,7 @@ class FullReportGenerator:
         story.append(Paragraph(footer_text, normal_style))
 
         # Build the PDF with page numbers
-        doc.build(
-            story,
-            onFirstPage=FullReportGenerator._add_page_number,
-            onLaterPages=FullReportGenerator._add_page_number,
-        )
+        doc.build(story, canvasmaker=NumberedCanvas)
 
         # Get the PDF bytes
         pdf_bytes = buffer.getvalue()
@@ -655,5 +683,5 @@ class FullReportGenerator:
         text = f"Page {page_num}"
         canvas.saveState()
         canvas.setFont("Helvetica", 9)
-        canvas.drawRightString(7.5 * inch, 0.5 * inch, text)
+        canvas.drawRightString(180 * mm, 0.5 * inch, text)
         canvas.restoreState()
