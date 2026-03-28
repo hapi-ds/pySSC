@@ -2870,15 +2870,14 @@ Module A uses binomial distribution theory to determine sample sizes. The calcul
 Module V is designed for **variable data analysis** where measurements are continuous numerical values (dimensions, weights, voltages, etc.).
 It uses a structured 4-phase workflow to ensure proper statistical analysis and sample size determination.
 
-### Phase 1: Initial Data Collection & Outlier Detection
-**Objective**: Collect preliminary data and identify statistical outliers
+### Phase 1: (Initial) Data Collection & Outlier Detection
+**Objective**: Collect (preliminary) data and identify statistical outliers
 
 **Steps**:
-1. Enter your initial measurement data (comma-separated values)
-2. Specify the number of standard deviations for outlier detection (typically 3σ)
-3. Click "Detect Outliers" to identify extreme values
-4. Review flagged outliers and decide whether to remove them
-5. Click "Complete Phase 1" to proceed
+1. Enter type and specification limits (LSL, USL)
+2. Enter risked based statistical parameters (confidence, reliability)
+3. Enter your measurement data (comma-separated values) or enter mean and sd
+4. Click "Analyse Pilot Data" --> System detects outliers and suggests removal in Phase 2
 
 **Key Concepts**:
 - **Outliers**: Data points that fall beyond ±k standard deviations from the mean
@@ -2889,17 +2888,22 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
 **Objective**: Assess data normality and apply transformations if needed
 
 **Steps**:
-1. System automatically performs normality tests (Shapiro-Wilk and Anderson-Darling)
-2. Review normality test results and diagnostic plots:
+1. You must review the results of the outlier detection and decide
+ whether to remove outliers (or keep them if they represent real variation).
+ You have to add comments on excusion.
+2. System automatically performs normality tests (Shapiro-Wilk and Anderson-Darling)
+ or you enable manual override and select which methode to use
+3. Click "Process normality testing"
+4. Review normality test results and diagnostic plots:
    - **Q-Q Plot**: Points should follow diagonal line for normal data
    - **P-P Plot**: Points should follow diagonal line for normal distribution
    - **I-MR Chart**: Checks process stability over time
-3. If data is non-normal, system recommends transformations:
+5. If data is non-normal, system recommends transformations:
    - **Logarithmic**: For right-skewed data (positive values only)
    - **Box-Cox**: For positive data with varying skewness
    - **Yeo-Johnson**: For data including zero or negative values
-4. Enable "Manual Override" to manually select transformation method if desired
-5. Click "Complete Phase 2" to proceed
+6. Review "Locked Methode" --> this is the methode we use for next Phase 3 and 4
+7. Click "Calculate required sample size" to proceed
 
 **Key Concepts**:
 - **Normality**: Many statistical methods assume normally distributed data
@@ -2910,18 +2914,14 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
 **Objective**: Calculate required sample size for tolerance limit estimation
 
 **Steps**:
-1. Enter statistical requirements:
-   - **Confidence Level**: Confidence in the tolerance interval (e.g., 95%)
-   - **Coverage**: Proportion of population within tolerance limits (e.g., 99%)
-   - **Sided**: One-sided (upper or lower) or two-sided tolerance limits
-2. Click "Calculate Sample Size" to determine required n
-3. Review the calculated sample size
-4. System locks Phase 3 controls to prevent recalculation that would invalidate Phase 4
+1. Review the calculated sample size, capability margins and tolerance factor
+2. If you have enough data from Phase 1, you can proceed to Phase 4 - if not, 
+    you have to collect more data and start from beginning (outlier detection and normality
+    tests have to be checked also on new data)
+3. Click "Calculate tolerance limits"
 
 **Key Concepts**:
 - **Tolerance Limits**: Statistical bounds that contain a specified proportion of the population
-- **Confidence Level**: How confident you are that the tolerance limits are correct
-- **Coverage**: What percentage of the population falls within the limits
 
 ### Phase 4: Final Validation & Tolerance Limit Calculation
 **Objective**: Calculate tolerance limits
@@ -2931,8 +2931,7 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
     - if enough data points are available,
     - else system shows how many you need.
     - You have to run all Phases again to make sure new data are normal and no outlier
-2. Click "Calculate Tolerance Limits" to perform final analysis
-3. Review results:
+2. Review results:
    - **Tolerance Limits**: Calculated statistical bounds
    - **Pass/Fail**: Whether tolerance limits fall within specification limits
    - **Ppk**: Process performance index (higher is better, ≥1.33 is typical target)
@@ -3039,9 +3038,9 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
   - Ppk = 1.67: Good process capability (5σ process)
   - Ppk ≥ 2.0: Excellent process capability (6σ process)
 
-**Confidence Level vs. Coverage**
+**Confidence Level vs. Reliability/Coverage**
 - **Confidence Level**: How sure you are that your tolerance limits are correct (e.g., 95% confidence)
-- **Coverage**: What proportion of the population falls within the limits (e.g., 99% coverage)
+- **Reliability/Coverage**: What proportion of the population falls within the limits (e.g., 99% coverage)
 - **Example**: "95% confidence, 99% coverage" means "I'm 95% confident that 99% of parts meet requirements"
                 """)
 
@@ -3056,14 +3055,14 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
 **Scenario**: Your data is already normally distributed
 
 **Steps**:
-1. **Phase 1**: Enter data → Detect outliers → Remove if necessary → Complete Phase 1
-2. **Phase 2**: Review normality tests
+1. **Phase 1**: Enter confidence (95%), coverage (99%), sided (Two-sided), data → Detect outliers → NEXT Complete Phase 1
+2. **Phase 2**: Remove outliers if necessary → test normality → Review normality tests
    - Shapiro-Wilk p-value > 0.05 ✓
    - Anderson-Darling statistic below critical value ✓
    - Q-Q plot points follow diagonal line ✓
    - System selects "None/Parametric" method → Complete Phase 2
-3. **Phase 3**: Enter confidence (95%), coverage (99%), sided (Two-sided) → Calculate → Complete Phase 3
-4. **Phase 4**: Collect n samples → Enter data → Enter LSL/USL → Calculate tolerance limits → Review Ppk
+3. **Phase 3**: Calculate Sample Size → Complete Phase 3
+4. **Phase 4**: Calculate tolerance limits → Review Ppk
 
 **Expected Outcome**: Straightforward analysis with no transformation needed
 
@@ -3072,14 +3071,14 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
 **Scenario**: Your data has a long tail to the right (e.g., cycle times, failure rates)
 
 **Steps**:
-1. **Phase 1**: Enter data → Detect outliers → Complete Phase 1
-2. **Phase 2**: Review normality tests
+1. **Phase 1**: Enter confidence (95%), coverage (99%), sided (Two-sided), data → Detect outliers → NEXT Complete Phase 1
+2. **Phase 2**: Remove outliers if necessary → test normality → Review normality tests
    - Shapiro-Wilk p-value < 0.05 (non-normal) ✗
    - Q-Q plot curves above diagonal line (right-skewed)
    - System recommends "Logarithmic" or "Box-Cox" transformation
    - Accept recommendation → Complete Phase 2
-3. **Phase 3**: Enter requirements → Calculate sample size → Complete Phase 3
-4. **Phase 4**: Collect n samples → Enter data → Enter LSL/USL → Calculate tolerance limits
+3. **Phase 3**: Calculate sample size → Complete Phase 3
+4. **Phase 4**: Calculate tolerance limits
    - System applies same transformation to final data
    - Review results in original units
 
@@ -3090,14 +3089,14 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
 **Scenario**: You want to manually select the transformation method
 
 **Steps**:
-1. **Phase 1**: Enter data → Detect outliers → Complete Phase 1
-2. **Phase 2**:
+1. **Phase 1**: Enter confidence (95%), coverage (99%), sided (Two-sided), data → Detect outliers → NEXT Complete Phase 1
+2. **Phase 2**: Remove outliers if necessary → test normality → Review normality tests
    - Review normality test results
    - Enable "Manual Override" checkbox
    - Dropdown now shows all methods: None/Parametric, Logarithmic, Box-Cox, Yeo-Johnson, Non-Parametric/Wilks
    - Select desired method → Complete Phase 2
-3. **Phase 3**: Enter requirements → Calculate sample size → Complete Phase 3
-4. **Phase 4**: Collect n samples → Enter data → Enter LSL/USL → Calculate tolerance limits
+3. **Phase 3**: Calculate sample size → Complete Phase 3
+4. **Phase 4**: Calculate tolerance limits
 
 **Use Case**: When you have domain knowledge about appropriate transformation or want to compare methods
 
@@ -3173,7 +3172,7 @@ START: Do you have attribute (Pass/Fail) or variable (numerical) data?
     │
     Phase 3: Calculate required sample size n
     │
-    Phase 4: Collect n samples → Calculate tolerance limits → Check Ppk
+    Phase 4: Calculate tolerance limits → Check Ppk
 ```
 
 ### Tips for Success
