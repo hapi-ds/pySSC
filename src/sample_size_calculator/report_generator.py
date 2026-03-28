@@ -28,6 +28,7 @@ from sample_size_calculator.report_paths import (
     get_validation_report_path,
     save_report,
 )
+from sample_size_calculator.version import __version__
 
 
 class ReportGenerator:
@@ -91,6 +92,12 @@ class ReportGenerator:
         # Module
         story.append(
             Paragraph(f"<b>Analysis Module:</b> {report_data.module}", normal_style)
+        )
+        story.append(Spacer(1, 0.05 * inch))
+
+        # Version (Requirement 27.6 - Software Configuration Management)
+        story.append(
+            Paragraph(f"<b>Software Version:</b> v{report_data.version}", normal_style)
         )
         story.append(Spacer(1, 0.2 * inch))
 
@@ -263,7 +270,7 @@ class ReportGenerator:
         # Save to reports directory (Requirement 27.1, 30.1)
         report_path = get_calculation_report_path()
         saved_path = save_report(pdf_bytes, report_path)
-        
+
         # Sign the PDF with hash for tamper detection
         try:
             signature = PDFSignature.sign_pdf(pdf_bytes, report_data.engine_hash)
@@ -325,7 +332,13 @@ class ReportGenerator:
                 f"<b>Test Execution Date:</b> {cert_data.test_date}", normal_style
             )
         )
-        story.append(Spacer(1, 0.1 * inch))
+        story.append(Spacer(1, 0.05 * inch))
+
+        # Software Version
+        story.append(
+            Paragraph(f"<b>Software Version:</b> v{__version__}", normal_style)
+        )
+        story.append(Spacer(1, 0.2 * inch))
 
         # Tester Name
         story.append(
@@ -695,33 +708,48 @@ class ReportGenerator:
 
         # Page break before PDF validation results
         story.append(PageBreak())
-        
+
         # ===== CHAPTER 3.5: PDF VALIDATION RESULTS =====
         story.append(Paragraph("CHAPTER 3.5: PDF VALIDATION RESULTS", heading_style))
         story.append(Spacer(1, 0.2 * inch))
-        
+
         # Check if we have PDF test results (from validation_runner)
-        pdf_test_results = cert_data.pdf_test_results if hasattr(cert_data, 'pdf_test_results') and cert_data.pdf_test_results else []
-        
+        pdf_test_results = (
+            cert_data.pdf_test_results
+            if hasattr(cert_data, "pdf_test_results") and cert_data.pdf_test_results
+            else []
+        )
+
         if pdf_test_results:
-            story.append(Paragraph("PDF Report Content Validation Tests", heading3_style))
+            story.append(
+                Paragraph("PDF Report Content Validation Tests", heading3_style)
+            )
             story.append(Spacer(1, 0.1 * inch))
-            
+
             # Extract PDF test results
             pdf_iq = [r for r in pdf_test_results if "test_iq" in r.get("test_id", "")]
             pdf_oq = [r for r in pdf_test_results if "test_oq" in r.get("test_id", "")]
-            pdf_pq_pdf = [r for r in pdf_test_results if "test_pq" in r.get("test_id", "") and "pdf" in r.get("test_id", "").lower()]
-            
+            pdf_pq_pdf = [
+                r
+                for r in pdf_test_results
+                if "test_pq" in r.get("test_id", "")
+                and "pdf" in r.get("test_id", "").lower()
+            ]
+
             total_pdf_tests = len(pdf_iq) + len(pdf_oq) + len(pdf_pq_pdf)
-            pdf_passed = sum(1 for r in pdf_test_results if r.get("status", "").upper() in ["PASS", "PASSED"])
+            pdf_passed = sum(
+                1
+                for r in pdf_test_results
+                if r.get("status", "").upper() in ["PASS", "PASSED"]
+            )
             pdf_failed = total_pdf_tests - pdf_passed
-            
+
             story.append(Paragraph(f"<b>PDF Test Summary:</b>", normal_style))
             story.append(Spacer(1, 0.1 * inch))
             story.append(Paragraph(f"Total Tests: {total_pdf_tests}", normal_style))
             story.append(Paragraph(f"Passed: {pdf_passed}", normal_style))
             story.append(Paragraph(f"Failed: {pdf_failed}", normal_style))
-            
+
             if total_pdf_tests > 0:
                 # PDF test results table
                 pdf_data = [
@@ -731,12 +759,12 @@ class ReportGenerator:
                         Paragraph("<b>Status</b>", normal_style),
                     ]
                 ]
-                
+
                 for result in pdf_test_results:
                     test_id = result.get("test_id", "N/A")
                     urs_id = result.get("urs_id", "N/A")
                     status = result.get("status", "N/A")
-                    
+
                     # Color code the status
                     if str(status).upper() in ["PASS", "PASSED"]:
                         status_text = f'<font color="green"><b>{status}</b></font>'
@@ -744,7 +772,7 @@ class ReportGenerator:
                         status_text = f'<font color="red"><b>{status}</b></font>'
                     else:
                         status_text = status
-                    
+
                     pdf_data.append(
                         [
                             Paragraph(str(test_id), normal_style),
@@ -752,7 +780,7 @@ class ReportGenerator:
                             Paragraph(status_text, normal_style),
                         ]
                     )
-                
+
                 pdf_table = Table(pdf_data, colWidths=[3 * inch, 2 * inch, 1.5 * inch])
                 pdf_table.setStyle(
                     TableStyle(
@@ -776,9 +804,9 @@ class ReportGenerator:
                 story.append(pdf_table)
         else:
             story.append(Paragraph("No PDF validation tests were run.", normal_style))
-        
+
         story.append(Spacer(1, 0.3 * inch))
-        
+
         # Page break before summary chapter
         story.append(PageBreak())
 

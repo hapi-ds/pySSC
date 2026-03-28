@@ -18,9 +18,12 @@ Validates: Requirements 37.1, 37.2, 37.3, 37.4, 37.5
 """
 
 from enum import StrEnum
+
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
+
+from sample_size_calculator.version import __version__
 
 
 class SpecificationType(StrEnum):
@@ -214,6 +217,7 @@ class CalculationReport(BaseModel):
     engine_hash: str
     validation_state: bool
     method_path: str
+    version: str = __version__
 
 
 class ValidationCertificate(BaseModel):

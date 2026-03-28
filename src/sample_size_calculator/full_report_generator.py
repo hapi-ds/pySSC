@@ -27,6 +27,7 @@ from reportlab.platypus import (
 
 from sample_size_calculator.hash_verifier import HashVerifier
 from sample_size_calculator.models import CalculationReport
+from sample_size_calculator.version import __version__
 
 
 class FullReportGenerator:
@@ -131,6 +132,12 @@ class FullReportGenerator:
 
         story.append(Paragraph("Engine Integrity Verification", heading2_style))
         story.append(Spacer(1, 0.1 * inch))
+
+        # Version (Requirement 27.6 - Software Configuration Management)
+        story.append(
+            Paragraph(f"<b>Software Version:</b> v{__version__}", normal_style)
+        )
+        story.append(Spacer(1, 0.05 * inch))
 
         story.append(Paragraph(f"<b>Engine Hash:</b> {engine_hash}", normal_style))
         story.append(Spacer(1, 0.05 * inch))
