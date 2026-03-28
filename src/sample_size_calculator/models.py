@@ -217,6 +217,9 @@ class CalculationReport(BaseModel):
     validation_state: bool
     method_path: str
     version: str = __version__
+    sampled_data: list[float] | None = None
+    detected_outliers: list[dict] | None = None
+    outlier_exclusions: list[dict] | None = None
 
 
 class ValidationCertificate(BaseModel):

@@ -176,7 +176,9 @@ class TestFullReportGenerator:
 
             # Should only get logs for the specified session
             assert len(logs) == 2
-            assert all(log["event_type"] in ["button_click", "calculation"] for log in logs)
+            assert all(
+                log["event_type"] in ["button_click", "calculation"] for log in logs
+            )
 
     def test_get_latest_validation_info_no_dir(self):
         """Test getting validation info when directory doesn't exist."""
@@ -216,3 +218,106 @@ class TestFullReportGenerator:
             assert "date" in info
             # Should get the most recent file
             assert "validation_certificate" in info["filename"]
+
+    def test_generate_full_report_with_sampled_data(self):
+        """Test full report generation with sampled data and outliers."""
+        report_data = CalculationReport(
+            timestamp=datetime.now().isoformat(),
+            module="Module V",
+            inputs={"confidence": 95.0, "reliability": 95.0},
+            results={
+                "sample_size": 30,
+                "transformation_method": "None",
+                "analysis_method": "Parametric",
+            },
+            engine_hash="test_hash_sampled_123",
+            validation_state=True,
+            method_path="Parametric (Two-Sided)",
+            sampled_data=[1.5, 2.3, 3.1, 4.7, 5.2, 6.8, 7.9],
+            detected_outliers=[
+                {
+                    "value": 7.9,
+                    "is_excluded": True,
+                    "rationale": "Sensor malfunction during high load test",
+                },
+                {"value": 1.5, "is_excluded": False, "rationale": None},
+            ],
+            outlier_exclusions=[
+                {"value": 7.9, "rationale": "Sensor malfunction during high load test"}
+            ],
+        )
+
+        session_id = "test_session_sampled_123"
+
+        # Generate full report
+        pdf_bytes = FullReportGenerator.generate_full_report(
+            calculation_report=report_data,
+            session_id=session_id,
+            log_dir="logs",
+            validation_reports_dir="reports/validation",
+        )
+
+        # Verify PDF was generated
+        assert pdf_bytes is not None
+        assert len(pdf_bytes) > 0
+        assert pdf_bytes[:4] == b"%PDF"
+
+    def test_generate_full_report_without_sampled_data(self):
+        """Test full report generation without sampled data (Module A style)."""
+        report_data = CalculationReport(
+            timestamp=datetime.now().isoformat(),
+            module="Module A",
+            inputs={"confidence": 95.0, "reliability": 95.0},
+            results={"sample_size": 59, "method": "Success Run Theorem"},
+            engine_hash="test_hash_no_sampled_123",
+            validation_state=True,
+            method_path="Success Run Theorem (c=0)",
+        )
+
+        session_id = "test_session_no_sampled_123"
+
+        # Generate full report
+        pdf_bytes = FullReportGenerator.generate_full_report(
+            calculation_report=report_data,
+            session_id=session_id,
+            log_dir="logs",
+            validation_reports_dir="reports/validation",
+        )
+
+        # Verify PDF was generated
+        assert pdf_bytes is not None
+        assert len(pdf_bytes) > 0
+        assert pdf_bytes[:4] == b"%PDF"
+
+    def test_generate_full_report_with_only_outliers(self):
+        """Test full report generation with outliers but no exclusions."""
+        report_data = CalculationReport(
+            timestamp=datetime.now().isoformat(),
+            module="Module V",
+            inputs={"confidence": 95.0, "reliability": 95.0},
+            results={
+                "sample_size": 30,
+                "transformation_method": "None",
+                "analysis_method": "Parametric",
+            },
+            engine_hash="test_hash_outliers_only_123",
+            validation_state=True,
+            method_path="Parametric (Two-Sided)",
+            sampled_data=[1.5, 2.3, 3.1, 4.7, 5.2],
+            detected_outliers=[{"value": 5.2, "is_excluded": False, "rationale": None}],
+        )
+
+        session_id = "test_session_outliers_only_123"
+
+        # Generate full report
+        pdf_bytes = FullReportGenerator.generate_full_report(
+            calculation_report=report_data,
+            session_id=session_id,
+            log_dir="logs",
+            validation_reports_dir="reports/validation",
+        )
+
+        # Verify PDF was generated
+        assert pdf_bytes is not None
+        assert len(pdf_bytes) > 0
+        assert pdf_bytes[:4] == b"%PDF"

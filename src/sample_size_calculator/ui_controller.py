@@ -2080,6 +2080,7 @@ class UIController:
                 validation_state = is_validated_state()
 
                 # Prepare report data
+                phase1 = self.module_v_state.phase1_results
                 phase2 = self.module_v_state.phase2_results
                 phase3 = self.module_v_state.phase3_results
                 phase4 = self.module_v_state.phase4_results
@@ -2116,6 +2117,29 @@ class UIController:
                     "ppk": phase4.ppk,
                 }
 
+                sampled_data = self.module_v_state.pilot_data or []
+                detected_outliers = (
+                    [
+                        {
+                            "value": o.value,
+                            "is_excluded": o.is_excluded,
+                            "rationale": o.rationale,
+                        }
+                        for o in phase1.outliers
+                    ]
+                    if phase1 and phase1.outliers
+                    else None
+                )
+                outlier_exclusions = (
+                    [
+                        {"value": o.value, "rationale": o.rationale}
+                        for o in phase1.outliers
+                        if o.is_excluded and o.rationale
+                    ]
+                    if phase1 and phase1.outliers
+                    else None
+                )
+
                 # Build method path
                 method_path = f"Specification: {spec_limits.spec_type.value}\n"
                 method_path += f"Transformation: {phase2.transformation_method.value}\n"
@@ -2131,6 +2155,9 @@ class UIController:
                     engine_hash=engine_hash,
                     validation_state=validation_state,
                     method_path=method_path,
+                    sampled_data=sampled_data,
+                    detected_outliers=detected_outliers,
+                    outlier_exclusions=outlier_exclusions,
                 )
 
                 # Generate PDF and save to reports directory
@@ -2190,6 +2217,7 @@ class UIController:
                 validation_state = is_validated_state()
 
                 # Prepare report data (same as regular report)
+                phase1 = self.module_v_state.phase1_results
                 phase2 = self.module_v_state.phase2_results
                 phase3 = self.module_v_state.phase3_results
                 phase4 = self.module_v_state.phase4_results
@@ -2226,6 +2254,29 @@ class UIController:
                     "ppk": phase4.ppk,
                 }
 
+                sampled_data = self.module_v_state.pilot_data or []
+                detected_outliers = (
+                    [
+                        {
+                            "value": o.value,
+                            "is_excluded": o.is_excluded,
+                            "rationale": o.rationale,
+                        }
+                        for o in phase1.outliers
+                    ]
+                    if phase1 and phase1.outliers
+                    else None
+                )
+                outlier_exclusions = (
+                    [
+                        {"value": o.value, "rationale": o.rationale}
+                        for o in phase1.outliers
+                        if o.is_excluded and o.rationale
+                    ]
+                    if phase1 and phase1.outliers
+                    else None
+                )
+
                 # Build method path
                 method_path = f"Specification: {spec_limits.spec_type.value}\n"
                 method_path += f"Transformation: {phase2.transformation_method.value}\n"
@@ -2241,6 +2292,9 @@ class UIController:
                     engine_hash=engine_hash,
                     validation_state=validation_state,
                     method_path=method_path,
+                    sampled_data=sampled_data,
+                    detected_outliers=detected_outliers,
+                    outlier_exclusions=outlier_exclusions,
                 )
 
                 # Generate full report PDF

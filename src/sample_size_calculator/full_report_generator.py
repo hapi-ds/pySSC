@@ -307,6 +307,142 @@ class FullReportGenerator:
             )
             story.append(result_table)
 
+        story.append(Spacer(1, 6 * mm))
+
+        # Sampled Data Section
+        if calculation_report.sampled_data:
+            story.append(Paragraph("Sampled Data", heading2_style))
+            story.append(Spacer(1, 0.25 * mm))
+
+            story.append(
+                Paragraph(
+                    f"<b>Total Data Points:</b> {len(calculation_report.sampled_data)}",
+                    normal_style,
+                )
+            )
+            story.append(Spacer(1, 0.25 * mm))
+
+            data_str = ", ".join(str(x) for x in calculation_report.sampled_data)
+            if len(data_str) > 500:
+                data_str = data_str[:500] + "..."
+            story.append(
+                Paragraph(f"<b>All Sampled Values:</b> {data_str}", normal_style)
+            )
+            story.append(Spacer(1, 6 * mm))
+
+        # Detected Outliers Section
+        if calculation_report.detected_outliers:
+            story.append(Paragraph("Detected Outliers", heading2_style))
+            story.append(Spacer(1, 0.25 * mm))
+
+            outlier_data = [
+                [
+                    Paragraph("<b>Value</b>", bold_style),
+                    Paragraph("<b>Status</b>", bold_style),
+                    Paragraph("<b>Rationale</b>", bold_style),
+                ]
+            ]
+
+            for outlier in calculation_report.detected_outliers:
+                status = "Excluded" if outlier.get("is_excluded", False) else "Included"
+                rationale = outlier.get("rationale") or "N/A"
+
+                status_color = "red" if outlier.get("is_excluded", False) else "green"
+                status_text = f'<font color="{status_color}">{status}</font>'
+
+                outlier_data.append(
+                    [
+                        Paragraph(str(outlier.get("value", "N/A")), normal_style),
+                        Paragraph(status_text, normal_style),
+                        Paragraph(rationale, normal_style),
+                    ]
+                )
+
+            if len(outlier_data) > 1:
+                outlier_table = Table(
+                    outlier_data, colWidths=[50 * mm, 40 * mm, 80 * mm]
+                )
+                outlier_table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 9),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            (
+                                "ROWBACKGROUNDS",
+                                (0, 1),
+                                (-1, -1),
+                                [colors.white, colors.lightgrey],
+                            ),
+                        ]
+                    )
+                )
+                story.append(outlier_table)
+
+            excluded_count = sum(
+                1
+                for o in calculation_report.detected_outliers
+                if o.get("is_excluded", False)
+            )
+            story.append(Spacer(1, 0.25 * mm))
+            story.append(
+                Paragraph(
+                    f"<b>Summary:</b> {len(calculation_report.detected_outliers)} outliers detected, {excluded_count} excluded",
+                    normal_style,
+                )
+            )
+            story.append(Spacer(1, 6 * mm))
+
+        # Outlier Exclusions Section (detailed rationale)
+        if calculation_report.outlier_exclusions:
+            story.append(
+                Paragraph("Outlier Exclusions (with Rationale)", heading2_style)
+            )
+            story.append(Spacer(1, 0.25 * mm))
+
+            exclusion_data = [
+                [
+                    Paragraph("<b>Value</b>", bold_style),
+                    Paragraph("<b>Rationale</b>", bold_style),
+                ]
+            ]
+
+            for exclusion in calculation_report.outlier_exclusions:
+                exclusion_data.append(
+                    [
+                        Paragraph(str(exclusion.get("value", "N/A")), normal_style),
+                        Paragraph(exclusion.get("rationale") or "", normal_style),
+                    ]
+                )
+
+            if len(exclusion_data) > 1:
+                exclusion_table = Table(exclusion_data, colWidths=[60 * mm, 90 * mm])
+                exclusion_table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 9),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            (
+                                "ROWBACKGROUNDS",
+                                (0, 1),
+                                (-1, -1),
+                                [colors.white, colors.lightgrey],
+                            ),
+                        ]
+                    )
+                )
+                story.append(exclusion_table)
+            story.append(Spacer(1, 6 * mm))
+
         story.append(PageBreak())
 
         # ===== SECTION 3: VALIDATION STATUS =====
