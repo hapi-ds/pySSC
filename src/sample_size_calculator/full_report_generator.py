@@ -30,36 +30,7 @@ from reportlab.platypus import (
 from sample_size_calculator.hash_verifier import HashVerifier
 from sample_size_calculator.models import CalculationReport
 from sample_size_calculator.version import __version__
-
-
-
-
-class NumberedCanvas(canvas.Canvas):
-    """Canvas subclass that tracks pages and displays 'page x of y' format."""
-
-    def __init__(self, *args, **kwargs):
-        canvas.Canvas.__init__(self, *args, **kwargs)
-        self._codes = []
-
-    def showPage(self):
-        self._codes.append({"code": self._code, "stack": self._codeStack})
-        self._startPage()
-
-    def save(self):
-        """Add page info to each page (page x of y)"""
-        self._pageNumber = 0
-        for code in self._codes:
-            self._code = code["code"]
-            self._codeStack = code["stack"]
-            self.setFont("Helvetica", 7)
-            self.drawRightString(200 * mm, 20 * mm,
-                "page %(this)i of %(total)i" % {
-                   'this': self._pageNumber + 1,
-                   'total': len(self._codes),
-                }
-            )
-            canvas.Canvas.showPage(self)
-        canvas.Canvas.save(self)
+from sample_size_calculator.pdf_report import NumberedCanvas
 
 
 class FullReportGenerator:

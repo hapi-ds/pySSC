@@ -1,11 +1,14 @@
 """PDF report template using NumberedCanvas for consistent page numbering."""
 
+from datetime import date
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.utils import ImageReader
+from pathlib import Path
 
 
 class NumberedCanvas(canvas.Canvas):
@@ -23,17 +26,34 @@ class NumberedCanvas(canvas.Canvas):
         """Add page info to each page (page x of y)"""
         # Reset page counter
         self._pageNumber = 0
+        width, height = A4
         for code in self._codes:
             # Recall saved page
             self._code = code['code']
             self._codeStack = code['stack']
             self.setFont("Helvetica", 7)
-            self.drawRightString(200 * mm, 20 * mm,
+            self.setLineWidth(0.8)
+            # header
+            # self.rect(20 * mm, height - 20 * mm, width - 40 * mm, 10 * mm, fill=0, stroke=1)
+            # BASE_DIR = Path(__file__).resolve().parent
+            # IMAGE_PATH = BASE_DIR / "QR.png"
+            # im = ImageReader(IMAGE_PATH)
+            # self.drawImage(im, 20*mm, height - 20 * mm, width=10*mm,height=10*mm,mask=None) 
+            # self.drawCentredString(width/2, height - 15 * mm, "powered by HApi")
+
+
+            # footer
+            self.line(20 * mm, 25 * mm, width - 20 * mm, 25 * mm)
+            #self.rect(20 * mm, 15 * mm, width - 40 * mm, 10 * mm, fill=0, stroke=1)
+            self.drawString(20 * mm, 20 * mm, f"printed on {date.today():%Y-%m-%d}")
+            self.drawCentredString(width/2, 20 * mm , "confidential")
+            self.drawRightString(190 * mm, 20 * mm,
                 "page %(this)i of %(total)i" % {
                    'this': self._pageNumber + 1,
                    'total': len(self._codes),
                 }
             )
+
             canvas.Canvas.showPage(self)
         canvas.Canvas.save(self)
 

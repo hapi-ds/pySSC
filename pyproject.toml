@@ -25,6 +25,7 @@ dependencies = [
     "nicegui>=3.7.1",
     "numpy>=2.4.2",
     "pandas>=2.2.3",
+    "pillow>=12.1.1",
     "pydantic>=2.12.5",
     "pypdf>=6.7.2",
     "python-semantic-release>=10.5.3",

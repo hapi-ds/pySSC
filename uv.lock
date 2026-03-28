@@ -3411,7 +3411,7 @@ wheels = [
 
 [[package]]
 name = "sample-size-calculator"
-version = "0.0.0"
+version = "1.0.2"
 source = { editable = "." }
 dependencies = [
     { name = "jupyterlab" },
@@ -3419,6 +3419,7 @@ dependencies = [
     { name = "nicegui" },
     { name = "numpy" },
     { name = "pandas" },
+    { name = "pillow" },
     { name = "pydantic" },
     { name = "pypdf" },
     { name = "python-semantic-release" },
@@ -3451,6 +3452,7 @@ requires-dist = [
     { name = "nicegui", specifier = ">=3.7.1" },
     { name = "numpy", specifier = ">=2.4.2" },
     { name = "pandas", specifier = ">=2.2.3" },
+    { name = "pillow", specifier = ">=12.1.1" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pypdf", specifier = ">=6.7.2" },
     { name = "python-semantic-release", specifier = ">=10.5.3" },
