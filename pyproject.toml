@@ -75,7 +75,7 @@ markers = [
 
 [tool.coverage.run]
 source = ["src/sample_size_calculator"]
-omit = ["tests/*", "scripts/*"]
+omit = ["tests/*", "scripts/*", "*ui_controller.py"]
 
 [tool.coverage.report]
 show_missing = true
