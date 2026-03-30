@@ -272,7 +272,6 @@ class ValidationRunner:
             self._report_progress("=" * 60)
 
             try:
-                import subprocess
 
                 pdf_result = subprocess.run(
                     [
