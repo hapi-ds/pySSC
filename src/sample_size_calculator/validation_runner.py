@@ -18,8 +18,6 @@ from sample_size_calculator.models import ValidationCertificate
 from sample_size_calculator.report_generator import ReportGenerator
 from sample_size_calculator.version import __version__
 from sample_size_calculator.vtm_generator import VTMGenerator
-import sys
-from pathlib import Path
 
 # Add parent directory (repo root) to path for importing scripts module
 script_path = Path(__file__).resolve().parent.parent.parent

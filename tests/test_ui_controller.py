@@ -1,7 +1,8 @@
 """Comprehensive unit tests for UI controller."""
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from sample_size_calculator.ui_controller import (
     ModuleVState,
@@ -57,10 +58,10 @@ class TestModuleVState:
 
     def test_complete_phase2_clears_downstream(self):
         from sample_size_calculator.models import (
+            AnalysisMethod,
             Phase1Results,
             Phase2Results,
             TransformationMethod,
-            AnalysisMethod,
         )
         
         state = ModuleVState()
@@ -96,19 +97,18 @@ class TestModuleVState:
         assert state.is_phase_enabled(1) is True
         assert state.is_phase_enabled(2) is False
         
-        from sample_size_calculator.models import Phase1Results
         state.complete_phase1([1.0, 2.0, 3.0])
         
         assert state.is_phase_enabled(2) is True
 
     def test_complete_phase3_clears_phase4(self):
         from sample_size_calculator.models import (
+            AnalysisMethod,
             Phase1Results,
             Phase2Results,
             Phase3Results,
             SpecificationType,
             TransformationMethod,
-            AnalysisMethod,
         )
         
         state = ModuleVState()
@@ -222,12 +222,12 @@ class TestModuleVStateEdgeCases:
 
     def test_complete_phase1_clears_all_downstream(self):
         from sample_size_calculator.models import (
+            AnalysisMethod,
             Phase1Results,
             Phase2Results,
             Phase3Results,
             SpecificationType,
             TransformationMethod,
-            AnalysisMethod,
         )
         
         state = ModuleVState()
