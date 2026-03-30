@@ -20,6 +20,9 @@ jobs:
         # install all + Dev-Tools + alle Extras
         run: uv sync --frozen --all-extras
 
+      - name: Install Playwright Browsers
+        run: playwright install --with-deps chromium
+
       - name: Start Service (Background)
         run: |
           # start app in background
