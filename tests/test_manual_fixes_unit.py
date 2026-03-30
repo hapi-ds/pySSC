@@ -137,8 +137,26 @@ class TestBug1Phase4Validation:
         # Setup: Create test data with N+10=20 samples (required N=10)
         n = 10
         final_data = [
-            10.0, 12.0, 11.0, 13.0, 12.5, 11.5, 12.2, 11.8, 12.3, 11.9,
-            12.1, 11.7, 12.4, 11.6, 12.6, 11.4, 12.8, 11.2, 12.9, 11.1,
+            10.0,
+            12.0,
+            11.0,
+            13.0,
+            12.5,
+            11.5,
+            12.2,
+            11.8,
+            12.3,
+            11.9,
+            12.1,
+            11.7,
+            12.4,
+            11.6,
+            12.6,
+            11.4,
+            12.8,
+            11.2,
+            12.9,
+            11.1,
         ]
 
         # Phase 2 results: No transformation, parametric analysis
@@ -217,7 +235,9 @@ class TestBug1Phase4Validation:
         )
 
         # Execute: Should raise ValueError for insufficient samples
-        with pytest.raises(ValueError, match="Insufficient samples") as exc_info:
+        with pytest.raises(
+            ValueError, match="Final dataset must contain at least"
+        ) as exc_info:
             calculate_tolerance_limits(
                 final_data, phase2_results, phase3_results, spec_limits
             )
@@ -588,7 +608,9 @@ class TestBug2YeoJohnsonRoundTrip:
 
         # Execute: Transform then inverse transform
         transformed = log_transform(original_data)
-        assert transformed is not None, "Log transform should succeed with positive data"
+        assert transformed is not None, (
+            "Log transform should succeed with positive data"
+        )
 
         inverse = inverse_log_transform(transformed)
 
@@ -729,7 +751,9 @@ class TestBug3Phase3StateManagement:
         state.complete_phase2(phase2_results)
 
         # Phase 4 should still not be enabled
-        assert not state.is_phase_enabled(4), "Phase 4 should not be enabled before Phase 3"
+        assert not state.is_phase_enabled(4), (
+            "Phase 4 should not be enabled before Phase 3"
+        )
 
         # Complete Phase 3
         phase3_results = Phase3Results(
@@ -741,7 +765,9 @@ class TestBug3Phase3StateManagement:
         state.complete_phase3(phase3_results)
 
         # Verify: Phase 4 should now be enabled
-        assert state.is_phase_enabled(4), "Phase 4 should be enabled after Phase 3 completion"
+        assert state.is_phase_enabled(4), (
+            "Phase 4 should be enabled after Phase 3 completion"
+        )
 
     def test_phase1_state_transitions_unchanged_preservation(self):
         """Test that Phase 1 state transitions work correctly (preservation).
@@ -802,7 +828,9 @@ class TestBug3Phase3StateManagement:
         state.complete_phase1(phase1_results)
 
         # Initially Phase 3 should not be enabled
-        assert not state.is_phase_enabled(3), "Phase 3 should not be enabled before Phase 2"
+        assert not state.is_phase_enabled(3), (
+            "Phase 3 should not be enabled before Phase 2"
+        )
 
         # Complete Phase 2
         phase2_results = Phase2Results(
@@ -880,9 +908,13 @@ class TestBug3Phase3StateManagement:
         state.complete_phase3(new_phase3_results)
 
         # Verify: Phase 4 should be cleared
-        assert not state.phase4_complete, "Phase 4 should be cleared after Phase 3 recalculation"
+        assert not state.phase4_complete, (
+            "Phase 4 should be cleared after Phase 3 recalculation"
+        )
         assert state.phase4_results is None, "Phase 4 results should be cleared"
-        assert state.phase3_results == new_phase3_results, "Phase 3 should have new results"
+        assert state.phase3_results == new_phase3_results, (
+            "Phase 3 should have new results"
+        )
 
     def test_phase_sequential_workflow_enforcement(self):
         """Test that phases must be completed sequentially.
@@ -952,7 +984,6 @@ class TestBug3Phase3StateManagement:
         assert state.is_phase_enabled(4), "Phase 4 should be enabled after Phase 3"
 
 
-
 class TestBug4HelpTab:
     """Unit tests for Bug 4: Help tab exists and is accessible.
 
@@ -978,7 +1009,7 @@ class TestBug4HelpTab:
         create_app_source = inspect.getsource(UIController.create_app)
 
         # Verify: Should have 3 ui.tab() calls
-        tab_count = create_app_source.count('ui.tab(')
+        tab_count = create_app_source.count("ui.tab(")
         assert tab_count == 4, (
             f"Expected 3 tabs (Module A, Module V, Examples, Help), but found {tab_count} tab creations"
         )
@@ -1003,14 +1034,14 @@ class TestBug4HelpTab:
         create_app_source = inspect.getsource(UIController.create_app)
 
         # Verify: All three tab names should be present
-        assert 'Module A' in create_app_source, "Module A tab not found"
-        assert 'Module V' in create_app_source, "Module V tab not found"
-        assert 'Help' in create_app_source, "Help tab not found"
+        assert "Module A" in create_app_source, "Module A tab not found"
+        assert "Module V" in create_app_source, "Module V tab not found"
+        assert "Help" in create_app_source, "Help tab not found"
 
         # Verify: Should have exactly 3 tab variables
-        assert 'module_a_tab' in create_app_source, "module_a_tab variable not found"
-        assert 'module_v_tab' in create_app_source, "module_v_tab variable not found"
-        assert 'help_tab' in create_app_source, "help_tab variable not found"
+        assert "module_a_tab" in create_app_source, "module_a_tab variable not found"
+        assert "module_v_tab" in create_app_source, "module_v_tab variable not found"
+        assert "help_tab" in create_app_source, "help_tab variable not found"
 
     def test_help_tab_has_panel(self):
         """Test that Help tab has a corresponding tab panel.
@@ -1028,12 +1059,12 @@ class TestBug4HelpTab:
         create_app_source = inspect.getsource(UIController.create_app)
 
         # Verify: Should have tab_panel for help_tab
-        assert 'ui.tab_panel(help_tab)' in create_app_source, (
+        assert "ui.tab_panel(help_tab)" in create_app_source, (
             "Help tab panel not found. Help tab should have a corresponding tab panel."
         )
 
         # Verify: Should call create_help_tab method
-        assert 'self.create_help_tab()' in create_app_source, (
+        assert "self.create_help_tab()" in create_app_source, (
             "create_help_tab() method not called. Help tab should have content."
         )
 
@@ -1047,7 +1078,7 @@ class TestBug4HelpTab:
         from sample_size_calculator.ui_controller import UIController
 
         # Verify: create_help_tab method should exist
-        assert hasattr(UIController, 'create_help_tab'), (
+        assert hasattr(UIController, "create_help_tab"), (
             "create_help_tab method does not exist in UIController class"
         )
 
@@ -1072,12 +1103,14 @@ class TestBug4HelpTab:
         create_app_source = inspect.getsource(UIController.create_app)
 
         # Verify: Module A tab should still exist
-        assert 'Module A' in create_app_source, "Module A tab not found (preservation failed)"
-        assert 'module_a_tab' in create_app_source, "module_a_tab variable not found"
-        assert 'ui.tab_panel(module_a_tab)' in create_app_source, (
+        assert "Module A" in create_app_source, (
+            "Module A tab not found (preservation failed)"
+        )
+        assert "module_a_tab" in create_app_source, "module_a_tab variable not found"
+        assert "ui.tab_panel(module_a_tab)" in create_app_source, (
             "Module A tab panel not found (preservation failed)"
         )
-        assert 'self.create_module_a_tab()' in create_app_source, (
+        assert "self.create_module_a_tab()" in create_app_source, (
             "create_module_a_tab() method not called (preservation failed)"
         )
 
@@ -1097,12 +1130,14 @@ class TestBug4HelpTab:
         create_app_source = inspect.getsource(UIController.create_app)
 
         # Verify: Module V tab should still exist
-        assert 'Module V' in create_app_source, "Module V tab not found (preservation failed)"
-        assert 'module_v_tab' in create_app_source, "module_v_tab variable not found"
-        assert 'ui.tab_panel(module_v_tab)' in create_app_source, (
+        assert "Module V" in create_app_source, (
+            "Module V tab not found (preservation failed)"
+        )
+        assert "module_v_tab" in create_app_source, "module_v_tab variable not found"
+        assert "ui.tab_panel(module_v_tab)" in create_app_source, (
             "Module V tab panel not found (preservation failed)"
         )
-        assert 'self.create_module_v_tab()' in create_app_source, (
+        assert "self.create_module_v_tab()" in create_app_source, (
             "create_module_v_tab() method not called (preservation failed)"
         )
 
@@ -1121,9 +1156,9 @@ class TestBug4HelpTab:
         create_app_source = inspect.getsource(UIController.create_app)
 
         # Find positions of each tab creation
-        module_a_pos = create_app_source.find('module_a_tab = ui.tab(')
-        module_v_pos = create_app_source.find('module_v_tab = ui.tab(')
-        help_pos = create_app_source.find('help_tab = ui.tab(')
+        module_a_pos = create_app_source.find("module_a_tab = ui.tab(")
+        module_v_pos = create_app_source.find("module_v_tab = ui.tab(")
+        help_pos = create_app_source.find("help_tab = ui.tab(")
 
         # Verify: All tabs should be found
         assert module_a_pos != -1, "Module A tab creation not found"
@@ -1134,9 +1169,7 @@ class TestBug4HelpTab:
         assert module_a_pos < module_v_pos, (
             "Module A tab should be created before Module V tab"
         )
-        assert module_v_pos < help_pos, (
-            "Module V tab should be created before Help tab"
-        )
+        assert module_v_pos < help_pos, "Module V tab should be created before Help tab"
 
     def test_tab_panels_match_tabs(self):
         """Test that each tab has a corresponding tab panel.
@@ -1153,24 +1186,22 @@ class TestBug4HelpTab:
         create_app_source = inspect.getsource(UIController.create_app)
 
         # Verify: Each tab should have a corresponding panel
-        assert 'ui.tab_panel(module_a_tab)' in create_app_source, (
+        assert "ui.tab_panel(module_a_tab)" in create_app_source, (
             "Module A tab panel not found"
         )
-        assert 'ui.tab_panel(module_v_tab)' in create_app_source, (
+        assert "ui.tab_panel(module_v_tab)" in create_app_source, (
             "Module V tab panel not found"
         )
-        assert 'ui.tab_panel(help_tab)' in create_app_source, (
-            "Help tab panel not found"
-        )
+        assert "ui.tab_panel(help_tab)" in create_app_source, "Help tab panel not found"
 
         # Verify: Each panel should call its corresponding create method
-        assert 'self.create_module_a_tab()' in create_app_source, (
+        assert "self.create_module_a_tab()" in create_app_source, (
             "create_module_a_tab() not called in Module A panel"
         )
-        assert 'self.create_module_v_tab()' in create_app_source, (
+        assert "self.create_module_v_tab()" in create_app_source, (
             "create_module_v_tab() not called in Module V panel"
         )
-        assert 'self.create_help_tab()' in create_app_source, (
+        assert "self.create_help_tab()" in create_app_source, (
             "create_help_tab() not called in Help panel"
         )
 
@@ -1190,7 +1221,7 @@ class TestBug4HelpTab:
         create_app_source = inspect.getsource(UIController.create_app)
 
         # Verify: tab_panels should have value=module_a_tab
-        assert 'ui.tab_panels(tabs, value=module_a_tab)' in create_app_source, (
+        assert "ui.tab_panels(tabs, value=module_a_tab)" in create_app_source, (
             "Default tab should be module_a_tab (preservation failed)"
         )
 
@@ -1231,13 +1262,14 @@ class TestBug5ManualOverride:
         ]
 
         for method in expected_methods:
-            assert f'"{method}"' in create_phase2_source or f"'{method}'" in create_phase2_source, (
-                f"Method '{method}' not found in manual_method_radio choices"
-            )
+            assert (
+                f'"{method}"' in create_phase2_source
+                or f"'{method}'" in create_phase2_source
+            ), f"Method '{method}' not found in manual_method_radio choices"
 
         # Verify: Should have exactly 5 methods in the radio button
         # Count occurrences of the method strings in the radio definition
-        radio_start = create_phase2_source.find('self.manual_method_radio = ui.radio(')
+        radio_start = create_phase2_source.find("self.manual_method_radio = ui.radio(")
         radio_end = create_phase2_source.find(').props("inline")', radio_start)
         radio_section = create_phase2_source[radio_start:radio_end]
 
@@ -1262,14 +1294,16 @@ class TestBug5ManualOverride:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: None/Parametric should be in the method list
-        assert '"None/Parametric"' in create_phase2_source or "'None/Parametric'" in create_phase2_source, (
-            "None/Parametric method not found in manual override choices"
-        )
+        assert (
+            '"None/Parametric"' in create_phase2_source
+            or "'None/Parametric'" in create_phase2_source
+        ), "None/Parametric method not found in manual override choices"
 
         # Verify: Should be the default value
-        assert 'value="None/Parametric"' in create_phase2_source or "value='None/Parametric'" in create_phase2_source, (
-            "None/Parametric should be the default value for manual_method_radio"
-        )
+        assert (
+            'value="None/Parametric"' in create_phase2_source
+            or "value='None/Parametric'" in create_phase2_source
+        ), "None/Parametric should be the default value for manual_method_radio"
 
     def test_manual_override_logarithmic_method_works(self):
         """Test that selecting Logarithmic method works correctly.
@@ -1286,9 +1320,10 @@ class TestBug5ManualOverride:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: Logarithmic should be in the method list
-        assert '"Logarithmic"' in create_phase2_source or "'Logarithmic'" in create_phase2_source, (
-            "Logarithmic method not found in manual override choices"
-        )
+        assert (
+            '"Logarithmic"' in create_phase2_source
+            or "'Logarithmic'" in create_phase2_source
+        ), "Logarithmic method not found in manual override choices"
 
     def test_manual_override_box_cox_method_works(self):
         """Test that selecting Box-Cox method works correctly.
@@ -1305,9 +1340,9 @@ class TestBug5ManualOverride:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: Box-Cox should be in the method list
-        assert '"Box-Cox"' in create_phase2_source or "'Box-Cox'" in create_phase2_source, (
-            "Box-Cox method not found in manual override choices"
-        )
+        assert (
+            '"Box-Cox"' in create_phase2_source or "'Box-Cox'" in create_phase2_source
+        ), "Box-Cox method not found in manual override choices"
 
     def test_manual_override_yeo_johnson_method_works(self):
         """Test that selecting Yeo-Johnson method works correctly.
@@ -1324,9 +1359,10 @@ class TestBug5ManualOverride:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: Yeo-Johnson should be in the method list
-        assert '"Yeo-Johnson"' in create_phase2_source or "'Yeo-Johnson'" in create_phase2_source, (
-            "Yeo-Johnson method not found in manual override choices"
-        )
+        assert (
+            '"Yeo-Johnson"' in create_phase2_source
+            or "'Yeo-Johnson'" in create_phase2_source
+        ), "Yeo-Johnson method not found in manual override choices"
 
     def test_manual_override_non_parametric_method_works(self):
         """Test that selecting Non-Parametric/Wilks method works correctly.
@@ -1343,9 +1379,10 @@ class TestBug5ManualOverride:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: Non-Parametric/Wilks should be in the method list
-        assert '"Non-Parametric/Wilks"' in create_phase2_source or "'Non-Parametric/Wilks'" in create_phase2_source, (
-            "Non-Parametric/Wilks method not found in manual override choices"
-        )
+        assert (
+            '"Non-Parametric/Wilks"' in create_phase2_source
+            or "'Non-Parametric/Wilks'" in create_phase2_source
+        ), "Non-Parametric/Wilks method not found in manual override choices"
 
     def test_manual_override_checkbox_exists(self):
         """Test that manual override checkbox exists in Phase 2 UI.
@@ -1363,14 +1400,15 @@ class TestBug5ManualOverride:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: manual_override_checkbox should exist
-        assert 'self.manual_override_checkbox = ui.checkbox(' in create_phase2_source, (
+        assert "self.manual_override_checkbox = ui.checkbox(" in create_phase2_source, (
             "manual_override_checkbox not found in Phase 2 UI"
         )
 
         # Verify: Checkbox should have "Enable Manual Override" label
-        assert '"Enable Manual Override"' in create_phase2_source or "'Enable Manual Override'" in create_phase2_source, (
-            "Manual override checkbox should have 'Enable Manual Override' label"
-        )
+        assert (
+            '"Enable Manual Override"' in create_phase2_source
+            or "'Enable Manual Override'" in create_phase2_source
+        ), "Manual override checkbox should have 'Enable Manual Override' label"
 
     def test_manual_method_radio_visibility_toggle(self):
         """Test that manual method radio visibility toggles with checkbox.
@@ -1388,17 +1426,17 @@ class TestBug5ManualOverride:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: manual_method_radio should be hidden by default
-        assert 'self.manual_method_radio.set_visibility(False)' in create_phase2_source, (
-            "manual_method_radio should be hidden by default"
-        )
+        assert (
+            "self.manual_method_radio.set_visibility(False)" in create_phase2_source
+        ), "manual_method_radio should be hidden by default"
 
         # Verify: Should have toggle function
-        assert 'def toggle_manual_method()' in create_phase2_source, (
+        assert "def toggle_manual_method()" in create_phase2_source, (
             "toggle_manual_method function not found"
         )
 
         # Verify: Toggle function should set visibility based on checkbox value
-        assert 'self.manual_method_radio.set_visibility(' in create_phase2_source, (
+        assert "self.manual_method_radio.set_visibility(" in create_phase2_source, (
             "toggle_manual_method should set manual_method_radio visibility"
         )
 
@@ -1419,12 +1457,12 @@ class TestBug5ManualOverride:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: Should check manual_override_checkbox.value
-        assert 'self.manual_override_checkbox.value' in create_phase2_source, (
+        assert "self.manual_override_checkbox.value" in create_phase2_source, (
             "Phase 2 should check manual_override_checkbox.value"
         )
 
         # Verify: Should have conditional logic for manual vs automatic
-        assert 'if self.manual_override_checkbox.value:' in create_phase2_source, (
+        assert "if self.manual_override_checkbox.value:" in create_phase2_source, (
             "Should have conditional logic for manual override"
         )
 
@@ -1444,14 +1482,15 @@ class TestBug5ManualOverride:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: Should have method string comparisons for mapping
-        assert 'method_str = self.manual_method_radio.value' in create_phase2_source, (
+        assert "method_str = self.manual_method_radio.value" in create_phase2_source, (
             "Should read manual_method_radio.value into method_str"
         )
 
         # Verify: Should have mapping for "None/Parametric"
-        assert 'if method_str == "None/Parametric"' in create_phase2_source or "if method_str == 'None/Parametric'" in create_phase2_source, (
-            "Should have mapping for None/Parametric method"
-        )
+        assert (
+            'if method_str == "None/Parametric"' in create_phase2_source
+            or "if method_str == 'None/Parametric'" in create_phase2_source
+        ), "Should have mapping for None/Parametric method"
 
     def test_manual_override_applies_to_phase2_results(self):
         """Test that manual override flag is set in Phase 2 results.
@@ -1469,7 +1508,7 @@ class TestBug5ManualOverride:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: Should set manual_override=True in Phase2Results
-        assert 'manual_override=True' in create_phase2_source, (
+        assert "manual_override=True" in create_phase2_source, (
             "Phase2Results should have manual_override=True when manual override is used"
         )
 
@@ -1490,7 +1529,10 @@ class TestBug5ManualOverride:
 
         # Verify: Should have else branch for automatic selection
         # Look for the pattern where transformation_cascade is called
-        assert 'transformation_cascade' in create_phase2_source or 'else:' in create_phase2_source, (
+        assert (
+            "transformation_cascade" in create_phase2_source
+            or "else:" in create_phase2_source
+        ), (
             "Should have automatic transformation logic when manual override is not enabled"
         )
 
@@ -1509,10 +1551,10 @@ class TestBug5ManualOverride:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: Should have .props("inline") for radio buttons
-        assert '.props("inline")' in create_phase2_source or ".props('inline')" in create_phase2_source, (
-            "manual_method_radio should have inline props for better display"
-        )
-
+        assert (
+            '.props("inline")' in create_phase2_source
+            or ".props('inline')" in create_phase2_source
+        ), "manual_method_radio should have inline props for better display"
 
 
 class TestBug6DiagnosticPlots:
@@ -1629,9 +1671,15 @@ class TestBug6DiagnosticPlots:
         imr_plot_src = controller._generate_imr_chart(test_data)
 
         # Verify: All three should be valid
-        assert qq_plot_src.startswith("data:image/png;base64,"), "Q-Q plot should be valid"
-        assert pp_plot_src.startswith("data:image/png;base64,"), "P-P plot should be valid"
-        assert imr_plot_src.startswith("data:image/png;base64,"), "I-MR chart should be valid"
+        assert qq_plot_src.startswith("data:image/png;base64,"), (
+            "Q-Q plot should be valid"
+        )
+        assert pp_plot_src.startswith("data:image/png;base64,"), (
+            "P-P plot should be valid"
+        )
+        assert imr_plot_src.startswith("data:image/png;base64,"), (
+            "I-MR chart should be valid"
+        )
 
         # Verify: All three should be different (different content)
         assert qq_plot_src != pp_plot_src, "Q-Q and P-P plots should be different"
@@ -1801,17 +1849,17 @@ class TestBug6DiagnosticPlots:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: Should have qq_plot_image component
-        assert 'self.qq_plot_image = ui.image()' in create_phase2_source, (
+        assert "self.qq_plot_image = ui.image()" in create_phase2_source, (
             "qq_plot_image component not found in Phase 2 UI"
         )
 
         # Verify: Should have pp_plot_image component
-        assert 'self.pp_plot_image = ui.image()' in create_phase2_source, (
+        assert "self.pp_plot_image = ui.image()" in create_phase2_source, (
             "pp_plot_image component not found in Phase 2 UI"
         )
 
         # Verify: Should have imr_plot_image component
-        assert 'self.imr_plot_image = ui.image()' in create_phase2_source, (
+        assert "self.imr_plot_image = ui.image()" in create_phase2_source, (
             "imr_plot_image component not found in Phase 2 UI"
         )
 
@@ -1831,28 +1879,28 @@ class TestBug6DiagnosticPlots:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: Should call _generate_qq_plot
-        assert 'self._generate_qq_plot(' in create_phase2_source, (
+        assert "self._generate_qq_plot(" in create_phase2_source, (
             "_generate_qq_plot should be called in Phase 2"
         )
 
         # Verify: Should call _generate_pp_plot
-        assert 'self._generate_pp_plot(' in create_phase2_source, (
+        assert "self._generate_pp_plot(" in create_phase2_source, (
             "_generate_pp_plot should be called in Phase 2"
         )
 
         # Verify: Should call _generate_imr_chart
-        assert 'self._generate_imr_chart(' in create_phase2_source, (
+        assert "self._generate_imr_chart(" in create_phase2_source, (
             "_generate_imr_chart should be called in Phase 2"
         )
 
         # Verify: Should set plot sources
-        assert 'self.qq_plot_image.set_source(' in create_phase2_source, (
+        assert "self.qq_plot_image.set_source(" in create_phase2_source, (
             "qq_plot_image source should be set"
         )
-        assert 'self.pp_plot_image.set_source(' in create_phase2_source, (
+        assert "self.pp_plot_image.set_source(" in create_phase2_source, (
             "pp_plot_image source should be set"
         )
-        assert 'self.imr_plot_image.set_source(' in create_phase2_source, (
+        assert "self.imr_plot_image.set_source(" in create_phase2_source, (
             "imr_plot_image source should be set"
         )
 
@@ -1873,19 +1921,21 @@ class TestBug6DiagnosticPlots:
         create_phase2_source = inspect.getsource(UIController._create_phase2_ui)
 
         # Verify: Should still have Shapiro-Wilk p-value display
-        assert 'shapiro_p_value' in create_phase2_source.lower(), (
+        assert "shapiro_p_value" in create_phase2_source.lower(), (
             "Shapiro-Wilk p-value display should be preserved"
         )
 
         # Verify: Should still have transformation method display
-        assert 'transformation_method' in create_phase2_source.lower() or 'method' in create_phase2_source.lower(), (
-            "Transformation method display should be preserved"
-        )
+        assert (
+            "transformation_method" in create_phase2_source.lower()
+            or "method" in create_phase2_source.lower()
+        ), "Transformation method display should be preserved"
 
         # Verify: Should still have results card or display area
-        assert 'self.phase2_results_card' in create_phase2_source or 'results' in create_phase2_source.lower(), (
-            "Phase 2 results display should be preserved"
-        )
+        assert (
+            "self.phase2_results_card" in create_phase2_source
+            or "results" in create_phase2_source.lower()
+        ), "Phase 2 results display should be preserved"
 
     def test_plot_generation_methods_exist(self):
         """Test that all three plot generation methods exist in UIController.
@@ -1898,17 +1948,17 @@ class TestBug6DiagnosticPlots:
         from sample_size_calculator.ui_controller import UIController
 
         # Verify: _generate_qq_plot method should exist
-        assert hasattr(UIController, '_generate_qq_plot'), (
+        assert hasattr(UIController, "_generate_qq_plot"), (
             "_generate_qq_plot method does not exist in UIController class"
         )
 
         # Verify: _generate_pp_plot method should exist
-        assert hasattr(UIController, '_generate_pp_plot'), (
+        assert hasattr(UIController, "_generate_pp_plot"), (
             "_generate_pp_plot method does not exist in UIController class"
         )
 
         # Verify: _generate_imr_chart method should exist
-        assert hasattr(UIController, '_generate_imr_chart'), (
+        assert hasattr(UIController, "_generate_imr_chart"), (
             "_generate_imr_chart method does not exist in UIController class"
         )
 
@@ -1941,19 +1991,19 @@ class TestBug6DiagnosticPlots:
         imr_source = inspect.getsource(UIController._generate_imr_chart)
 
         # Verify: All should use plt.subplots to create figures
-        assert 'plt.subplots(' in qq_source, "Q-Q plot should use plt.subplots"
-        assert 'plt.subplots(' in pp_source, "P-P plot should use plt.subplots"
-        assert 'plt.subplots(' in imr_source, "I-MR chart should use plt.subplots"
+        assert "plt.subplots(" in qq_source, "Q-Q plot should use plt.subplots"
+        assert "plt.subplots(" in pp_source, "P-P plot should use plt.subplots"
+        assert "plt.subplots(" in imr_source, "I-MR chart should use plt.subplots"
 
         # Verify: All should close figures to prevent memory leaks
-        assert 'plt.close(' in qq_source, "Q-Q plot should close figure"
-        assert 'plt.close(' in pp_source, "P-P plot should close figure"
-        assert 'plt.close(' in imr_source, "I-MR chart should close figure"
+        assert "plt.close(" in qq_source, "Q-Q plot should close figure"
+        assert "plt.close(" in pp_source, "P-P plot should close figure"
+        assert "plt.close(" in imr_source, "I-MR chart should close figure"
 
         # Verify: All should convert to base64
-        assert 'base64' in qq_source, "Q-Q plot should use base64 encoding"
-        assert 'base64' in pp_source, "P-P plot should use base64 encoding"
-        assert 'base64' in imr_source, "I-MR chart should use base64 encoding"
+        assert "base64" in qq_source, "Q-Q plot should use base64 encoding"
+        assert "base64" in pp_source, "P-P plot should use base64 encoding"
+        assert "base64" in imr_source, "I-MR chart should use base64 encoding"
 
     def test_qq_plot_uses_scipy_probplot(self):
         """Test that Q-Q plot uses scipy.stats.probplot.
@@ -1971,7 +2021,7 @@ class TestBug6DiagnosticPlots:
         qq_source = inspect.getsource(UIController._generate_qq_plot)
 
         # Verify: Should use stats.probplot
-        assert 'stats.probplot(' in qq_source, (
+        assert "stats.probplot(" in qq_source, (
             "Q-Q plot should use stats.probplot for proper quantile analysis"
         )
 
@@ -1996,17 +2046,15 @@ class TestBug6DiagnosticPlots:
         pp_source = inspect.getsource(UIController._generate_pp_plot)
 
         # Verify: Should calculate empirical CDF
-        assert 'empirical_cdf' in pp_source, (
-            "P-P plot should calculate empirical CDF"
-        )
+        assert "empirical_cdf" in pp_source, "P-P plot should calculate empirical CDF"
 
         # Verify: Should calculate theoretical CDF
-        assert 'theoretical_cdf' in pp_source, (
+        assert "theoretical_cdf" in pp_source, (
             "P-P plot should calculate theoretical CDF"
         )
 
         # Verify: Should use stats.norm.cdf for theoretical CDF
-        assert 'stats.norm.cdf(' in pp_source, (
+        assert "stats.norm.cdf(" in pp_source, (
             "P-P plot should use stats.norm.cdf for theoretical CDF"
         )
 
@@ -2026,20 +2074,20 @@ class TestBug6DiagnosticPlots:
         imr_source = inspect.getsource(UIController._generate_imr_chart)
 
         # Verify: Should calculate moving ranges
-        assert 'moving_ranges' in imr_source, (
+        assert "moving_ranges" in imr_source, (
             "I-MR chart should calculate moving ranges"
         )
 
         # Verify: Should calculate UCL and LCL
-        assert 'ucl_i' in imr_source or 'UCL' in imr_source, (
+        assert "ucl_i" in imr_source or "UCL" in imr_source, (
             "I-MR chart should calculate upper control limit"
         )
-        assert 'lcl_i' in imr_source or 'LCL' in imr_source, (
+        assert "lcl_i" in imr_source or "LCL" in imr_source, (
             "I-MR chart should calculate lower control limit"
         )
 
         # Verify: Should use d2 constant for control limits
-        assert 'd2' in imr_source, (
+        assert "d2" in imr_source, (
             "I-MR chart should use d2 constant for control limit calculations"
         )
 
@@ -2060,28 +2108,30 @@ class TestBug6DiagnosticPlots:
         imr_source = inspect.getsource(UIController._generate_imr_chart)
 
         # Verify: Q-Q plot has title
-        assert 'Q-Q Plot' in qq_source or 'Quantile-Quantile' in qq_source, (
+        assert "Q-Q Plot" in qq_source or "Quantile-Quantile" in qq_source, (
             "Q-Q plot should have descriptive title"
         )
 
         # Verify: P-P plot has title
-        assert 'P-P Plot' in pp_source or 'Probability-Probability' in pp_source, (
+        assert "P-P Plot" in pp_source or "Probability-Probability" in pp_source, (
             "P-P plot should have descriptive title"
         )
 
         # Verify: I-MR chart has title
-        assert 'I-MR' in imr_source or 'Individual' in imr_source or 'Moving Range' in imr_source, (
-            "I-MR chart should have descriptive title"
-        )
+        assert (
+            "I-MR" in imr_source
+            or "Individual" in imr_source
+            or "Moving Range" in imr_source
+        ), "I-MR chart should have descriptive title"
 
         # Verify: All plots set axis labels
-        assert 'set_xlabel(' in qq_source and 'set_ylabel(' in qq_source, (
+        assert "set_xlabel(" in qq_source and "set_ylabel(" in qq_source, (
             "Q-Q plot should have axis labels"
         )
-        assert 'set_xlabel(' in pp_source and 'set_ylabel(' in pp_source, (
+        assert "set_xlabel(" in pp_source and "set_ylabel(" in pp_source, (
             "P-P plot should have axis labels"
         )
-        assert 'set_xlabel(' in imr_source and 'set_ylabel(' in imr_source, (
+        assert "set_xlabel(" in imr_source and "set_ylabel(" in imr_source, (
             "I-MR chart should have axis labels"
         )
 
@@ -2112,24 +2162,22 @@ class TestBug7HelpContent:
         help_source = inspect.getsource(UIController.create_help_tab)
 
         # Verify: Module A section exists
-        assert 'Module A' in help_source, (
-            "Help content should include Module A section"
-        )
+        assert "Module A" in help_source, "Help content should include Module A section"
 
         # Verify: Module A section has substantive content
-        assert 'Attribute Data Analysis' in help_source, (
+        assert "Attribute Data Analysis" in help_source, (
             "Module A section should describe attribute data analysis"
         )
 
         # Verify: Module A section explains purpose
-        assert 'Purpose' in help_source or 'purpose' in help_source.lower(), (
+        assert "Purpose" in help_source or "purpose" in help_source.lower(), (
             "Module A section should explain its purpose"
         )
 
         # Verify: Module A section has input requirements
-        assert 'Input Requirements' in help_source or 'Confidence Level' in help_source, (
-            "Module A section should describe input requirements"
-        )
+        assert (
+            "Input Requirements" in help_source or "Confidence Level" in help_source
+        ), "Module A section should describe input requirements"
 
     def test_help_content_has_module_v_workflow_section(self):
         """Test that Help content includes Module V 4-phase workflow explanation.
@@ -2146,32 +2194,30 @@ class TestBug7HelpContent:
         help_source = inspect.getsource(UIController.create_help_tab)
 
         # Verify: Module V section exists
-        assert 'Module V' in help_source, (
-            "Help content should include Module V section"
-        )
+        assert "Module V" in help_source, "Help content should include Module V section"
 
         # Verify: Module V section describes 4-phase workflow
-        assert '4-Phase' in help_source or 'Phase 1' in help_source, (
+        assert "4-Phase" in help_source or "Phase 1" in help_source, (
             "Module V section should describe 4-phase workflow"
         )
 
         # Verify: All 4 phases are documented
-        assert 'Phase 1' in help_source, "Module V section should document Phase 1"
-        assert 'Phase 2' in help_source, "Module V section should document Phase 2"
-        assert 'Phase 3' in help_source, "Module V section should document Phase 3"
-        assert 'Phase 4' in help_source, "Module V section should document Phase 4"
+        assert "Phase 1" in help_source, "Module V section should document Phase 1"
+        assert "Phase 2" in help_source, "Module V section should document Phase 2"
+        assert "Phase 3" in help_source, "Module V section should document Phase 3"
+        assert "Phase 4" in help_source, "Module V section should document Phase 4"
 
         # Verify: Phase descriptions include key concepts
-        assert 'Outlier' in help_source or 'outlier' in help_source, (
+        assert "Outlier" in help_source or "outlier" in help_source, (
             "Phase 1 should explain outlier detection"
         )
-        assert 'Normality' in help_source or 'normality' in help_source, (
+        assert "Normality" in help_source or "normality" in help_source, (
             "Phase 2 should explain normality testing"
         )
-        assert 'Sample Size' in help_source or 'sample size' in help_source, (
+        assert "Sample Size" in help_source or "sample size" in help_source, (
             "Phase 3 should explain sample size calculation"
         )
-        assert 'Tolerance' in help_source or 'tolerance' in help_source, (
+        assert "Tolerance" in help_source or "tolerance" in help_source, (
             "Phase 4 should explain tolerance limits"
         )
 
@@ -2190,44 +2236,36 @@ class TestBug7HelpContent:
         help_source = inspect.getsource(UIController.create_help_tab)
 
         # Verify: Statistical terms section exists
-        assert 'Statistical Terms' in help_source or 'Glossary' in help_source, (
+        assert "Statistical Terms" in help_source or "Glossary" in help_source, (
             "Help content should include statistical terms glossary"
         )
 
         # Verify: Normality tests are explained
-        assert 'Shapiro-Wilk' in help_source, (
+        assert "Shapiro-Wilk" in help_source, (
             "Statistical terms should explain Shapiro-Wilk test"
         )
-        assert 'Anderson-Darling' in help_source, (
+        assert "Anderson-Darling" in help_source, (
             "Statistical terms should explain Anderson-Darling test"
         )
 
         # Verify: Transformations are explained
-        assert 'Logarithmic' in help_source, (
+        assert "Logarithmic" in help_source, (
             "Statistical terms should explain logarithmic transformation"
         )
-        assert 'Box-Cox' in help_source, (
+        assert "Box-Cox" in help_source, (
             "Statistical terms should explain Box-Cox transformation"
         )
-        assert 'Yeo-Johnson' in help_source, (
+        assert "Yeo-Johnson" in help_source, (
             "Statistical terms should explain Yeo-Johnson transformation"
         )
 
         # Verify: Diagnostic plots are explained
-        assert 'Q-Q Plot' in help_source, (
-            "Statistical terms should explain Q-Q plot"
-        )
-        assert 'P-P Plot' in help_source, (
-            "Statistical terms should explain P-P plot"
-        )
-        assert 'I-MR' in help_source, (
-            "Statistical terms should explain I-MR chart"
-        )
+        assert "Q-Q Plot" in help_source, "Statistical terms should explain Q-Q plot"
+        assert "P-P Plot" in help_source, "Statistical terms should explain P-P plot"
+        assert "I-MR" in help_source, "Statistical terms should explain I-MR chart"
 
         # Verify: Process capability is explained
-        assert 'Ppk' in help_source, (
-            "Statistical terms should explain Ppk"
-        )
+        assert "Ppk" in help_source, "Statistical terms should explain Ppk"
 
     def test_help_content_has_step_by_step_guidance_section(self):
         """Test that Help content includes step-by-step guidance.
@@ -2244,24 +2282,26 @@ class TestBug7HelpContent:
         help_source = inspect.getsource(UIController.create_help_tab)
 
         # Verify: Step-by-step guidance section exists
-        assert 'Step-by-Step' in help_source or 'Workflow' in help_source, (
+        assert "Step-by-Step" in help_source or "Workflow" in help_source, (
             "Help content should include step-by-step guidance"
         )
 
         # Verify: Common workflows are documented
-        assert 'Common Workflow' in help_source or 'Scenario' in help_source, (
+        assert "Common Workflow" in help_source or "Scenario" in help_source, (
             "Step-by-step section should include common workflows"
         )
 
         # Verify: Troubleshooting guidance exists
-        assert 'Troubleshooting' in help_source or 'Problem' in help_source, (
+        assert "Troubleshooting" in help_source or "Problem" in help_source, (
             "Step-by-step section should include troubleshooting guidance"
         )
 
         # Verify: Decision guidance exists
-        assert 'Decision' in help_source or 'Choose' in help_source or 'Choosing' in help_source, (
-            "Step-by-step section should include decision guidance"
-        )
+        assert (
+            "Decision" in help_source
+            or "Choose" in help_source
+            or "Choosing" in help_source
+        ), "Step-by-step section should include decision guidance"
 
     def test_help_content_all_sections_have_non_empty_text(self):
         """Test that all four required sections have substantial non-empty text.
@@ -2295,7 +2335,7 @@ class TestBug7HelpContent:
         )
 
         # Verify: Content includes detailed explanations (not just bullet points)
-        assert help_source.count('###') >= 10, (
+        assert help_source.count("###") >= 10, (
             "Help content should have multiple subsections with detailed explanations"
         )
 
@@ -2315,23 +2355,21 @@ class TestBug7HelpContent:
         module_a_source = inspect.getsource(UIController.create_module_a_tab)
 
         # Verify: Module A tab creation method exists
-        assert module_a_source is not None, (
-            "Module A tab creation method should exist"
-        )
+        assert module_a_source is not None, "Module A tab creation method should exist"
 
         # Verify: Module A has core functionality
-        assert 'Confidence Level' in module_a_source, (
+        assert "Confidence Level" in module_a_source, (
             "Module A should have confidence level input"
         )
-        assert 'Reliability Level' in module_a_source, (
+        assert "Reliability Level" in module_a_source, (
             "Module A should have reliability level input"
         )
-        assert 'Allowable Failures' in module_a_source, (
+        assert "Allowable Failures" in module_a_source, (
             "Module A should have allowable failures input"
         )
 
         # Verify: Module A has calculation functionality
-        assert 'calculate' in module_a_source.lower(), (
+        assert "calculate" in module_a_source.lower(), (
             "Module A should have calculation functionality"
         )
 
@@ -2351,35 +2389,26 @@ class TestBug7HelpContent:
         module_v_source = inspect.getsource(UIController.create_module_v_tab)
 
         # Verify: Module V tab creation method exists
-        assert module_v_source is not None, (
-            "Module V tab creation method should exist"
-        )
+        assert module_v_source is not None, "Module V tab creation method should exist"
 
         # Verify: Module V has 4-phase structure
-        assert 'Phase 1' in module_v_source, (
-            "Module V should have Phase 1"
-        )
-        assert 'Phase 2' in module_v_source, (
-            "Module V should have Phase 2"
-        )
-        assert 'Phase 3' in module_v_source, (
-            "Module V should have Phase 3"
-        )
-        assert 'Phase 4' in module_v_source, (
-            "Module V should have Phase 4"
-        )
+        assert "Phase 1" in module_v_source, "Module V should have Phase 1"
+        assert "Phase 2" in module_v_source, "Module V should have Phase 2"
+        assert "Phase 3" in module_v_source, "Module V should have Phase 3"
+        assert "Phase 4" in module_v_source, "Module V should have Phase 4"
 
         # Verify: Module V has core functionality
-        assert 'outlier' in module_v_source.lower(), (
+        assert "outlier" in module_v_source.lower(), (
             "Module V should have outlier detection"
         )
-        assert 'normality' in module_v_source.lower() or 'shapiro' in module_v_source.lower(), (
-            "Module V should have normality testing"
-        )
-        assert 'sample size' in module_v_source.lower() or 'sample_size' in module_v_source, (
-            "Module V should have sample size calculation"
-        )
-        assert 'tolerance' in module_v_source.lower(), (
+        assert (
+            "normality" in module_v_source.lower()
+            or "shapiro" in module_v_source.lower()
+        ), "Module V should have normality testing"
+        assert (
+            "sample size" in module_v_source.lower() or "sample_size" in module_v_source
+        ), "Module V should have sample size calculation"
+        assert "tolerance" in module_v_source.lower(), (
             "Module V should have tolerance limit calculation"
         )
 
@@ -2399,12 +2428,12 @@ class TestBug7HelpContent:
 
         # Verify: All transformation methods are documented
         transformation_methods = [
-            'None/Parametric',
-            'Logarithmic',
-            'Box-Cox',
-            'Yeo-Johnson',
-            'Non-Parametric',
-            'Wilks'
+            "None/Parametric",
+            "Logarithmic",
+            "Box-Cox",
+            "Yeo-Johnson",
+            "Non-Parametric",
+            "Wilks",
         ]
 
         for method in transformation_methods:
@@ -2427,19 +2456,13 @@ class TestBug7HelpContent:
         help_source = inspect.getsource(UIController.create_help_tab)
 
         # Verify: All diagnostic plots are documented
-        diagnostic_plots = [
-            'Q-Q Plot',
-            'P-P Plot',
-            'I-MR'
-        ]
+        diagnostic_plots = ["Q-Q Plot", "P-P Plot", "I-MR"]
 
         for plot in diagnostic_plots:
-            assert plot in help_source, (
-                f"Help content should document {plot}"
-            )
+            assert plot in help_source, f"Help content should document {plot}"
 
         # Verify: Plot interpretations are provided
-        assert 'Interpretation' in help_source or 'interpretation' in help_source, (
+        assert "Interpretation" in help_source or "interpretation" in help_source, (
             "Help content should explain how to interpret diagnostic plots"
         )
 
@@ -2458,21 +2481,18 @@ class TestBug7HelpContent:
         help_source = inspect.getsource(UIController.create_help_tab)
 
         # Verify: Ppk is documented
-        assert 'Ppk' in help_source, (
-            "Help content should document Ppk"
-        )
+        assert "Ppk" in help_source, "Help content should document Ppk"
 
         # Verify: Ppk interpretation guidelines are provided
         # Common Ppk thresholds: 1.0, 1.33, 1.67, 2.0
-        assert '1.33' in help_source or '1.67' in help_source, (
+        assert "1.33" in help_source or "1.67" in help_source, (
             "Help content should provide Ppk interpretation thresholds"
         )
 
         # Verify: Ppk formula or definition is provided
-        assert 'Process Performance' in help_source or 'capability' in help_source.lower(), (
-            "Help content should explain what Ppk measures"
-        )
-
+        assert (
+            "Process Performance" in help_source or "capability" in help_source.lower()
+        ), "Help content should explain what Ppk measures"
 
 
 class TestBug8AndersonDarlingTest:
@@ -2507,7 +2527,9 @@ class TestBug8AndersonDarlingTest:
         assert isinstance(critical_values, list), "Critical values should be a list"
         assert len(critical_values) == 5, "Should have 5 critical values"
 
-        assert isinstance(significance_levels, list), "Significance levels should be a list"
+        assert isinstance(significance_levels, list), (
+            "Significance levels should be a list"
+        )
         assert len(significance_levels) == 5, "Should have 5 significance levels"
 
         # Verify: Significance levels are standard values (15%, 10%, 5%, 2.5%, 1%)
@@ -2592,8 +2614,12 @@ class TestBug8AndersonDarlingTest:
         assert 0 <= sw_p_value <= 1, "Shapiro-Wilk p-value should be in [0, 1]"
 
         assert ad_statistic is not None, "Anderson-Darling should return statistic"
-        assert ad_critical_values is not None, "Anderson-Darling should return critical values"
-        assert ad_sig_levels is not None, "Anderson-Darling should return significance levels"
+        assert ad_critical_values is not None, (
+            "Anderson-Darling should return critical values"
+        )
+        assert ad_sig_levels is not None, (
+            "Anderson-Darling should return significance levels"
+        )
 
     def test_shapiro_wilk_continues_displaying_preservation(self):
         """Test that Shapiro-Wilk test continues to work correctly (preservation).
@@ -2638,10 +2664,14 @@ class TestBug8AndersonDarlingTest:
 
         # Verify: Both tests return valid results
         assert sw_statistic is not None, "Shapiro-Wilk should handle small datasets"
-        assert sw_p_value is not None, "Shapiro-Wilk should return p-value for small datasets"
+        assert sw_p_value is not None, (
+            "Shapiro-Wilk should return p-value for small datasets"
+        )
 
         assert ad_statistic is not None, "Anderson-Darling should handle small datasets"
-        assert len(ad_critical_values) == 5, "Anderson-Darling should return 5 critical values"
+        assert len(ad_critical_values) == 5, (
+            "Anderson-Darling should return 5 critical values"
+        )
 
     def test_both_tests_with_large_dataset(self):
         """Test both normality tests with large dataset.
@@ -2667,10 +2697,14 @@ class TestBug8AndersonDarlingTest:
 
         # Verify: Both tests return valid results
         assert sw_statistic is not None, "Shapiro-Wilk should handle large datasets"
-        assert sw_p_value is not None, "Shapiro-Wilk should return p-value for large datasets"
+        assert sw_p_value is not None, (
+            "Shapiro-Wilk should return p-value for large datasets"
+        )
 
         assert ad_statistic is not None, "Anderson-Darling should handle large datasets"
-        assert len(ad_critical_values) == 5, "Anderson-Darling should return 5 critical values"
+        assert len(ad_critical_values) == 5, (
+            "Anderson-Darling should return 5 critical values"
+        )
 
     def test_both_tests_with_data_containing_zeros(self):
         """Test both normality tests with data containing zeros.
@@ -2696,7 +2730,9 @@ class TestBug8AndersonDarlingTest:
         assert sw_p_value is not None, "Shapiro-Wilk should return p-value with zeros"
 
         assert ad_statistic is not None, "Anderson-Darling should handle zeros"
-        assert len(ad_critical_values) == 5, "Anderson-Darling should return 5 critical values"
+        assert len(ad_critical_values) == 5, (
+            "Anderson-Darling should return 5 critical values"
+        )
 
     def test_both_tests_with_negative_values(self):
         """Test both normality tests with negative values.
@@ -2719,10 +2755,16 @@ class TestBug8AndersonDarlingTest:
 
         # Verify: Both tests return valid results
         assert sw_statistic is not None, "Shapiro-Wilk should handle negative values"
-        assert sw_p_value is not None, "Shapiro-Wilk should return p-value with negatives"
+        assert sw_p_value is not None, (
+            "Shapiro-Wilk should return p-value with negatives"
+        )
 
-        assert ad_statistic is not None, "Anderson-Darling should handle negative values"
-        assert len(ad_critical_values) == 5, "Anderson-Darling should return 5 critical values"
+        assert ad_statistic is not None, (
+            "Anderson-Darling should handle negative values"
+        )
+        assert len(ad_critical_values) == 5, (
+            "Anderson-Darling should return 5 critical values"
+        )
 
     def test_anderson_darling_critical_values_are_ordered(self):
         """Test that Anderson-Darling critical values are in ascending order.
@@ -2793,7 +2835,7 @@ class TestBug9PDFTableFormatting:
         )
 
         # Execute: Generate PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, _ = ReportGenerator.generate_user_report(report_data)
 
         # Verify: PDF should be generated successfully
         assert pdf_bytes is not None, "PDF should be generated"
@@ -2833,7 +2875,7 @@ class TestBug9PDFTableFormatting:
         )
 
         # Execute: Generate PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, _ = ReportGenerator.generate_user_report(report_data)
 
         # Verify: PDF should be generated with table structure
         assert pdf_bytes is not None, "PDF should be generated"
@@ -2873,7 +2915,7 @@ class TestBug9PDFTableFormatting:
         )
 
         # Execute: Generate PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, _ = ReportGenerator.generate_user_report(report_data)
 
         # Verify: PDF should be generated with all results
         assert pdf_bytes is not None, "PDF should be generated"
@@ -2904,7 +2946,7 @@ class TestBug9PDFTableFormatting:
         )
 
         # Execute: Generate PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, _ = ReportGenerator.generate_user_report(report_data)
 
         # Verify: PDF should still be generated (without results table)
         assert pdf_bytes is not None, "PDF should be generated even with empty results"
@@ -2936,7 +2978,7 @@ class TestBug9PDFTableFormatting:
         )
 
         # Execute: Generate PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, _ = ReportGenerator.generate_user_report(report_data)
 
         # Verify: PDF should be generated with single-row table
         assert pdf_bytes is not None, "PDF should be generated"
@@ -2972,7 +3014,7 @@ class TestBug9PDFTableFormatting:
         )
 
         # Execute: Generate PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, _ = ReportGenerator.generate_user_report(report_data)
 
         # Verify: PDF should be generated
         assert pdf_bytes is not None, "PDF should be generated"
@@ -3011,7 +3053,7 @@ class TestBug9PDFTableFormatting:
         )
 
         # Execute: Generate PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, _ = ReportGenerator.generate_user_report(report_data)
 
         # Verify: PDF should be generated with all sections
         assert pdf_bytes is not None, "PDF should be generated"
@@ -3056,7 +3098,7 @@ class TestBug9PDFTableFormatting:
         )
 
         # Execute: Generate PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, _ = ReportGenerator.generate_user_report(report_data)
 
         # Verify: PDF should be generated
         assert pdf_bytes is not None, "PDF should be generated"
@@ -3089,7 +3131,7 @@ class TestBug9PDFTableFormatting:
         )
 
         # Execute: Generate PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, _ = ReportGenerator.generate_user_report(report_data)
 
         # Verify: PDF should be generated
         assert pdf_bytes is not None, "PDF should be generated"
@@ -3126,7 +3168,7 @@ class TestBug9PDFTableFormatting:
         )
 
         # Execute: Generate PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, _ = ReportGenerator.generate_user_report(report_data)
 
         # Verify: PDF should be generated without errors
         assert pdf_bytes is not None, "PDF should be generated"
@@ -3162,7 +3204,7 @@ class TestBug9PDFTableFormatting:
         )
 
         # Execute: Generate PDF report
-        pdf_bytes = ReportGenerator.generate_user_report(report_data)
+        pdf_bytes, _ = ReportGenerator.generate_user_report(report_data)
 
         # Verify: PDF should be generated without errors
         assert pdf_bytes is not None, "PDF should be generated"
