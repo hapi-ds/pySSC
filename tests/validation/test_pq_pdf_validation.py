@@ -5,13 +5,13 @@ not just UI interactions. They use parameterized inputs and verify
 specific expected values in generated PDF reports.
 """
 
+import re
 from io import BytesIO
 from pathlib import Path
 
 import pytest
 from playwright.sync_api import Page, expect
 from pypdf import PdfReader
-
 
 MODULE_A_TEST_CASES = [
     pytest.param(
@@ -268,17 +268,18 @@ class TestModuleVPDFValidation:
         ).first.click()
         page.wait_for_timeout(2000)
 
+        report_button = page.locator(
+            'button:has-text("Generate"), button:has-text("Report")'
+        ).first
+        expect(report_button).to_be_enabled(timeout=3000)
         with page.expect_download(timeout=10000) as download_info:
-            page.locator(
-                'button:has-text("Generate"), button:has-text("Report")'
-            ).first.click()
+            report_button.click()
 
         download = download_info.value
-        pdf_path = tmp_path / "report_v_params.pdf"
+        pdf_path = tmp_path / "report.pdf"
         download.save_as(pdf_path)
-
-        reader = PdfReader(BytesIO(pdf_path.read_bytes()))
-        pdf_text = "".join(page.extract_text() or "" for page in reader.pages)
+        pdf_bytes = pdf_path.read_bytes()
+        pdf_text = extract_text_from_pdf(pdf_bytes)
 
         # Verify PDF contains Pass/Fail result
         pass_fail = test_case.get("Pass_Fail")
@@ -293,10 +294,13 @@ class TestModuleVPDFValidation:
         assert str(test_case["reliability"]) in pdf_text, (
             f"PDF should contain reliability {test_case['reliability']}"
         )
-
+        
         # Verify specific values from Calculated Results table
         required_sample_size = test_case.get("Required Sample Size")
+        # need more flexible check because of possible line breaks
+        pattern = rf"Required\s+Sample\s+Size\s+{required_sample_size}"
+
         if required_sample_size is not None:
-            assert f"Required Sample Size\n{required_sample_size}" in pdf_text, (
+            assert re.search(pattern, pdf_text), (
                 f"PDF should contain 'Required Sample Size' with value {required_sample_size}"
             )

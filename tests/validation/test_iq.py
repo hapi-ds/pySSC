@@ -194,7 +194,6 @@ def test_hash_verifier_module_present():
     (calculations.py).
     """
     from sample_size_calculator.hash_verifier import (
-        HashVerifier,
         get_engine_hash,
         get_validated_hash,
         is_validated_state,
@@ -254,7 +253,6 @@ def test_report_generator_module_present():
     """
     from sample_size_calculator.report_generator import (
         CalculationReport,
-        ReportGenerator,
         ValidationCertificate,
     )
 
@@ -308,7 +306,7 @@ def test_all_validation_modules_importable():
         except ImportError as e:
             missing_modules.append(f"{module}: {e}")
 
-    assert not missing_modules, f"Missing required validation modules:\n" + "\n".join(
+    assert not missing_modules, "Missing required validation modules:\n" + "\n".join(
         missing_modules
     )
 

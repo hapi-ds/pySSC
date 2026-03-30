@@ -183,11 +183,13 @@ logs/
 
 # Reports - ignore generated PDF files but keep directory structure
 reports/**/*.pdf
+reports/**/*.json
 !reports/.gitkeep
 !reports/*/.gitkeep
 
 # test results
 test_results_*.json
+validation_traceability_matrix.csv
 
 # my todo list
 hktodos/

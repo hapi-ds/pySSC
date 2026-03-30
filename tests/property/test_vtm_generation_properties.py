@@ -135,8 +135,8 @@ class TestVTMGeneration:
             # Verify file was created
             assert csv_path.exists(), "CSV file should be created"
 
-            # Read the CSV back
-            vtm_from_csv = pd.read_csv(csv_path)
+            # Read the CSV back (skip comment lines starting with #)
+            vtm_from_csv = pd.read_csv(csv_path, comment="#")
 
             # Verify data integrity
             assert len(vtm_from_csv) == num_test_results, (

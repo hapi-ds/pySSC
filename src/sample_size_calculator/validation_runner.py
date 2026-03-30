@@ -6,6 +6,7 @@ from within the UI and report progress and results.
 
 import json
 import platform
+import re
 import subprocess
 import sys
 from collections.abc import Callable
@@ -15,7 +16,14 @@ from pathlib import Path
 from sample_size_calculator.hash_verifier import HashVerifier
 from sample_size_calculator.models import ValidationCertificate
 from sample_size_calculator.report_generator import ReportGenerator
+from sample_size_calculator.version import __version__
 from sample_size_calculator.vtm_generator import VTMGenerator
+
+# Add parent directory (repo root) to path for importing scripts module
+script_path = Path(__file__).resolve().parent.parent.parent
+if str(script_path) not in sys.path:
+    sys.path.insert(0, str(script_path))
+from scripts.calculate_coverage import calculate_coverage
 
 
 class ValidationRunner:
@@ -98,7 +106,7 @@ class ValidationRunner:
         test_results = []
 
         for test in pytest_data.get("tests", []):
-            # Extract URS IDs from markers (from keywords since pytest-json-report doesn't capture args)
+            # Extract URS IDs from markers (try pytest-json-report format first, then source file)
             urs_ids = []
 
             test_id = test.get("nodeid", "unknown")
@@ -107,9 +115,20 @@ class ValidationRunner:
                 test_id.split("::")[-1].split("[")[0] if "::" in test_id else test_id
             )
 
-            if "::" in test_id:
-                # Parse the marker directly from the source file
+            # Try to get URS IDs from pytest-json-report markers field first
+            test_markers = test.get("markers", [])
+            for marker in test_markers:
+                if isinstance(marker, dict):
+                    if marker.get("name") == "urs":
+                        urs_args = marker.get("args", [])
+                        if isinstance(urs_args, list):
+                            urs_ids.extend([str(arg) for arg in urs_args])
+                elif hasattr(marker, "name") and marker.name == "urs":
+                    if hasattr(marker, "args"):
+                        urs_ids.extend([str(arg) for arg in marker.args])
 
+            # If no URS IDs from pytest-json-report format, try parsing source file
+            if not urs_ids:
                 test_file_path = test_id.split("::")[0]
                 try:
                     with open(test_file_path) as f:
@@ -138,7 +157,7 @@ class ValidationRunner:
                                     urs_pattern = r'"([^"]+)"'
                                     found_ids = re.findall(urs_pattern, match)
 
-                                    # Only add IDs that look like URS IDs
+                                    # Add all URS IDs (not just the first one)
                                     for urs_id in found_ids:
                                         if (
                                             urs_id.startswith("URS-")
@@ -146,9 +165,9 @@ class ValidationRunner:
                                         ):
                                             collected_urs_ids.append(urs_id)
 
-                            # Use the most recent marker (first in reverse order = last in file)
+                            # Use all collected URS IDs from markers
                             if collected_urs_ids:
-                                urs_ids = [collected_urs_ids[0]]
+                                urs_ids = collected_urs_ids
 
                             break
                 except Exception:
@@ -204,13 +223,15 @@ class ValidationRunner:
             if HashVerifier.VALIDATED_HASH_FILE.exists():
                 HashVerifier.VALIDATED_HASH_FILE.unlink()
                 self._report_progress("Removed previous validation hash")
-            
+
             self._report_progress("=" * 60)
             self._report_progress("🚀 VALIDATION PROCESS STARTED")
             self._report_progress(f"👤 Tester: {tester_name}")
-            self._report_progress(f"📅 Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            self._report_progress(
+                f"📅 Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            )
             self._report_progress("=" * 60)
-            
+
             # Run IQ tests
             self._report_progress("Running IQ (Installation Qualification) tests...")
             iq_data = self._run_test_suite("tests/validation/test_iq.py", "iq")
@@ -249,46 +270,57 @@ class ValidationRunner:
                     self._report_progress("✅ PQ Tests PASSED")
             else:
                 self._report_progress("⚠️  Skipping PQ tests (app is running)")
-            
+
             # Run PDF validation tests
             self._report_progress("")
             self._report_progress("=" * 60)
             self._report_progress("📊 Running PDF Validation Tests...")
             self._report_progress("=" * 60)
-            
+
             try:
-                import subprocess
+
                 pdf_result = subprocess.run(
-                    ["uv", "run", "pytest", "tests/validation/test_pq_pdf_validation.py::TestModuleVPDFValidation", "-v"],
+                    [
+                        "uv",
+                        "run",
+                        "pytest",
+                        "tests/validation/test_pq_pdf_validation.py::TestModuleVPDFValidation",
+                        "-v",
+                    ],
                     capture_output=True,
                     text=True,
                     timeout=300,
                 )
-                
+
                 # Count passed/failed from output
                 stdout = pdf_result.stdout + "\n" + pdf_result.stderr
-                
+
                 # Parse pytest summary to extract actual test results
-                import re
+
                 passed_count = 0
                 failed_count = 0
-                
+
                 # Extract PDF test results by scanning each line
-                for line in stdout.split('\n'):
-                    if 'test_module_v_pdf_contains_confidence_reliability' in line and 'test_pq_pdf_validation' in line:
-                        if 'PASSED' in line and 'FAILED' not in line:
+                for line in stdout.split("\n"):
+                    if (
+                        "test_module_v_pdf_contains_confidence_reliability" in line
+                        and "test_pq_pdf_validation" in line
+                    ):
+                        if "PASSED" in line and "FAILED" not in line:
                             status = "PASSED"
-                        elif 'FAILED' in line:
+                        elif "FAILED" in line:
                             status = "FAILED"
                         else:
                             continue
-                        
-                        self.pdf_test_results.append({
-                            "urs_id": "URS-REP-01",
-                            "test_id": "test_pq_pdf_validation.py::TestModuleVPDFValidation::test_module_v_pdf_contains_confidence_reliability",
-                            "status": status
-                        })
-                        
+
+                        self.pdf_test_results.append(
+                            {
+                                "urs_id": "URS-REP-01",
+                                "test_id": "test_pq_pdf_validation.py::TestModuleVPDFValidation::test_module_v_pdf_contains_confidence_reliability",
+                                "status": status,
+                            }
+                        )
+
                         if status == "PASSED":
                             passed_count += 1
                         else:
@@ -296,9 +328,11 @@ class ValidationRunner:
 
                 # Calculate total tests
                 total_tests = passed_count + failed_count
-                
-                self._report_progress(f"📊 PDF Test Results: {total_tests} tests, {passed_count} passed, {failed_count} failed")
-                
+
+                self._report_progress(
+                    f"📊 PDF Test Results: {total_tests} tests, {passed_count} passed, {failed_count} failed"
+                )
+
                 if pdf_result.returncode == 0 and failed_count == 0:
                     self._report_progress("✅ PDF Validation Tests PASSED")
                 else:
@@ -307,14 +341,30 @@ class ValidationRunner:
             except Exception as e:
                 self._report_progress(f"⚠️  PDF validation check failed: {str(e)}")
 
+            # Calculate URS coverage metrics
+            self._report_progress("Calculating URS Coverage...")
+            try:
+                coverage_metrics = calculate_coverage(
+                    urs_document_path="requirements/02_URS_SampleSizeCalculator.md",
+                    test_files=[
+                        "tests/validation/test_iq.py",
+                        "tests/validation/test_oq.py",
+                        "tests/validation/test_pq.py",
+                    ],
+                )
+                self._report_progress(f"✅ Coverage calculated: {coverage_metrics['coverage_percentage']:.1f}%")
+            except Exception as e:
+                self._report_progress(f"⚠️  Could not calculate coverage: {e}")
+                coverage_metrics = None
+
             # Generate VTM
             self._report_progress("Generating Verification Traceability Matrix...")
-            vtm = VTMGenerator.generate_vtm(self.test_results)
+            vtm = VTMGenerator.generate_vtm(self.test_results, coverage_metrics)
 
-            # Export VTM to CSV
+            # Export VTM to CSV with coverage metrics
             vtm_csv_path = Path("validation_traceability_matrix.csv")
-            VTMGenerator.export_vtm_csv(vtm, vtm_csv_path)
-            self._report_progress(f"VTM exported to: {vtm_csv_path}")
+            VTMGenerator.export_vtm_csv(vtm, vtm_csv_path, coverage_metrics)
+            self._report_progress(f"✅ VTM exported to: {vtm_csv_path}")
 
             # Get current engine hash
             engine_hash = HashVerifier.get_engine_hash()
@@ -331,6 +381,7 @@ class ValidationRunner:
                     "platform": platform.platform(),
                     "python_version": sys.version,
                     "python_implementation": platform.python_implementation(),
+                    "software_version": __version__,
                 },
                 test_results=self.test_results,
                 validated_hash=engine_hash,
@@ -357,7 +408,7 @@ class ValidationRunner:
                 self._report_progress(f"📄 Certificate: {report_path}")
                 self._report_progress(f"🔍 Engine Hash: {engine_hash[:16]}...")
                 self._report_progress("=" * 60)
-                
+
                 return (
                     True,
                     f"Validation successful! Certificate saved to {report_path}",
@@ -369,12 +420,12 @@ class ValidationRunner:
                 self._report_progress(f"📄 Certificate: {report_path}")
                 self._report_progress(f"🔍 Engine Hash: {engine_hash[:16]}...")
                 self._report_progress("=" * 60)
-                
+
                 # Remove validated hash so button shows red
                 if HashVerifier.VALIDATED_HASH_FILE.exists():
                     HashVerifier.VALIDATED_HASH_FILE.unlink()
                     self._report_progress("Removed invalid validation hash")
-                
+
                 return (
                     False,
                     f"Validation failed. Some tests did not pass. Certificate saved to {report_path}",

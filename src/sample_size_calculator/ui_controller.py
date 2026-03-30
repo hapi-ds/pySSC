@@ -48,6 +48,7 @@ from sample_size_calculator.tolerance import (
 )
 from sample_size_calculator.transformations import transformation_cascade
 from sample_size_calculator.validation_runner import ValidationRunner
+from sample_size_calculator.version import __version__
 
 
 class ModuleVState:
@@ -181,6 +182,9 @@ class UIController:
         with ui.header().classes("items-center justify-between w-full"):
             with ui.row().classes("items-center gap-4"):
                 ui.label("Sample Size Calculator").classes("text-h4")
+                ui.label(f"v{__version__}").classes(
+                    "text-caption bg-secondary text-secondary-contrast px-2 rounded"
+                )
                 ui.label(
                     "Medical Device Design Verification & Process Validation"
                 ).classes("text-subtitle2")
@@ -410,9 +414,7 @@ class UIController:
                                     "field": "n_original",
                                 },
                                 {
-                                    "headerName": "Sample Size (Corrected for N={})".format(
-                                        int(population_size)
-                                    ),
+                                    "headerName": f"Sample Size (Corrected for N={int(population_size)})",
                                     "field": "n_corrected",
                                 },
                             ]
@@ -420,7 +422,7 @@ class UIController:
                                 {
                                     "c": c,
                                     "n_original": n_orig,
-                                    "n_corrected": round(n_corr, 2),
+                                    "n_corrected": round(n_corr or 0.0, 2),
                                 }
                                 for c, n_orig, n_corr in results
                             ]
@@ -654,7 +656,7 @@ class UIController:
                 # Log PDF generation
                 self.logger.log_report_generation(
                     "Module A PDF Report",
-                    report_path,
+                    str(report_path),
                     validation_state,
                     self.session_id,
                 )
@@ -800,7 +802,7 @@ class UIController:
                 # Log PDF generation
                 self.logger.log_report_generation(
                     "Module A Full Report",
-                    saved_path,
+                    str(saved_path),
                     validation_state,
                     self.session_id,
                 )
@@ -1813,22 +1815,36 @@ class UIController:
                 # Populate Phase 4 info check based on pilot data length
                 self.phase4_info_container.clear()
                 with self.phase4_info_container:
-                    available_data = phase2_results.cleaned_data if phase2_results and phase2_results.cleaned_data else []
+                    available_data = (
+                        phase2_results.cleaned_data
+                        if phase2_results and phase2_results.cleaned_data
+                        else []
+                    )
                     available_count = len(available_data)
                     required_count = phase3_results.required_sample_size
-                    
+
                     if available_count >= required_count:
                         ui.label("Validation Data Status").classes("text-h6")
-                        ui.label(f"✓ Sufficient data available (Have: {available_count}, Need: {required_count})").classes("text-body1 text-positive")
+                        ui.label(
+                            f"✓ Sufficient data available (Have: {available_count}, Need: {required_count})"
+                        ).classes("text-body1 text-positive")
                         if available_count > 0:
                             mean_val = sum(available_data) / available_count
-                            ui.label(f"Data Summary: Mean = {mean_val:.4f}, Count = {available_count}").classes("text-body2")
+                            ui.label(
+                                f"Data Summary: Mean = {mean_val:.4f}, Count = {available_count}"
+                            ).classes("text-body2")
                         self.calculate_phase4_btn.set_visibility(True)
                     else:
                         missing = required_count - available_count
-                        ui.label("Validation Data Status").classes("text-h6 text-warning")
-                        ui.label(f"⚠ Insufficient data! (Have: {available_count}, Need: {required_count})").classes("text-body1 text-negative")
-                        ui.label(f"Please return to Phase 1 and enter at least {missing} more data point{'s' if missing != 1 else ''}.").classes("text-body1 text-negative")
+                        ui.label("Validation Data Status").classes(
+                            "text-h6 text-warning"
+                        )
+                        ui.label(
+                            f"⚠ Insufficient data! (Have: {available_count}, Need: {required_count})"
+                        ).classes("text-body1 text-negative")
+                        ui.label(
+                            f"Please return to Phase 1 and enter at least {missing} more data point{'s' if missing != 1 else ''}."
+                        ).classes("text-body1 text-negative")
                         self.calculate_phase4_btn.set_visibility(False)
 
                 # Log calculation
@@ -1935,7 +1951,9 @@ class UIController:
                     )
                     return
 
-                final_data = phase2_results.cleaned_data if phase2_results.cleaned_data else []
+                final_data = (
+                    phase2_results.cleaned_data if phase2_results.cleaned_data else []
+                )
 
                 if len(final_data) < phase3_results.required_sample_size:
                     ui.notify(
@@ -2062,6 +2080,7 @@ class UIController:
                 validation_state = is_validated_state()
 
                 # Prepare report data
+                phase1 = self.module_v_state.phase1_results
                 phase2 = self.module_v_state.phase2_results
                 phase3 = self.module_v_state.phase3_results
                 phase4 = self.module_v_state.phase4_results
@@ -2098,6 +2117,29 @@ class UIController:
                     "ppk": phase4.ppk,
                 }
 
+                sampled_data = self.module_v_state.pilot_data or []
+                detected_outliers = (
+                    [
+                        {
+                            "value": o.value,
+                            "is_excluded": o.is_excluded,
+                            "rationale": o.rationale,
+                        }
+                        for o in phase1.outliers
+                    ]
+                    if phase1 and phase1.outliers
+                    else None
+                )
+                outlier_exclusions = (
+                    [
+                        {"value": o.value, "rationale": o.rationale}
+                        for o in phase1.outliers
+                        if o.is_excluded and o.rationale
+                    ]
+                    if phase1 and phase1.outliers
+                    else None
+                )
+
                 # Build method path
                 method_path = f"Specification: {spec_limits.spec_type.value}\n"
                 method_path += f"Transformation: {phase2.transformation_method.value}\n"
@@ -2113,6 +2155,9 @@ class UIController:
                     engine_hash=engine_hash,
                     validation_state=validation_state,
                     method_path=method_path,
+                    sampled_data=sampled_data,
+                    detected_outliers=detected_outliers,
+                    outlier_exclusions=outlier_exclusions,
                 )
 
                 # Generate PDF and save to reports directory
@@ -2139,7 +2184,7 @@ class UIController:
                 # Log PDF generation
                 self.logger.log_report_generation(
                     "Module V PDF Report",
-                    report_path,
+                    str(report_path),
                     validation_state,
                     self.session_id,
                 )
@@ -2172,6 +2217,7 @@ class UIController:
                 validation_state = is_validated_state()
 
                 # Prepare report data (same as regular report)
+                phase1 = self.module_v_state.phase1_results
                 phase2 = self.module_v_state.phase2_results
                 phase3 = self.module_v_state.phase3_results
                 phase4 = self.module_v_state.phase4_results
@@ -2208,6 +2254,29 @@ class UIController:
                     "ppk": phase4.ppk,
                 }
 
+                sampled_data = self.module_v_state.pilot_data or []
+                detected_outliers = (
+                    [
+                        {
+                            "value": o.value,
+                            "is_excluded": o.is_excluded,
+                            "rationale": o.rationale,
+                        }
+                        for o in phase1.outliers
+                    ]
+                    if phase1 and phase1.outliers
+                    else None
+                )
+                outlier_exclusions = (
+                    [
+                        {"value": o.value, "rationale": o.rationale}
+                        for o in phase1.outliers
+                        if o.is_excluded and o.rationale
+                    ]
+                    if phase1 and phase1.outliers
+                    else None
+                )
+
                 # Build method path
                 method_path = f"Specification: {spec_limits.spec_type.value}\n"
                 method_path += f"Transformation: {phase2.transformation_method.value}\n"
@@ -2223,6 +2292,9 @@ class UIController:
                     engine_hash=engine_hash,
                     validation_state=validation_state,
                     method_path=method_path,
+                    sampled_data=sampled_data,
+                    detected_outliers=detected_outliers,
+                    outlier_exclusions=outlier_exclusions,
                 )
 
                 # Generate full report PDF
@@ -2268,7 +2340,7 @@ class UIController:
                 # Log PDF generation
                 self.logger.log_report_generation(
                     "Module V Full Report",
-                    saved_path,
+                    str(saved_path),
                     validation_state,
                     self.session_id,
                 )
@@ -2594,19 +2666,19 @@ class UIController:
 
             # Control buttons
             with ui.row().classes("gap-2"):
-                start_btn = ui.button(
+                ui.button(
                     "Start JupyterLab",
                     icon="play_arrow",
                     on_click=lambda: self._start_jupyter(status_label),
                 ).props("color=positive")
 
-                stop_btn = ui.button(
+                ui.button(
                     "Stop JupyterLab",
                     icon="stop",
                     on_click=lambda: self._stop_jupyter(status_label),
                 ).props("color=negative")
 
-                open_btn = ui.button(
+                ui.button(
                     "Open JupyterLab",
                     icon="open_in_new",
                     on_click=lambda: self._open_jupyter(),
@@ -2652,7 +2724,7 @@ The `notebooks/` directory contains interactive examples:
 
 ### Docker Usage
 
-When running in Docker, JupyterLab is accessible at the same URL. 
+When running in Docker, JupyterLab is accessible at the same URL.
 The notebooks directory is mounted as a volume for persistence.
                 """)
 
@@ -2852,15 +2924,14 @@ Module A uses binomial distribution theory to determine sample sizes. The calcul
 Module V is designed for **variable data analysis** where measurements are continuous numerical values (dimensions, weights, voltages, etc.).
 It uses a structured 4-phase workflow to ensure proper statistical analysis and sample size determination.
 
-### Phase 1: Initial Data Collection & Outlier Detection
-**Objective**: Collect preliminary data and identify statistical outliers
+### Phase 1: (Initial) Data Collection & Outlier Detection
+**Objective**: Collect (preliminary) data and identify statistical outliers
 
 **Steps**:
-1. Enter your initial measurement data (comma-separated values)
-2. Specify the number of standard deviations for outlier detection (typically 3σ)
-3. Click "Detect Outliers" to identify extreme values
-4. Review flagged outliers and decide whether to remove them
-5. Click "Complete Phase 1" to proceed
+1. Enter type and specification limits (LSL, USL)
+2. Enter risked based statistical parameters (confidence, reliability)
+3. Enter your measurement data (comma-separated values) or enter mean and sd
+4. Click "Analyse Pilot Data" --> System detects outliers and suggests removal in Phase 2
 
 **Key Concepts**:
 - **Outliers**: Data points that fall beyond ±k standard deviations from the mean
@@ -2871,17 +2942,22 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
 **Objective**: Assess data normality and apply transformations if needed
 
 **Steps**:
-1. System automatically performs normality tests (Shapiro-Wilk and Anderson-Darling)
-2. Review normality test results and diagnostic plots:
+1. You must review the results of the outlier detection and decide
+ whether to remove outliers (or keep them if they represent real variation).
+ You have to add comments on excusion.
+2. System automatically performs normality tests (Shapiro-Wilk and Anderson-Darling)
+ or you enable manual override and select which methode to use
+3. Click "Process normality testing"
+4. Review normality test results and diagnostic plots:
    - **Q-Q Plot**: Points should follow diagonal line for normal data
    - **P-P Plot**: Points should follow diagonal line for normal distribution
    - **I-MR Chart**: Checks process stability over time
-3. If data is non-normal, system recommends transformations:
+5. If data is non-normal, system recommends transformations:
    - **Logarithmic**: For right-skewed data (positive values only)
    - **Box-Cox**: For positive data with varying skewness
    - **Yeo-Johnson**: For data including zero or negative values
-4. Enable "Manual Override" to manually select transformation method if desired
-5. Click "Complete Phase 2" to proceed
+6. Review "Locked Methode" --> this is the methode we use for next Phase 3 and 4
+7. Click "Calculate required sample size" to proceed
 
 **Key Concepts**:
 - **Normality**: Many statistical methods assume normally distributed data
@@ -2892,18 +2968,14 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
 **Objective**: Calculate required sample size for tolerance limit estimation
 
 **Steps**:
-1. Enter statistical requirements:
-   - **Confidence Level**: Confidence in the tolerance interval (e.g., 95%)
-   - **Coverage**: Proportion of population within tolerance limits (e.g., 99%)
-   - **Sided**: One-sided (upper or lower) or two-sided tolerance limits
-2. Click "Calculate Sample Size" to determine required n
-3. Review the calculated sample size
-4. System locks Phase 3 controls to prevent recalculation that would invalidate Phase 4
+1. Review the calculated sample size, capability margins and tolerance factor
+2. If you have enough data from Phase 1, you can proceed to Phase 4 - if not,
+    you have to collect more data and start from beginning (outlier detection and normality
+    tests have to be checked also on new data)
+3. Click "Calculate tolerance limits"
 
 **Key Concepts**:
 - **Tolerance Limits**: Statistical bounds that contain a specified proportion of the population
-- **Confidence Level**: How confident you are that the tolerance limits are correct
-- **Coverage**: What percentage of the population falls within the limits
 
 ### Phase 4: Final Validation & Tolerance Limit Calculation
 **Objective**: Calculate tolerance limits
@@ -2913,8 +2985,7 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
     - if enough data points are available,
     - else system shows how many you need.
     - You have to run all Phases again to make sure new data are normal and no outlier
-2. Click "Calculate Tolerance Limits" to perform final analysis
-3. Review results:
+2. Review results:
    - **Tolerance Limits**: Calculated statistical bounds
    - **Pass/Fail**: Whether tolerance limits fall within specification limits
    - **Ppk**: Process performance index (higher is better, ≥1.33 is typical target)
@@ -3021,9 +3092,9 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
   - Ppk = 1.67: Good process capability (5σ process)
   - Ppk ≥ 2.0: Excellent process capability (6σ process)
 
-**Confidence Level vs. Coverage**
+**Confidence Level vs. Reliability/Coverage**
 - **Confidence Level**: How sure you are that your tolerance limits are correct (e.g., 95% confidence)
-- **Coverage**: What proportion of the population falls within the limits (e.g., 99% coverage)
+- **Reliability/Coverage**: What proportion of the population falls within the limits (e.g., 99% coverage)
 - **Example**: "95% confidence, 99% coverage" means "I'm 95% confident that 99% of parts meet requirements"
                 """)
 
@@ -3038,14 +3109,14 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
 **Scenario**: Your data is already normally distributed
 
 **Steps**:
-1. **Phase 1**: Enter data → Detect outliers → Remove if necessary → Complete Phase 1
-2. **Phase 2**: Review normality tests
+1. **Phase 1**: Enter confidence (95%), coverage (99%), sided (Two-sided), data → Detect outliers → NEXT Complete Phase 1
+2. **Phase 2**: Remove outliers if necessary → test normality → Review normality tests
    - Shapiro-Wilk p-value > 0.05 ✓
    - Anderson-Darling statistic below critical value ✓
    - Q-Q plot points follow diagonal line ✓
    - System selects "None/Parametric" method → Complete Phase 2
-3. **Phase 3**: Enter confidence (95%), coverage (99%), sided (Two-sided) → Calculate → Complete Phase 3
-4. **Phase 4**: Collect n samples → Enter data → Enter LSL/USL → Calculate tolerance limits → Review Ppk
+3. **Phase 3**: Calculate Sample Size → Complete Phase 3
+4. **Phase 4**: Calculate tolerance limits → Review Ppk
 
 **Expected Outcome**: Straightforward analysis with no transformation needed
 
@@ -3054,14 +3125,14 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
 **Scenario**: Your data has a long tail to the right (e.g., cycle times, failure rates)
 
 **Steps**:
-1. **Phase 1**: Enter data → Detect outliers → Complete Phase 1
-2. **Phase 2**: Review normality tests
+1. **Phase 1**: Enter confidence (95%), coverage (99%), sided (Two-sided), data → Detect outliers → NEXT Complete Phase 1
+2. **Phase 2**: Remove outliers if necessary → test normality → Review normality tests
    - Shapiro-Wilk p-value < 0.05 (non-normal) ✗
    - Q-Q plot curves above diagonal line (right-skewed)
    - System recommends "Logarithmic" or "Box-Cox" transformation
    - Accept recommendation → Complete Phase 2
-3. **Phase 3**: Enter requirements → Calculate sample size → Complete Phase 3
-4. **Phase 4**: Collect n samples → Enter data → Enter LSL/USL → Calculate tolerance limits
+3. **Phase 3**: Calculate sample size → Complete Phase 3
+4. **Phase 4**: Calculate tolerance limits
    - System applies same transformation to final data
    - Review results in original units
 
@@ -3072,14 +3143,14 @@ It uses a structured 4-phase workflow to ensure proper statistical analysis and 
 **Scenario**: You want to manually select the transformation method
 
 **Steps**:
-1. **Phase 1**: Enter data → Detect outliers → Complete Phase 1
-2. **Phase 2**:
+1. **Phase 1**: Enter confidence (95%), coverage (99%), sided (Two-sided), data → Detect outliers → NEXT Complete Phase 1
+2. **Phase 2**: Remove outliers if necessary → test normality → Review normality tests
    - Review normality test results
    - Enable "Manual Override" checkbox
    - Dropdown now shows all methods: None/Parametric, Logarithmic, Box-Cox, Yeo-Johnson, Non-Parametric/Wilks
    - Select desired method → Complete Phase 2
-3. **Phase 3**: Enter requirements → Calculate sample size → Complete Phase 3
-4. **Phase 4**: Collect n samples → Enter data → Enter LSL/USL → Calculate tolerance limits
+3. **Phase 3**: Calculate sample size → Complete Phase 3
+4. **Phase 4**: Calculate tolerance limits
 
 **Use Case**: When you have domain knowledge about appropriate transformation or want to compare methods
 
@@ -3155,7 +3226,7 @@ START: Do you have attribute (Pass/Fail) or variable (numerical) data?
     │
     Phase 3: Calculate required sample size n
     │
-    Phase 4: Collect n samples → Calculate tolerance limits → Check Ppk
+    Phase 4: Calculate tolerance limits → Check Ppk
 ```
 
 ### Tips for Success
@@ -3179,7 +3250,7 @@ START: Do you have attribute (Pass/Fail) or variable (numerical) data?
             with ui.card().classes("w-full"):
                 ui.markdown("""
 ### Validation Reports & Certificates
-                            
+
 After running the validation suite, a comprehensive report is generated that includes:
 
 - Who and when the validation was performed
@@ -3211,7 +3282,7 @@ You can find the generated full reports in the `reports/full/` directory.
             "Computer Software Validation ISO TR 80002-2", icon="search"
         ).classes("w-full"):
             with ui.card().classes("w-full"):
-                with open("./requirements/00_ComputerSoftwareValidation.md", "r") as f:
+                with open("./requirements/00_ComputerSoftwareValidation.md") as f:
                     md_content = f.read()
                 ui.markdown(md_content)
 

@@ -22,6 +22,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from sample_size_calculator.version import __version__
+
 
 class SpecificationType(StrEnum):
     """Specification type for Module V analysis."""
@@ -214,6 +216,10 @@ class CalculationReport(BaseModel):
     engine_hash: str
     validation_state: bool
     method_path: str
+    version: str = __version__
+    sampled_data: list[float] | None = None
+    detected_outliers: list[dict] | None = None
+    outlier_exclusions: list[dict] | None = None
 
 
 class ValidationCertificate(BaseModel):

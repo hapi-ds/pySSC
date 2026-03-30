@@ -109,13 +109,6 @@ def box_cox_transform(data: list[float]) -> tuple[list[float], float] | None:
         # scipy.stats.boxcox returns (transformed_data, lambda_param)
         transformed_array, lambda_param = stats.boxcox(data_array)
 
-        # Reject extreme lambda values that cause numerical instability
-        # Box-Cox with |λ| > 3 leads to power transformations that exceed
-        # floating-point precision limits in round-trip transformations
-        # Even moderate lambdas cause precision issues with tight tolerances
-        if abs(lambda_param) > 3.0:
-            return None
-
         return transformed_array.tolist(), float(lambda_param)
     except (ValueError, RuntimeError):
         # Handle numerical errors (e.g., constant data, optimization failures)

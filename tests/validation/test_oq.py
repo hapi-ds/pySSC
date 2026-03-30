@@ -11,8 +11,6 @@ import pytest
 
 from sample_size_calculator.calculations import CalculationEngine
 from sample_size_calculator.models import (
-    AnalysisMethod,
-    OutlierInfo,
     Phase1Results,
     SpecificationLimits,
     SpecificationType,
@@ -988,8 +986,9 @@ def test_inverse_transforms_round_trip():
     np.testing.assert_allclose(back_log, original, rtol=1e-10)
 
     # Box-Cox round-trip
-    bc_data, bc_lambda = box_cox_transform(original)
-    assert bc_data is not None and bc_lambda is not None
+    result = box_cox_transform(original)
+    assert result is not None
+    bc_data, bc_lambda = result
     back_bc = inverse_box_cox_transform(bc_data, bc_lambda)
     np.testing.assert_allclose(back_bc, original, rtol=1e-9)
 
@@ -1344,7 +1343,7 @@ def test_specification_constraints_two_sided():
     assert lsl_only.lsl is not None, "One-sided spec can have LSL only"
 
     # Verify validation raises error if both are None for one-sided
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=".*"):
         SpecificationLimits(
             lsl=None,
             usl=None,
@@ -1513,7 +1512,6 @@ def test_parametric_n_iteration_one_sided():
     SRS 14.1: FOR one-sided specifications, THE System SHALL iterate N until
     k1(N) <= k_margin.
     """
-    from sample_size_calculator.models import SpecificationType
 
     # Calculate capability margin for pilot data
     pilot_data = [10.015, 9.996, 10.019, 10.046, 9.993]
@@ -1522,7 +1520,7 @@ def test_parametric_n_iteration_one_sided():
 
     # One-sided specification (LSL only)
     lsl = 9.5
-    usl = None
+    _ = None
 
     # Calculate k_margin: distance to LSL divided by std
     k_margin = (mean_pilot - lsl) / std_pilot if lsl else float("inf")
@@ -1562,7 +1560,6 @@ def test_parametric_n_iteration_two_sided():
     SRS 14.2: FOR two-sided specifications, THE System SHALL iterate N until
     k2(N) <= k_margin.
     """
-    from sample_size_calculator.models import SpecificationType
 
     # Calculate capability margin for pilot data
     pilot_data = [10.015, 9.996, 10.019, 10.046, 9.993]
@@ -1615,13 +1612,11 @@ def test_final_data_execution_with_locked_transformation():
     validation data than was locked in Phase 2.
     """
     from sample_size_calculator.models import (
-        AnalysisMethod,
         TransformationMethod,
     )
 
     # Simulate locked transformation from Phase 2
-    locked_transformation = TransformationMethod.LOGARITHMIC
-    locked_lambda = None  # Log transform doesn't have lambda
+    _ = TransformationMethod.LOGARITHMIC
 
     # Final validation data (must be in original units)
-    final_data_original = [10.0, 10.1, 9.9, 10.2, 10.0]
+    final_data_original = [10.0, 10.1, 9.9, 10.2, 10.0]  # noqa: F841

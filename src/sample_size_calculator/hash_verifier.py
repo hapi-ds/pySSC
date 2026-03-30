@@ -12,12 +12,37 @@ from pathlib import Path
 class HashVerifier:
     """Manages calculation engine hash verification for QMS compliance."""
 
-    # Path to the calculation engine file
-    ENGINE_FILE = Path(__file__).parent / "calculations.py"
+    # Directory containing all source files to track
+    SOURCE_DIR = Path(__file__).parent
 
     # Path to the validated hash configuration file
     CONFIG_DIR = Path(__file__).parent.parent.parent / "config"
     VALIDATED_HASH_FILE = CONFIG_DIR / "validated_hash.json"
+
+    @classmethod
+    def calculate_package_hash(cls) -> str:
+        """Calculate SHA-256 hash of all source files in the package.
+
+        Combines hashes of all .py files in the package directory to create
+        a fingerprint of the entire codebase. This ensures any change to
+        source code will be detected, including version.py changes.
+
+        Returns:
+            Hexadecimal SHA-256 hash string of all source files
+        """
+        all_py_files = sorted(cls.SOURCE_DIR.glob("*.py"))
+
+        sha256_hash = hashlib.sha256()
+
+        for py_file in all_py_files:
+            try:
+                with open(py_file, "rb") as f:
+                    for byte_block in iter(lambda: f.read(4096), b""):
+                        sha256_hash.update(byte_block)
+            except OSError:
+                continue
+
+        return sha256_hash.hexdigest()
 
     @staticmethod
     def calculate_file_hash(filepath: str | Path) -> str:
@@ -52,12 +77,15 @@ class HashVerifier:
 
     @staticmethod
     def get_engine_hash() -> str:
-        """Get current SHA-256 hash of calculations.py.
+        """Get current SHA-256 hash of all source files in the package.
+
+        Returns SHA-256 hash of entire package, including version.py and all .py files.
+        This ensures any code change is detected for validation integrity.
 
         Returns:
-            Hexadecimal SHA-256 hash string of the calculation engine
+            Hexadecimal SHA-256 hash string of all source files
         """
-        return HashVerifier.calculate_file_hash(HashVerifier.ENGINE_FILE)
+        return HashVerifier.calculate_package_hash()
 
     @staticmethod
     def get_validated_hash() -> str | None:
@@ -145,7 +173,10 @@ class HashVerifier:
 
 # Convenience functions for direct import
 def get_engine_hash() -> str:
-    """Get current SHA-256 hash of calculations.py.
+    """Get current SHA-256 hash of all source files in the package.
+
+    Returns SHA-256 hash of entire package, including version.py and all .py files.
+    This ensures any code change is detected for validation integrity.
 
     Convenience function that wraps HashVerifier.get_engine_hash().
 

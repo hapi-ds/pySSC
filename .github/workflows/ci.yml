@@ -1,0 +1,64 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    workflow_dispatch:
+
+jobs:
+  test-and-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install Dependencies
+        # install all + Dev-Tools + alle Extras
+        run: uv sync --frozen --all-extras
+
+      - name: Start Service (Background)
+        run: |
+          # start app in background
+          uv run python src/sample_size_calculator/main.py &
+          # wait, until Service ready (Port 8080)
+          timeout 30s bash -c 'until curl -s localhost:8080; do sleep 1; done' || echo "Service not started in time, continue..."
+
+      - name: Run Validation Script
+        run: |
+          uv run python scripts/run_validation.py --tester 'Test' --skip-pq
+
+      - name: Run Tests with Coverage
+        id: pytest_step
+        run: |
+          # Test and gererate XML for Badge
+          uv run pytest --cov=src/sample_size_calculator --cov-report=xml --cov-report=term
+
+      - name: Pytest coverage comment
+        id: coverageComment
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-xml-coverage-path: ./coverage.xml
+          title: Coverage Report
+          badge-title: Coverage
+
+      - name: Update Coverage Badge Gist
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_TOKEN }}
+          gistID: aa5bb33df835905782de38749202e3f0
+          filename: pytest-coverage.json
+          label: Coverage
+          # use Output for Coverage-Action
+          message: ${{ steps.coverageComment.outputs.coverage }}
+          color: ${{ steps.coverageComment.outputs.color }}
+          namedLogo: python
+
+      - name: Cleanup Service
+        if: always()
+        run: |
+          # search proces, and kill
+          fuser -k 8080/tcp || true

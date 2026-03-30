@@ -4,7 +4,6 @@ import os
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional
 
 from nicegui import ui
 
@@ -15,8 +14,8 @@ class JupyterManager:
     def __init__(
         self,
         port: int = 8888,
-        token: Optional[str] = None,
-        notebook_dir: Optional[str] = None,
+        token: str | None = None,
+        notebook_dir: str | None = None,
     ):
         """Initialize JupyterLab manager.
 
@@ -28,7 +27,7 @@ class JupyterManager:
         self.port = port
         self.token = token or os.urandom(16).hex()
         self.notebook_dir = Path(notebook_dir or "notebooks").resolve()
-        self.process: Optional[subprocess.Popen] = None
+        self.process: subprocess.Popen | None = None
         self._ensure_notebook_dir()
 
     def _ensure_notebook_dir(self) -> None:
