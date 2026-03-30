@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.0.4 (2026-03-30)
+
+### Bug Fixes
+
+- Run playwright with uv
+  ([`64e1d0a`](https://github.com/hapi-ds/pySSC/commit/64e1d0ac8e5aca8898447958d41b1a654ce4511b))
+
+
 ## v1.0.3 (2026-03-30)
 
 ### Bug Fixes
