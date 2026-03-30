@@ -100,7 +100,7 @@ class ValidationRunner:
         test_results = []
 
         for test in pytest_data.get("tests", []):
-            # Extract URS IDs from markers (from keywords since pytest-json-report doesn't capture args)
+            # Extract URS IDs from markers (try pytest-json-report format first, then source file)
             urs_ids = []
 
             test_id = test.get("nodeid", "unknown")
@@ -109,9 +109,20 @@ class ValidationRunner:
                 test_id.split("::")[-1].split("[")[0] if "::" in test_id else test_id
             )
 
-            if "::" in test_id:
-                # Parse the marker directly from the source file
+            # Try to get URS IDs from pytest-json-report markers field first
+            test_markers = test.get("markers", [])
+            for marker in test_markers:
+                if isinstance(marker, dict):
+                    if marker.get("name") == "urs":
+                        urs_args = marker.get("args", [])
+                        if isinstance(urs_args, list):
+                            urs_ids.extend([str(arg) for arg in urs_args])
+                elif hasattr(marker, "name") and marker.name == "urs":
+                    if hasattr(marker, "args"):
+                        urs_ids.extend([str(arg) for arg in marker.args])
 
+            # If no URS IDs from pytest-json-report format, try parsing source file
+            if not urs_ids:
                 test_file_path = test_id.split("::")[0]
                 try:
                     with open(test_file_path) as f:
@@ -140,7 +151,7 @@ class ValidationRunner:
                                     urs_pattern = r'"([^"]+)"'
                                     found_ids = re.findall(urs_pattern, match)
 
-                                    # Only add IDs that look like URS IDs
+                                    # Add all URS IDs (not just the first one)
                                     for urs_id in found_ids:
                                         if (
                                             urs_id.startswith("URS-")
@@ -148,9 +159,9 @@ class ValidationRunner:
                                         ):
                                             collected_urs_ids.append(urs_id)
 
-                            # Use the most recent marker (first in reverse order = last in file)
+                            # Use all collected URS IDs from markers
                             if collected_urs_ids:
-                                urs_ids = [collected_urs_ids[0]]
+                                urs_ids = collected_urs_ids
 
                             break
                 except Exception:

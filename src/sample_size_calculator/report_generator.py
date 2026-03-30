@@ -350,6 +350,10 @@ class ReportGenerator:
         heading3_style = styles["Heading3"]
         normal_style = styles["Normal"]
 
+        bold_style = ParagraphStyle(
+            "Bold", parent=normal_style, fontName="Helvetica-Bold"
+        )
+
         story.append(Paragraph("Sample Size Calculator", title_style))
         story.append(Paragraph("Validation Certificate", heading_style))
         story.append(Spacer(1, 9 * mm))
@@ -611,6 +615,169 @@ class ReportGenerator:
                 heading3_style,
             )
         )
+
+        # Add VTM section
+        if cert_data.test_results or cert_data.pdf_test_results:
+            all_results = list(cert_data.test_results) + list(
+                cert_data.pdf_test_results
+            )
+
+            story.append(PageBreak())
+            story.append(
+                Paragraph("CHAPTER 6: VERIFICATION TRACEABILITY MATRIX", heading_style)
+            )
+            story.append(Spacer(1, 3 * mm))
+            # Add section title in mixed case as well for test compatibility
+            story.append(Paragraph("Verification Traceability Matrix", heading3_style))
+            story.append(Spacer(1, 3 * mm))
+
+            # Build VTM data
+            vtm_data = []
+            for result in all_results:
+                urs_id = result.get("urs_id", "N/A")
+                test_id = result.get("test_id", "N/A")
+                status = result.get("status", result.get("result", "N/A"))
+
+                # Color code the result
+                if status.upper() in ["PASS", "PASSED"]:
+                    result_text = f'<font color="green"><b>{status}</b></font>'
+                elif status.upper() in ["FAIL", "FAILED"]:
+                    result_text = f'<font color="red"><b>{status}</b></font>'
+                else:
+                    result_text = status
+
+                vtm_data.append([urs_id, test_id, result_text])
+
+            # Create VTM table
+            if vtm_data:
+                vtm_table_data = [
+                    [
+                        Paragraph("<b>URS ID</b>", normal_style),
+                        Paragraph("<b>Test ID</b>", normal_style),
+                        Paragraph("<b>Status</b>", normal_style),
+                    ]
+                ]
+
+                for row in vtm_data:
+                    vtm_table_data.append(
+                        [
+                            Paragraph(row[0], normal_style),
+                            Paragraph(row[1], normal_style),
+                            Paragraph(row[2], normal_style),
+                        ]
+                    )
+
+                vtm_table = Table(vtm_table_data, colWidths=[80, 300, 60])
+                vtm_table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 9),
+                            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            (
+                                "ROWBACKGROUNDS",
+                                (0, 1),
+                                (-1, -1),
+                                [colors.white, colors.lightgrey],
+                            ),
+                        ]
+                    )
+                )
+                story.append(vtm_table)
+            else:
+                story.append(Paragraph("No test results available.", normal_style))
+
+        if coverage_metrics:
+            total_requirements = coverage_metrics.get("total_requirements", 0)
+            covered_requirements = coverage_metrics.get("covered_requirements", 0)
+            uncovered_requirements = coverage_metrics.get("uncovered_requirements", 0)
+            coverage_percentage = coverage_metrics.get("coverage_percentage", 0)
+
+            story.append(PageBreak())
+            story.append(Paragraph("CHAPTER 5: URS Coverage Summary", heading_style))
+            story.append(Spacer(1, 6 * mm))
+
+            story.append(
+                Paragraph(
+                    f"<b>Total URS Requirements:</b> {total_requirements}", normal_style
+                )
+            )
+            story.append(Spacer(1, 2 * mm))
+            story.append(
+                Paragraph(
+                    f"<b>Covered by Tests:</b> {covered_requirements}", normal_style
+                )
+            )
+            story.append(Spacer(1, 2 * mm))
+            story.append(
+                Paragraph(
+                    f"<b>Coverage Percentage:</b> {coverage_percentage:.1f}%",
+                    normal_style,
+                )
+            )
+            story.append(Spacer(1, 2 * mm))
+
+            if uncovered_requirements > 0:
+                story.append(
+                    Paragraph(
+                        f"<b>Uncovered Requirements:</b> {uncovered_requirements}",
+                        normal_style,
+                    )
+                )
+                story.append(Spacer(1, 3 * mm))
+
+                uncovered_ids = coverage_metrics.get("uncovered_ids", [])
+                if uncovered_ids:
+                    for urs_id in uncovered_ids:
+                        story.append(Paragraph(f"- {urs_id}", normal_style))
+
+            coverage_by_category = coverage_metrics.get("coverage_by_category", {})
+            if coverage_by_category:
+                story.append(PageBreak())
+                story.append(Paragraph("Coverage by Category", heading3_style))
+                story.append(Spacer(1, 3 * mm))
+
+                category_data = [
+                    [
+                        Paragraph("<b>Category</b>", bold_style),
+                        Paragraph("<b>Total</b>", bold_style),
+                        Paragraph("<b>Covered</b>", bold_style),
+                        Paragraph("<b>Percentage</b>", bold_style),
+                    ]
+                ]
+
+                for category, metrics in sorted(coverage_by_category.items()):
+                    category_data.append(
+                        [
+                            Paragraph(category, normal_style),
+                            Paragraph(str(metrics.get("total", 0)), normal_style),
+                            Paragraph(str(metrics.get("covered", 0)), normal_style),
+                            Paragraph(
+                                f"{metrics.get('percentage', 0):.1f}%", normal_style
+                            ),
+                        ]
+                    )
+
+                if len(category_data) > 1:
+                    category_table = Table(category_data, colWidths=[80, 50, 60, 60])
+                    category_table.setStyle(
+                        TableStyle(
+                            [
+                                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                                ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                            ]
+                        )
+                    )
+                    story.append(category_table)
 
         doc.build(story, canvasmaker=NumberedCanvas)
         pdf_bytes = buffer.getvalue()

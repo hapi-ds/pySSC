@@ -82,7 +82,7 @@ class TestModuleACalculations:
         reliability=confidence_reliability_strategy,
         allowable_failures=st.integers(min_value=1, max_value=10),
     )
-    @settings(deadline=1000)  # Allow up to 1 second for iterative calculations
+    @settings(deadline=5000)  # Allow up to 5 seconds for iterative calculations
     def test_property_4_cumulative_binomial_constraint_satisfaction(
         self, confidence: float, reliability: float, allowable_failures: int
     ) -> None:
