@@ -18,6 +18,14 @@ from sample_size_calculator.models import ValidationCertificate
 from sample_size_calculator.report_generator import ReportGenerator
 from sample_size_calculator.version import __version__
 from sample_size_calculator.vtm_generator import VTMGenerator
+import sys
+from pathlib import Path
+
+# Add parent directory (repo root) to path for importing scripts module
+script_path = Path(__file__).resolve().parent.parent.parent
+if str(script_path) not in sys.path:
+    sys.path.insert(0, str(script_path))
+from scripts.calculate_coverage import calculate_coverage
 
 
 class ValidationRunner:
@@ -335,14 +343,30 @@ class ValidationRunner:
             except Exception as e:
                 self._report_progress(f"⚠️  PDF validation check failed: {str(e)}")
 
+            # Calculate URS coverage metrics
+            self._report_progress("Calculating URS Coverage...")
+            try:
+                coverage_metrics = calculate_coverage(
+                    urs_document_path="requirements/02_URS_SampleSizeCalculator.md",
+                    test_files=[
+                        "tests/validation/test_iq.py",
+                        "tests/validation/test_oq.py",
+                        "tests/validation/test_pq.py",
+                    ],
+                )
+                self._report_progress(f"✅ Coverage calculated: {coverage_metrics['coverage_percentage']:.1f}%")
+            except Exception as e:
+                self._report_progress(f"⚠️  Could not calculate coverage: {e}")
+                coverage_metrics = None
+
             # Generate VTM
             self._report_progress("Generating Verification Traceability Matrix...")
-            vtm = VTMGenerator.generate_vtm(self.test_results)
+            vtm = VTMGenerator.generate_vtm(self.test_results, coverage_metrics)
 
-            # Export VTM to CSV
+            # Export VTM to CSV with coverage metrics
             vtm_csv_path = Path("validation_traceability_matrix.csv")
-            VTMGenerator.export_vtm_csv(vtm, vtm_csv_path)
-            self._report_progress(f"VTM exported to: {vtm_csv_path}")
+            VTMGenerator.export_vtm_csv(vtm, vtm_csv_path, coverage_metrics)
+            self._report_progress(f"✅ VTM exported to: {vtm_csv_path}")
 
             # Get current engine hash
             engine_hash = HashVerifier.get_engine_hash()

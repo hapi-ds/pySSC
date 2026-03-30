@@ -89,10 +89,7 @@ class VTMGenerator:
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
         with open(filepath, "w") as f:
-            f.write("# Verification Traceability Matrix\n")
-
             if coverage_metrics:
-                f.write("#\n")
                 f.write("# VTM Coverage Summary\n")
                 f.write(
                     f"# Total URS Requirements: {coverage_metrics.get('total_requirements', 0)}\n"
@@ -108,17 +105,7 @@ class VTMGenerator:
                 if uncovered_ids:
                     f.write(f"# Uncovered Requirements: {', '.join(uncovered_ids)}\n")
 
-                f.write("#\n")
-                f.write("# Coverage by Category:\n")
-                coverage_by_category = coverage_metrics.get("coverage_by_category", {})
-                for category, metrics in coverage_by_category.items():
-                    f.write(
-                        f"#   {category}: {metrics.get('covered', 0)}/{metrics.get('total', 0)} "
-                        f"({metrics.get('percentage', 0):.1f}%)\n"
-                    )
-                f.write("#\n")
-
-            vtm.to_csv(filepath, mode="a", header=True, index=False)
+            vtm.to_csv(f, header=True, index=False)
 
     @staticmethod
     def add_vtm_to_pdf(story: list, vtm: pd.DataFrame) -> None:

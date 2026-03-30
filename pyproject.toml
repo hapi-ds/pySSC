@@ -28,6 +28,7 @@ dependencies = [
     "pillow>=12.1.1",
     "pydantic>=2.12.5",
     "pypdf>=6.7.2",
+    "pytest-mock>=3.15.1",
     "python-semantic-release>=10.5.3",
     "reportlab>=4.4.10",
     "scipy>=1.17.0",
@@ -60,6 +61,7 @@ packages = ["src/sample_size_calculator"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -70,6 +72,13 @@ markers = [
     "pq: Performance Qualification tests",
     "urs(urs_ids): URS requirement traceability marker - accepts one or more URS IDs",
 ]
+
+[tool.coverage.run]
+source = ["src/sample_size_calculator"]
+omit = ["tests/*", "scripts/*"]
+
+[tool.coverage.report]
+show_missing = true
 
 [tool.pytest-json-report]
 # Include marker information in JSON report
