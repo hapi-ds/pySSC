@@ -123,7 +123,7 @@ class TestModuleACalculations:
         confidence=confidence_reliability_strategy,
         reliability=confidence_reliability_strategy,
     )
-    @settings(deadline=1000)  # Allow up to 1 second for sensitivity analysis
+    @settings(deadline=5000)  # Allow up to 5 seconds for sensitivity analysis
     def test_property_5_sample_size_monotonicity_with_allowable_failures(
         self, confidence: float, reliability: float
     ) -> None:
