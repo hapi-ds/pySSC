@@ -41,6 +41,15 @@ button_id_strategy = st.text(
     ),
 )
 
+event_type_strategy = st.text(
+    min_size=1,
+    max_size=50,
+    alphabet=st.characters(
+        whitelist_categories=("Lu", "Ll", "Nd"),
+        blacklist_characters="\r\n\t\x00-\x1e\x7f",
+    ),
+)
+
 module_strategy = st.sampled_from(["Module_A", "Module_V"])
 phase_strategy = st.one_of(
     st.none(), st.sampled_from(["Phase_1", "Phase_2", "Phase_3", "Phase_4"])
@@ -421,6 +430,183 @@ class TestAuditLogging:
                     raise AssertionError(
                         f"Context is not valid JSON: {context_json}"
                     ) from e
+
+    @given(
+        event_type=event_type_strategy,
+        session_id=session_id_strategy,
+    )
+    def test_property_34_comprehensive_event_logging_ui_interaction(
+        self, event_type: str, session_id: str
+    ) -> None:
+        """Property 34: Comprehensive Event Logging - UI Interaction.
+
+        **Validates: Requirements 38.1, 38.2**
+
+        When a UI interaction occurs, the system should log the event type,
+        timestamp, and contextual information with session ID.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            logger = AuditLogger(log_dir=tmp_dir)
+
+            context = {"interaction_type": "tab_switch", "target": "Module_V"}
+            logger.log_ui_interaction(event_type, session_id, context)
+
+            log_file = Path(tmp_dir) / "audit.log"
+            assert log_file.exists(), "Log file should be created"
+
+            with open(log_file) as f:
+                log_content = f.read()
+
+            assert len(log_content) > 0, "Log file should not be empty"
+            assert session_id in log_content, (
+                f"Session ID {session_id} should be in log"
+            )
+            assert (
+                event_type in log_content or json.dumps(event_type)[1:-1] in log_content
+            ), f"Event type '{event_type}' should be in log (raw or JSON-escaped)"
+
+    @given(
+        error_type=st.sampled_from(["range_error", "type_error", "required_error"]),
+        error_message=st.text(min_size=1, max_size=100),
+        field_id=field_id_strategy,
+        invalid_value=value_strategy,
+        session_id=session_id_strategy,
+    )
+    def test_property_34_comprehensive_event_logging_validation_error(
+        self,
+        error_type: str,
+        error_message: str,
+        field_id: str,
+        invalid_value: Any,
+        session_id: str,
+    ) -> None:
+        """Property 34: Comprehensive Event Logging - Validation Error.
+
+        **Validates: Requirements 38.1, 38.5**
+
+        When validation fails, the system should log error type, message,
+        field identifier, invalid value, and session ID with WARNING level.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            logger = AuditLogger(log_dir=tmp_dir)
+
+            logger.log_validation_error(
+                error_type, error_message, field_id, invalid_value, session_id
+            )
+
+            log_file = Path(tmp_dir) / "audit.log"
+            assert log_file.exists(), "Log file should be created"
+
+            with open(log_file) as f:
+                log_content = f.read()
+
+            assert len(log_content) > 0, "Log file should not be empty"
+            assert session_id in log_content, (
+                f"Session ID {session_id} should be in log"
+            )
+            assert "validation_error" in log_content, (
+                "Event type 'validation_error' should be in log"
+            )
+            assert error_type in log_content, (
+                f"Error type '{error_type}' should be in log"
+            )
+            assert (
+                error_message in log_content
+                or json.dumps(error_message)[1:-1] in log_content
+            ), f"Error message '{error_message}' should be in log (raw or JSON-escaped)"
+            assert (
+                field_id in log_content or json.dumps(field_id)[1:-1] in log_content
+            ), f"Field ID '{field_id}' should be in log (raw or JSON-escaped)"
+
+    @given(
+        outlier_value=st.floats(min_value=-1000.0, max_value=1000.0),
+        rationale=st.text(min_size=1, max_size=200),
+        session_id=session_id_strategy,
+    )
+    def test_property_34_comprehensive_event_logging_outlier_exclusion(
+        self, outlier_value: float, rationale: str, session_id: str
+    ) -> None:
+        """Property 34: Comprehensive Event Logging - Outlier Exclusion.
+
+        **Validates: Requirements 38.1, 38.8**
+
+        When an outlier is excluded, the system should log the value,
+        engineering rationale, and session ID.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            logger = AuditLogger(log_dir=tmp_dir)
+
+            logger.log_outlier_exclusion(outlier_value, rationale, session_id)
+
+            log_file = Path(tmp_dir) / "audit.log"
+            assert log_file.exists(), "Log file should be created"
+
+            with open(log_file) as f:
+                log_content = f.read()
+
+            assert len(log_content) > 0, "Log file should not be empty"
+            assert session_id in log_content, (
+                f"Session ID {session_id} should be in log"
+            )
+            assert "outlier_exclusion" in log_content, (
+                "Event type 'outlier_exclusion' should be in log"
+            )
+            assert str(outlier_value) in log_content, (
+                f"Outlier value '{outlier_value}' should be in log"
+            )
+            assert (
+                rationale in log_content or json.dumps(rationale)[1:-1] in log_content
+            ), f"Rationale '{rationale}' should be in log (raw or JSON-escaped)"
+
+    @given(
+        report_type=st.sampled_from(["user_calculation", "validation_certificate"]),
+        engine_hash=st.text(min_size=64, max_size=64, alphabet="0123456789abcdef"),
+        validation_state=st.booleans(),
+        session_id=session_id_strategy,
+    )
+    def test_property_34_comprehensive_event_logging_report_generation(
+        self,
+        report_type: str,
+        engine_hash: str,
+        validation_state: bool,
+        session_id: str,
+    ) -> None:
+        """Property 34: Comprehensive Event Logging - Report Generation.
+
+        **Validates: Requirements 38.1, 38.9**
+
+        When a PDF report is generated, the system should log report type,
+        engine hash, validation state, and session ID.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            logger = AuditLogger(log_dir=tmp_dir)
+
+            logger.log_report_generation(
+                report_type, engine_hash, validation_state, session_id
+            )
+
+            log_file = Path(tmp_dir) / "audit.log"
+            assert log_file.exists(), "Log file should be created"
+
+            with open(log_file) as f:
+                log_content = f.read()
+
+            assert len(log_content) > 0, "Log file should not be empty"
+            assert session_id in log_content, (
+                f"Session ID {session_id} should be in log"
+            )
+            assert "report_generation" in log_content, (
+                "Event type 'report_generation' should be in log"
+            )
+            assert report_type in log_content, (
+                f"Report type '{report_type}' should be in log"
+            )
+            assert engine_hash in log_content, (
+                f"Engine hash '{engine_hash}' should be in log"
+            )
+            assert str(validation_state).lower() in log_content.lower(), (
+                f"Validation state '{validation_state}' should be in log"
+            )
 
     @given(
         session_id=session_id_strategy,
