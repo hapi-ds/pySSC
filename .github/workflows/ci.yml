@@ -21,7 +21,7 @@ jobs:
         run: uv sync --frozen --all-extras
 
       - name: Install Playwright Browsers
-        run: playwright install --with-deps chromium
+        run: uv run playwright install --with-deps chromium
 
       - name: Start Service (Background)
         run: |
