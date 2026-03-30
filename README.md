@@ -13,7 +13,7 @@
     <img src="https://github.com/hapi-ds/pySSC/actions/workflows/ci.yml/badge.svg" alt="CI Pipeline Status">
   </a>
   <a href="https://github.com/hapi-ds/pySSC/actions">
-    <img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/hapi-ds/aa5bb33df835905782de38749202e3f0/raw/pytest-coverage-commenter-adge.json" alt="Coverage">
+    <img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/hapi-ds/aa5bb33df835905782de38749202e3f0/raw/pytest-coverage.json" alt="Coverage">
   </a>
 </p>
 
