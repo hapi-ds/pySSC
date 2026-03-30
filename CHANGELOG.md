@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.0.3 (2026-03-30)
+
+### Bug Fixes
+
+- Install playwright dependencies
+  ([`3bd240a`](https://github.com/hapi-ds/pySSC/commit/3bd240ac1809e7eda1507f84583917362dab2ff9))
+
+
 ## v1.0.2 (2026-03-27)
 
 ### Bug Fixes
