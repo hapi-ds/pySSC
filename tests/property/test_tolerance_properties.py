@@ -798,3 +798,855 @@ def test_property_25_non_parametric_no_ppk(data: list[float], lsl: float, usl: f
 
     # Ppk should be None for non-parametric methods
     assert result.ppk is None, "Ppk should be None for non-parametric methods"
+
+
+@pytest.mark.property
+def test_property_17_parametric_sample_size_iteration():
+    """Property 17: Parametric Sample Size Iteration."""
+    from sample_size_calculator.models import AnalysisMethod, SpecificationType
+    from sample_size_calculator.tolerance import calculate_required_sample_size
+
+    result = calculate_required_sample_size(
+        k_margin=5.0,
+        confidence=95.0,
+        reliability=95.0,
+        spec_type=SpecificationType.ONE_SIDED,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+    )
+
+    assert result.required_sample_size >= 3
+    assert result.k_margin == 5.0
+    assert result.k_factor > 0
+
+
+@pytest.mark.property
+def test_property_17_parametric_two_sided_sample_size():
+    """Property 17: Parametric Two-Sided Sample Size."""
+    from sample_size_calculator.models import AnalysisMethod, SpecificationType
+    from sample_size_calculator.tolerance import calculate_required_sample_size
+
+    result = calculate_required_sample_size(
+        k_margin=5.0,
+        confidence=95.0,
+        reliability=95.0,
+        spec_type=SpecificationType.TWO_SIDED,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+    )
+
+    assert result.required_sample_size >= 3
+    assert result.k_factor > 0
+
+
+@pytest.mark.property
+def test_property_17_non_parametric_one_sided_sample_size():
+    """Property 17: Non-Parametric One-Sided Sample Size."""
+    from sample_size_calculator.models import AnalysisMethod, SpecificationType
+    from sample_size_calculator.tolerance import calculate_required_sample_size
+
+    result = calculate_required_sample_size(
+        k_margin=5.0,
+        confidence=95.0,
+        reliability=95.0,
+        spec_type=SpecificationType.ONE_SIDED,
+        analysis_method=AnalysisMethod.NON_PARAMETRIC,
+    )
+
+    assert result.required_sample_size > 0
+    assert result.k_factor == 0.0
+
+
+@pytest.mark.property
+def test_property_17_non_parametric_two_sided_sample_size():
+    """Property 17: Non-Parametric Two-Sided Sample Size."""
+    from sample_size_calculator.models import AnalysisMethod, SpecificationType
+    from sample_size_calculator.tolerance import calculate_required_sample_size
+
+    result = calculate_required_sample_size(
+        k_margin=5.0,
+        confidence=95.0,
+        reliability=95.0,
+        spec_type=SpecificationType.TWO_SIDED,
+        analysis_method=AnalysisMethod.NON_PARAMETRIC,
+    )
+
+    assert result.required_sample_size > 0
+    assert result.k_factor == 0.0
+
+
+@pytest.mark.property
+def test_property_16_capability_margin_with_yeo_johnson_transformation():
+    """Property 16: Capability Margin with Yeo-Johnson Transformation."""
+    from sample_size_calculator.tolerance import calculate_capability_margin
+
+    data = [10.0, 12.0, 11.0, 13.0, 12.5, 11.5, 12.2]
+    lambda_param = 0.5
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=0.1, usl=200.0
+    )
+
+    def yeo_johnson_forward_single(x: float, lmbda: float) -> float:
+        if x >= 0:
+            if abs(lmbda) < 1e-10:
+                return math.log(x + 1)
+            else:
+                return ((x + 1) ** lmbda - 1) / lmbda
+        else:
+            if abs(lmbda - 2) < 1e-10:
+                return -math.log(-x + 1)
+            else:
+                return -((-x + 1) ** (2 - lmbda) - 1) / (2 - lmbda)
+
+    transformed_data = [yeo_johnson_forward_single(x, lambda_param) for x in data]
+
+    k_margin = calculate_capability_margin(
+        transformed_data,
+        spec_limits,
+        TransformationMethod.YEO_JOHNSON,
+        lambda_param,
+    )
+
+    assert k_margin > 0
+
+
+@pytest.mark.property
+@pytest.mark.property
+def test_property_16_capability_margin_box_cox_lambda_zero():
+    """Property 16: Box-Cox with lambda approximately zero."""
+    from sample_size_calculator.tolerance import calculate_capability_margin
+
+    data = [50.0, 60.0, 55.0, 65.0, 58.0]
+    # When lambda ≈ 0, Box-Cox uses log transform, so data should be log-transformed
+    transformed_data = [math.log(x) for x in data]
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=10.0, usl=200.0
+    )
+
+    k_margin = calculate_capability_margin(
+        transformed_data, spec_limits, TransformationMethod.BOX_COX, 1e-12
+    )
+    assert k_margin > 0
+@pytest.mark.property
+def test_property_16_capability_margin_yeo_johnson_lambda_zero():
+    """Property 16: Yeo-Johnson with lambda approximately zero."""
+    from sample_size_calculator.tolerance import calculate_capability_margin
+
+    # When lambda ≈ 0, Yeo-Johnson uses log(x+1)
+    # So data should be pre-transformed using this formula
+    # Original values around 1-2 will give transformed values around 0.7-1.1
+    data = [0.7, 1.0, 0.9, 1.1, 0.85]
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=0.0, usl=20.0
+    )
+
+    k_margin = calculate_capability_margin(
+        data, spec_limits, TransformationMethod.YEO_JOHNSON, 1e-12
+    )
+    assert k_margin > 0
+@pytest.mark.property
+def test_property_16_capability_margin_yeo_johnson_lambda_two():
+    """Property 16: Yeo-Johnson with lambda approximately 2."""
+    from sample_size_calculator.tolerance import calculate_capability_margin
+
+    # For lambda ~ 2, negative values are transformed as -(-x+1)^(2-lambda)/(2-lambda)
+    # When lambda=2, this becomes -log(-x+1), so we need x < 0 and -x+1 > 0
+    data = [-0.5, -0.3, -0.2]
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=-5.0, usl=5.0
+    )
+
+    k_margin = calculate_capability_margin(
+        data, spec_limits, TransformationMethod.YEO_JOHNSON, 2 - 1e-12
+    )
+    assert k_margin > 0
+@pytest.mark.property
+def test_property_16_capability_margin_negative_values_log():
+    """Property 16: Log transformation with non-positive values."""
+    from sample_size_calculator.tolerance import calculate_capability_margin
+
+    # Data is already in transformed (log) space, but LSL must be positive
+    data_with_zero = [2.0, 4.0, 3.5]
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=-5.0, usl=200.0
+    )
+
+    with pytest.raises(ValueError, match="must be positive"):
+        calculate_capability_margin(
+            data_with_zero, spec_limits, TransformationMethod.LOGARITHMIC, None
+        )
+@pytest.mark.property
+def test_property_16_capability_margin_negative_values_box_cox():
+    """Property 16: Box-Cox with non-positive values."""
+    from sample_size_calculator.tolerance import calculate_capability_margin
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=-5.0, usl=200.0
+    )
+
+    with pytest.raises(ValueError, match="must be positive"):
+        calculate_capability_margin(
+            [1.0, 2.0, 3.0], spec_limits, TransformationMethod.BOX_COX, 1.0
+        )
+@pytest.mark.property
+def test_property_16_capability_margin_missing_lambda_box_cox():
+    """Property 16: Box-Cox without lambda parameter."""
+    from sample_size_calculator.tolerance import calculate_capability_margin
+
+    data = [50.0, 60.0, 55.0]
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=10.0, usl=200.0
+    )
+
+    with pytest.raises(ValueError, match="Lambda parameter required"):
+        calculate_capability_margin(
+            data, spec_limits, TransformationMethod.BOX_COX, None
+        )
+@pytest.mark.property
+def test_property_16_capability_margin_missing_lambda_yeo_johnson():
+    """Property 16: Yeo-Johnson without lambda parameter."""
+    from sample_size_calculator.tolerance import calculate_capability_margin
+
+    # Use log-transformed data (since Yeo-Johnson with lambda=0 is similar to log)
+    data = [3.9, 4.1, 4.0]
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=1.0, usl=6.0
+    )
+
+    with pytest.raises(ValueError, match="Lambda parameter required"):
+        calculate_capability_margin(
+            data, spec_limits, TransformationMethod.YEO_JOHNSON, None
+        )
+@pytest.mark.property
+def test_property_17_invalid_k_margin():
+    """Property 17: Invalid k_margin validation."""
+    from sample_size_calculator.models import AnalysisMethod, SpecificationType
+    from sample_size_calculator.tolerance import calculate_required_sample_size
+
+    with pytest.raises(ValueError, match="k_margin must be positive"):
+        calculate_required_sample_size(
+            k_margin=-1.0,
+            confidence=95.0,
+            reliability=95.0,
+            spec_type=SpecificationType.ONE_SIDED,
+            analysis_method=AnalysisMethod.PARAMETRIC,
+        )
+
+
+@pytest.mark.property
+def test_property_17_invalid_confidence():
+    """Property 17: Invalid confidence validation."""
+    from sample_size_calculator.models import AnalysisMethod, SpecificationType
+    from sample_size_calculator.tolerance import calculate_required_sample_size
+
+    with pytest.raises(ValueError, match="Confidence must be between 0 and 100"):
+        calculate_required_sample_size(
+            k_margin=3.0,
+            confidence=-5.0,
+            reliability=95.0,
+            spec_type=SpecificationType.ONE_SIDED,
+            analysis_method=AnalysisMethod.PARAMETRIC,
+        )
+
+
+@pytest.mark.property
+def test_property_17_invalid_reliability():
+    """Property 17: Invalid reliability validation."""
+    from sample_size_calculator.models import AnalysisMethod, SpecificationType
+    from sample_size_calculator.tolerance import calculate_required_sample_size
+
+    with pytest.raises(ValueError, match="Reliability must be between 0 and 100"):
+        calculate_required_sample_size(
+            k_margin=3.0,
+            confidence=95.0,
+            reliability=150.0,
+            spec_type=SpecificationType.ONE_SIDED,
+            analysis_method=AnalysisMethod.PARAMETRIC,
+        )
+
+
+@pytest.mark.property
+def test_property_27_yeo_johnson_tolerance_limits():
+    """Property 27: Yeo-Johnson Transformation in Tolerance Limits."""
+    from sample_size_calculator.tolerance import calculate_tolerance_limits
+    from sample_size_calculator.transformations import box_cox_transform
+
+    data = [10.0, 12.0, 11.0, 13.0, 12.5, 11.5, 12.2, 11.8]
+    result = box_cox_transform(data)
+    if result is None:
+        pytest.skip("Box-Cox transformation failed")
+    transformed_data, lambda_param = result
+    if lambda_param is None or abs(lambda_param) < 1e-10:
+        pytest.skip("Lambda parameter too close to zero")
+
+    phase2 = Phase2Results(
+        cleaned_data=transformed_data,
+        shapiro_p_value=0.8,
+        transformation_method=TransformationMethod.YEO_JOHNSON,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+        lambda_param=lambda_param,
+        manual_override=False,
+    )
+
+    k_factor = 2.5
+    phase3 = Phase3Results(
+        required_sample_size=len(transformed_data),
+        k_margin=3.0,
+        k_factor=k_factor,
+        specification_type=SpecificationType.TWO_SIDED,
+    )
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=0.1, usl=200.0
+    )
+
+    result = calculate_tolerance_limits(data, phase2, phase3, spec_limits)
+
+    assert "lower" in result.tolerance_limits
+    assert "upper" in result.tolerance_limits
+
+
+@pytest.mark.property
+def test_property_26_ppk_no_lsl():
+    """Property 26: Ppk with only USL."""
+    from sample_size_calculator.tolerance import calculate_ppk
+
+    data = [10.0, 12.0, 11.0, 13.0, 12.5]
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.ONE_SIDED, lsl=None, usl=100.0
+    )
+
+    ppk = calculate_ppk(data, spec_limits)
+
+    mean = np.mean(data)
+    std = np.std(data, ddof=1)
+    expected_ppk = (spec_limits.usl - mean) / (3 * std)
+
+    assert math.isclose(ppk, expected_ppk, rel_tol=1e-9)
+
+
+@pytest.mark.property
+def test_property_26_ppk_no_usl():
+    """Property 26: Ppk with only LSL."""
+    from sample_size_calculator.tolerance import calculate_ppk
+
+    data = [10.0, 12.0, 11.0, 13.0, 12.5]
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.ONE_SIDED, lsl=0.5, usl=None
+    )
+
+    ppk = calculate_ppk(data, spec_limits)
+
+    mean = np.mean(data)
+    std = np.std(data, ddof=1)
+    expected_ppk = (mean - spec_limits.lsl) / (3 * std)
+
+    assert math.isclose(ppk, expected_ppk, rel_tol=1e-9)
+
+
+
+@pytest.mark.property
+def test_property_20_final_dataset_too_small():
+    """Property 20: Final dataset smaller than required."""
+    from sample_size_calculator.tolerance import calculate_tolerance_limits
+
+    final_data = [10.0] * 5
+    phase2 = Phase2Results(
+        cleaned_data=final_data,
+        shapiro_p_value=0.8,
+        transformation_method=TransformationMethod.NONE,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+        lambda_param=None,
+        manual_override=False,
+    )
+    phase3 = Phase3Results(
+        required_sample_size=15,
+        k_margin=3.0,
+        k_factor=2.5,
+        specification_type=SpecificationType.TWO_SIDED,
+    )
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=0.1, usl=200.0
+    )
+
+    with pytest.raises(ValueError, match="must contain at least"):
+        calculate_tolerance_limits(final_data, phase2, phase3, spec_limits)
+
+
+@pytest.mark.property
+def test_property_16_capability_margin_box_cox_negative_lsl():
+    """Property 16: Box-Cox with negative LSL."""
+    from sample_size_calculator.tolerance import calculate_capability_margin
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=-5.0, usl=200.0
+    )
+
+    # This should raise because Box-Cox requires positive values for spec limits
+    with pytest.raises(ValueError, match="must be positive"):
+        calculate_capability_margin(
+            [1.0, 2.0, 3.0], spec_limits, TransformationMethod.BOX_COX, 1.0
+        )
+
+
+@pytest.mark.property
+def test_property_16_capability_margin_box_cox_negative_usl():
+    """Property 16: Box-Cox with negative USL."""
+    from sample_size_calculator.tolerance import calculate_capability_margin
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=0.1, usl=-5.0
+    )
+
+    # This should raise because Box-Cox requires positive values for spec limits
+    with pytest.raises(ValueError, match="must be positive"):
+        calculate_capability_margin(
+            [1.0, 2.0, 3.0], spec_limits, TransformationMethod.BOX_COX, 1.0
+        )
+
+
+@pytest.mark.property
+def test_property_16_capability_margin_yeo_johnson_negative_x_lambda_not_two():
+    """Property 16: Yeo-Johnson with negative x and lambda != 2."""
+    from sample_size_calculator.tolerance import calculate_capability_margin
+
+    # Data with negative values, lambda = 0.5 (not close to 2)
+    data = [-0.5, -0.3, -0.2]
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=-5.0, usl=5.0
+    )
+
+    # For x < 0 and lambda != 2: y = -((-x + 1)^(2-lambda) - 1) / (2 - lambda)
+    # When lambda = 0.5: y = -((-x + 1)^1.5 - 1) / 1.5
+    k_margin = calculate_capability_margin(
+        data, spec_limits, TransformationMethod.YEO_JOHNSON, 0.5
+    )
+    assert k_margin > 0
+
+
+@pytest.mark.property
+def test_property_27_parametric_tolerance_limit_one_sided_lsl():
+    """Property 27: Parametric tolerance limit for one-sided LSL."""
+    from sample_size_calculator.tolerance import calculate_tolerance_limits
+
+    data = [10.0, 12.0, 11.0, 13.0, 12.5]
+    phase2 = Phase2Results(
+        cleaned_data=data,
+        shapiro_p_value=0.8,
+        transformation_method=TransformationMethod.NONE,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+        lambda_param=None,
+        manual_override=False,
+    )
+
+    k_factor = 2.0
+    phase3 = Phase3Results(
+        k_factor=k_factor,
+        required_sample_size=len(data),
+        k_margin=3.0,
+        specification_type=SpecificationType.ONE_SIDED,
+    )
+
+    # One-sided LSL only
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.ONE_SIDED, lsl=5.0, usl=None
+    )
+
+    result = calculate_tolerance_limits(data, phase2, phase3, spec_limits)
+
+    assert "lower" in result.tolerance_limits
+    # Only lower limit should be present
+    assert len(result.tolerance_limits) == 1
+
+
+@pytest.mark.property
+def test_property_27_parametric_tolerance_limit_one_sided_usl():
+    """Property 27: Parametric tolerance limit for one-sided USL."""
+    from sample_size_calculator.tolerance import calculate_tolerance_limits
+
+    data = [10.0, 12.0, 11.0, 13.0, 12.5]
+    phase2 = Phase2Results(
+        cleaned_data=data,
+        shapiro_p_value=0.8,
+        transformation_method=TransformationMethod.NONE,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+        lambda_param=None,
+        manual_override=False,
+    )
+
+    k_factor = 2.0
+    phase3 = Phase3Results(
+        required_sample_size=len(data),
+        k_margin=3.0,
+        k_factor=k_factor,
+        specification_type=SpecificationType.ONE_SIDED,
+    )
+
+    # One-sided USL only
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.ONE_SIDED, lsl=None, usl=20.0
+    )
+
+    result = calculate_tolerance_limits(data, phase2, phase3, spec_limits)
+
+    assert "upper" in result.tolerance_limits
+    # Only upper limit should be present
+    assert len(result.tolerance_limits) == 1
+
+
+@pytest.mark.property
+def test_property_27_box_cox_back_transform():
+    """Property 27: Box-Cox back-transform with lambda != 0."""
+    from sample_size_calculator.tolerance import calculate_tolerance_limits
+    from sample_size_calculator.transformations import box_cox_transform
+
+    data = [50.0, 60.0, 55.0, 65.0, 58.0]
+    result = box_cox_transform(data)
+    if result is None:
+        pytest.skip("Box-Cox transformation failed")
+    transformed_data, lambda_param = result
+    if lambda_param is None or abs(lambda_param) < 1e-10:
+        pytest.skip("Lambda parameter too close to zero")
+
+    phase2 = Phase2Results(
+        cleaned_data=transformed_data,
+        shapiro_p_value=0.8,
+        transformation_method=TransformationMethod.BOX_COX,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+        lambda_param=lambda_param,
+        manual_override=False,
+    )
+
+    k_factor = 2.0
+    phase3 = Phase3Results(
+        required_sample_size=len(transformed_data),
+        k_margin=5.0,
+        k_factor=k_factor,
+        specification_type=SpecificationType.TWO_SIDED,
+    )
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=10.0, usl=200.0
+    )
+
+    result = calculate_tolerance_limits(data, phase2, phase3, spec_limits)
+
+    assert "lower" in result.tolerance_limits
+    assert "upper" in result.tolerance_limits
+    # Back-transformed values should be positive
+    assert result.tolerance_limits["lower"] > 0
+    assert result.tolerance_limits["upper"] > 0
+
+
+@pytest.mark.property
+def test_property_27_yeo_johnson_back_transform():
+    """Property 27: Yeo-Johnson back-transform."""
+    from sample_size_calculator.tolerance import calculate_tolerance_limits
+    from sample_size_calculator.transformations import box_cox_transform
+
+    # Data with both positive and negative values for Yeo-Johnson
+    data = [-1.0, -0.5, 0.0, 0.5, 1.0]
+    result = box_cox_transform(data)
+    if result is None:
+        pytest.skip("Box-Cox transformation failed")
+    transformed_data, lambda_param = result
+    # Use Yeo-Johnson with the lambda we got
+    lambda_param = 0.5
+
+    phase2 = Phase2Results(
+        cleaned_data=transformed_data,
+        shapiro_p_value=0.8,
+        transformation_method=TransformationMethod.YEO_JOHNSON,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+        lambda_param=lambda_param,
+        manual_override=False,
+    )
+
+    k_factor = 2.0
+    phase3 = Phase3Results(
+        required_sample_size=len(transformed_data),
+        k_margin=5.0,
+        k_factor=k_factor,
+        specification_type=SpecificationType.TWO_SIDED,
+    )
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=-5.0, usl=5.0
+    )
+
+    result = calculate_tolerance_limits(data, phase2, phase3, spec_limits)
+
+    assert "lower" in result.tolerance_limits
+    assert "upper" in result.tolerance_limits
+
+
+@pytest.mark.property
+def test_property_25_pass_fail_with_tolerance_exceeding_spec():
+    """Property 25: Pass/Fail when tolerance exceeds specification."""
+    from sample_size_calculator.tolerance import calculate_tolerance_limits
+
+    # Create data that will produce tolerance limits outside spec
+    data = [10.0, 10.5, 10.2, 10.8, 10.3]
+    phase2 = Phase2Results(
+        cleaned_data=data,
+        shapiro_p_value=0.8,
+        transformation_method=TransformationMethod.NONE,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+        lambda_param=None,
+        manual_override=False,
+    )
+
+    k_factor = 10.0  # Very large k to push limits outside spec
+    phase3 = Phase3Results(
+        required_sample_size=len(data),
+        k_margin=20.0,
+        k_factor=k_factor,
+        specification_type=SpecificationType.TWO_SIDED,
+    )
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=15.0, usl=20.0
+    )
+
+    result = calculate_tolerance_limits(data, phase2, phase3, spec_limits)
+
+    # Tolerance limits should exceed specification limits
+    assert result.pass_fail == "Fail"
+
+
+@pytest.mark.property
+def test_property_25_pass_fail_with_strict_spec():
+    """Property 25: Pass/Fail with strict specifications."""
+    from sample_size_calculator.tolerance import calculate_tolerance_limits
+
+    data = [10.0, 12.0, 11.0, 13.0, 12.5]
+    phase2 = Phase2Results(
+        cleaned_data=data,
+        shapiro_p_value=0.8,
+        transformation_method=TransformationMethod.NONE,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+        lambda_param=None,
+        manual_override=False,
+    )
+
+    k_factor = 1.5
+    phase3 = Phase3Results(
+        required_sample_size=len(data),
+        k_margin=5.0,
+        k_factor=k_factor,
+        specification_type=SpecificationType.TWO_SIDED,
+    )
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=5.0, usl=20.0
+    )
+
+    result = calculate_tolerance_limits(data, phase2, phase3, spec_limits)
+
+    # Tolerance limits should be within specification limits
+    assert result.pass_fail == "Pass"
+
+
+@pytest.mark.property
+def test_property_16_capability_margin_log_negative_lsl():
+    """Property 16: Log transformation with negative LSL."""
+    from sample_size_calculator.tolerance import calculate_capability_margin
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=-5.0, usl=200.0
+    )
+
+    # This should raise because log requires positive values for spec limits
+    with pytest.raises(ValueError, match="must be positive"):
+        calculate_capability_margin(
+            [1.0, 2.0, 3.0], spec_limits, TransformationMethod.LOGARITHMIC, None
+        )
+
+
+@pytest.mark.property
+def test_property_27_box_cox_missing_lambda_in_back_transform():
+    """Property 27: Box-Cox back-transform without lambda parameter."""
+    from sample_size_calculator.tolerance import calculate_tolerance_limits
+    from sample_size_calculator.transformations import box_cox_transform
+
+    data = [50.0, 60.0, 55.0]
+    result = box_cox_transform(data)
+    if result is None:
+        pytest.skip("Box-Cox transformation failed")
+    transformed_data, lambda_param = result
+    if lambda_param is None or abs(lambda_param) < 1e-10:
+        pytest.skip("Lambda parameter too close to zero")
+
+    phase2 = Phase2Results(
+        cleaned_data=transformed_data,
+        shapiro_p_value=0.8,
+        transformation_method=TransformationMethod.BOX_COX,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+        lambda_param=None,  # This should cause an error
+        manual_override=False,
+    )
+
+    k_factor = 2.0
+    phase3 = Phase3Results(
+        required_sample_size=len(transformed_data),
+        k_margin=5.0,
+        k_factor=k_factor,
+        specification_type=SpecificationType.TWO_SIDED,
+    )
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=10.0, usl=200.0
+    )
+
+    with pytest.raises(ValueError, match="Lambda parameter required"):
+        calculate_tolerance_limits(data, phase2, phase3, spec_limits)
+
+
+@pytest.mark.property
+def test_property_27_yeo_johnson_missing_lambda_in_back_transform():
+    """Property 27: Yeo-Johnson back-transform without lambda parameter."""
+    from sample_size_calculator.tolerance import calculate_tolerance_limits
+    from sample_size_calculator.transformations import box_cox_transform
+
+    data = [-1.0, -0.5, 0.0]
+    result = box_cox_transform(data)
+    if result is None:
+        pytest.skip("Box-Cox transformation failed")
+    transformed_data, lambda_param = result
+    # Force using Yeo-Johnson with the lambda we got
+    lambda_param = lambda_param or 0.5
+
+    phase2 = Phase2Results(
+        cleaned_data=transformed_data,
+        shapiro_p_value=0.8,
+        transformation_method=TransformationMethod.YEO_JOHNSON,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+        lambda_param=None,  # This should cause an error
+        manual_override=False,
+    )
+
+    k_factor = 2.0
+    phase3 = Phase3Results(
+        required_sample_size=len(transformed_data),
+        k_margin=5.0,
+        k_factor=k_factor,
+        specification_type=SpecificationType.TWO_SIDED,
+    )
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=-5.0, usl=5.0
+    )
+
+    with pytest.raises(ValueError, match="Lambda parameter required"):
+        calculate_tolerance_limits(data, phase2, phase3, spec_limits)
+
+
+@pytest.mark.property
+def test_property_17_parametric_iteration_limit():
+    """Property 17: Test parametric iteration limit behavior.
+
+    Note: This test verifies that the function can handle cases where
+    k_margin is very small relative to confidence/reliability requirements.
+    However, with max_iterations=10000 in calculate_required_sample_size,
+    convergence should occur for reasonable inputs.
+    """
+    from sample_size_calculator.models import AnalysisMethod, SpecificationType
+    from sample_size_calculator.tolerance import calculate_required_sample_size
+
+    # Use a k_margin that's achievable
+    result = calculate_required_sample_size(
+        k_margin=3.0,
+        confidence=95.0,
+        reliability=95.0,
+        spec_type=SpecificationType.ONE_SIDED,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+    )
+
+    assert result.required_sample_size > 0
+    assert result.k_factor <= result.k_margin
+
+
+@pytest.mark.property
+def test_property_27_tolerance_limit_pass_fail_comparison():
+    """Property 27: Verify tolerance limits are within spec for Pass."""
+    from sample_size_calculator.tolerance import calculate_tolerance_limits
+
+    data = [10.0, 12.0, 11.0, 13.0, 12.5]
+    phase2 = Phase2Results(
+        cleaned_data=data,
+        shapiro_p_value=0.8,
+        transformation_method=TransformationMethod.NONE,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+        lambda_param=None,
+        manual_override=False,
+    )
+
+    # Small k_factor to ensure limits are close to mean
+    k_factor = 1.5
+    phase3 = Phase3Results(
+        required_sample_size=len(data),
+        k_margin=5.0,
+        k_factor=k_factor,
+        specification_type=SpecificationType.TWO_SIDED,
+    )
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=5.0, usl=20.0
+    )
+
+    result = calculate_tolerance_limits(data, phase2, phase3, spec_limits)
+
+    # Calculate expected tolerance limits
+    import numpy as np
+    mean = np.mean(data)
+    std = np.std(data, ddof=1)
+    expected_lower = mean - k_factor * std
+    expected_upper = mean + k_factor * std
+
+    assert result.tolerance_limits["lower"] == expected_lower
+    assert result.tolerance_limits["upper"] == expected_upper
+
+    # Verify pass: tolerance limits within spec
+    assert result.pass_fail == "Pass"
+    
+    # Type checkers may not infer dict value types correctly, so cast if needed
+    lower_limit = result.tolerance_limits.get("lower", 0.0)
+    upper_limit = result.tolerance_limits.get("upper", 0.0)
+    
+    # Only assert if specification limits are defined (not None)
+    if spec_limits.lsl is not None:
+        assert lower_limit >= spec_limits.lsl
+    if spec_limits.usl is not None:
+        assert upper_limit <= spec_limits.usl
+
+
+@pytest.mark.property
+def test_property_27_tolerance_limit_pass_fail_fail():
+    """Property 27: Verify tolerance limits exceed spec for Fail."""
+    from sample_size_calculator.tolerance import calculate_tolerance_limits
+
+    data = [10.0, 12.0, 11.0, 13.0, 12.5]
+    phase2 = Phase2Results(
+        cleaned_data=data,
+        shapiro_p_value=0.8,
+        transformation_method=TransformationMethod.NONE,
+        analysis_method=AnalysisMethod.PARAMETRIC,
+        lambda_param=None,
+        manual_override=False,
+    )
+
+    # Large k_factor to push limits outside spec
+    k_factor = 10.0
+    phase3 = Phase3Results(
+        required_sample_size=len(data),
+        k_margin=10.0,
+        k_factor=k_factor,
+        specification_type=SpecificationType.TWO_SIDED,
+    )
+
+    spec_limits = SpecificationLimits(
+        spec_type=SpecificationType.TWO_SIDED, lsl=5.0, usl=20.0
+    )
+
+    result = calculate_tolerance_limits(data, phase2, phase3, spec_limits)
+
+    # Verify fail: tolerance limits exceed spec
+    assert result.pass_fail == "Fail"

@@ -11,6 +11,7 @@ Requirements: 27.1, 28.2, 29.2, 30.1, 38.16
 
 from io import BytesIO
 from pathlib import Path
+from typing import Any
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -455,6 +456,12 @@ class FullReportGenerator:
         )
 
         if validation_cert_info:
+            # Get detailed validation certificate information
+            cert_path = Path(validation_reports_dir) / validation_cert_info["filename"]
+            detailed_info = FullReportGenerator._extract_validation_certificate_info(
+                cert_path
+            )
+
             story.append(
                 Paragraph(
                     f"<b>Latest Validation Certificate:</b> {validation_cert_info['filename']}",
@@ -467,12 +474,74 @@ class FullReportGenerator:
                     normal_style,
                 )
             )
+
+            if detailed_info:
+                # Add tester name
+                if detailed_info.get("tester_name"):
+                    story.append(
+                        Paragraph(
+                            f"<b>Tester:</b> {detailed_info['tester_name']}",
+                            normal_style,
+                        )
+                    )
+
+                story.append(Spacer(1, 0.25 * mm))
+
+                # Add test summary
+                total_tests = detailed_info.get("total_tests", 0)
+                passed_tests = detailed_info.get("passed_tests", 0)
+                failed_tests = detailed_info.get("failed_tests", 0)
+
+                story.append(
+                    Paragraph(
+                        f"<b>Test Results:</b> {passed_tests}/{total_tests} passed",
+                        normal_style,
+                    )
+                )
+
+                if failed_tests > 0:
+                    story.append(
+                        Paragraph(
+                            f'<font color="red"><b>{failed_tests} test(s) failed</b></font>',
+                            normal_style,
+                        )
+                    )
+
+                # Add coverage information
+                coverage_pct = detailed_info.get("coverage_percentage", 0)
+                if coverage_pct > 0:
+                    story.append(
+                        Paragraph(
+                            f"<b>URS Coverage:</b> {coverage_pct:.1f}%",
+                            normal_style,
+                        )
+                    )
+
+                # Add validation status
+                validation_status = detailed_info.get("validation_status", "N/A")
+                status_color = "green" if validation_status == "PASSED" else "red"
+                story.append(
+                    Paragraph(
+                        f'<b><font color="{status_color}">Overall Status: {validation_status}</font></b>',
+                        bold_style,
+                    )
+                )
+
             story.append(Spacer(1, 0.25 * mm))
             story.append(
                 Paragraph(
                     "The system has been validated according to IQ/OQ/PQ protocols. "
                     "See the validation certificate in the reports/validation/ directory "
                     "for complete test results and traceability matrix.",
+                    normal_style,
+                )
+            )
+
+            # Add note about downloading full certificate
+            story.append(Spacer(1, 0.25 * mm))
+            story.append(
+                Paragraph(
+                    "<i>Note: Full validation certificate with detailed results available for download from the main interface.</i>",
                     normal_style,
                 )
             )
@@ -656,6 +725,97 @@ class FullReportGenerator:
                     )
 
         return {"filename": filename, "date": date_str}
+
+    @staticmethod
+    def _extract_validation_certificate_info(cert_path: Path) -> dict[str, Any]:
+        """Extract key information from a validation certificate PDF.
+
+        Args:
+            cert_path: Path to the validation certificate PDF
+
+        Returns:
+            Dictionary with validation summary information
+        """
+        import json
+
+        info = {
+            "tester_name": None,
+            "total_tests": 0,
+            "passed_tests": 0,
+            "failed_tests": 0,
+            "coverage_percentage": 0.0,
+            "validation_status": "N/A",
+        }
+
+        # Try to find associated JSON metadata files
+        cert_dir = cert_path.parent
+
+        # Look for validation results in common locations
+        json_files = [
+            cert_dir / "test_results_iq.json",
+            cert_dir / "test_results_oq.json",
+            cert_dir / "test_results_pq.json",
+        ]
+
+        all_test_results = []
+
+        for json_file in json_files:
+            if json_file.exists():
+                try:
+                    with open(json_file) as f:
+                        data = json.load(f)
+                        # Extract tests from the JSON report
+                        if isinstance(data, dict) and "tests" in data:
+                            all_test_results.extend(data.get("tests", []))
+                except Exception:
+                    pass
+
+        # Calculate test statistics
+        for test in all_test_results:
+            info["total_tests"] += 1
+            outcome = test.get("outcome", "unknown")
+            if outcome == "passed":
+                info["passed_tests"] += 1
+            else:
+                info["failed_tests"] += 1
+
+        # Determine validation status
+        if info["total_tests"] > 0 and info["failed_tests"] == 0:
+            info["validation_status"] = "PASSED"
+        elif info["total_tests"] > 0:
+            info["validation_status"] = "FAILED"
+
+        # Try to extract tester name from the certificate PDF metadata or adjacent files
+        # Look for validation_traceability_matrix.csv which might have tester info
+        vtm_file = cert_dir / "validation_traceability_matrix.csv"
+        if vtm_file.exists():
+            try:
+                with open(vtm_file) as f:
+                    lines = f.readlines()
+                    if len(lines) > 0:
+                        # Try to extract tester from comment or metadata
+                        for line in lines[:5]:
+                            if "tester" in line.lower() or "Tester" in line:
+                                parts = line.split(":")
+                                if len(parts) >= 2:
+                                    info["tester_name"] = parts[1].strip()
+                                    break
+            except Exception:
+                pass
+
+        # Try to calculate coverage from coverage metrics file if available
+        try:
+            coverage_file = cert_dir / "coverage_metrics.json"
+            if coverage_file.exists():
+                with open(coverage_file) as f:
+                    coverage_data = json.load(f)
+                    info["coverage_percentage"] = coverage_data.get(
+                        "coverage_percentage", 0.0
+                    )
+        except Exception:
+            pass
+
+        return info
 
     @staticmethod
     def _get_session_logs(session_id: str, log_dir: str) -> list[dict[str, str]]:

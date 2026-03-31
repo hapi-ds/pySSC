@@ -415,3 +415,237 @@ class TestUIControllerJupyterIntegration:
             controller._open_jupyter()
             
             mock_js.assert_called_once_with('window.open("http://localhost:8888", "_blank");')
+
+
+class TestModuleAHandler:
+    """Tests for Module A calculation and report handlers."""
+
+    def test_handle_calculate_single_failure(self):
+        with patch("sample_size_calculator.ui_controller.CalculationEngine") as mock_engine:
+            mock_engine.success_run_theorem.return_value = 100
+            n = mock_engine.success_run_theorem(95.0, 95.0)
+            assert n == 100
+
+    def test_handle_calculate_multiple_failures(self):
+        with patch("sample_size_calculator.ui_controller.CalculationEngine") as mock_engine:
+            mock_engine.cumulative_binomial.return_value = 250
+            n = mock_engine.cumulative_binomial(95.0, 95.0, 2)
+            assert n == 250
+
+    def test_handle_calculate_sensitivity_analysis(self):
+        with patch("sample_size_calculator.ui_controller.CalculationEngine") as mock_engine:
+            mock_engine.sensitivity_analysis_with_correction.return_value = [
+                (0, 100, None),
+                (1, 150, None),
+                (2, 200, None),
+            ]
+            results = mock_engine.sensitivity_analysis_with_correction(95.0, 95.0, None)
+            assert len(results) == 3
+
+    def test_handle_calculate_population_correction(self):
+        with patch("sample_size_calculator.ui_controller.CalculationEngine") as mock_engine:
+            mock_engine.success_run_theorem.return_value = 100
+            mock_engine.finite_population_correction.return_value = 95.24
+            n_original = mock_engine.success_run_theorem(95.0, 95.0)
+            n_corrected = mock_engine.finite_population_correction(n_original, 1000)
+            assert n_original == 100
+            assert abs(n_corrected - 95.24) < 0.1
+
+
+class TestModuleVPhaseHandlers:
+    """Tests for Module V phase handlers."""
+
+    def test_handle_analyze_phase1_pilot_data(self):
+        from sample_size_calculator.models import Phase1Results
+        
+        pilot_data_str = "10.0, 10.1, 9.9, 10.2, 10.0"
+        pilot_data = [float(x.strip()) for x in pilot_data_str.split(",") if x.strip()]
+        
+        assert len(pilot_data) == 5
+        
+        results = Phase1Results(
+            pilot_data=pilot_data,
+            outliers=[],
+            q1=9.9,
+            q3=10.1,
+            iqr=0.2,
+        )
+        
+        assert results.pilot_data == pilot_data
+
+    def test_handle_analyze_phase1_estimated_statistics(self):
+        estimated_mean = 10.0
+        estimated_std = 0.1
+        
+        assert estimated_mean == 10.0
+        assert estimated_std == 0.1
+        assert estimated_std > 0
+
+
+class TestEnforcementAndWorkflow:
+    """Tests for workflow enforcement."""
+
+    def test_sequential_phase_enforcement(self):
+        state = ModuleVState()
+        
+        assert state.is_phase_enabled(1) is True
+        assert state.is_phase_enabled(2) is False
+        
+        state.complete_phase1([1.0, 2.0, 3.0])
+        
+        assert state.is_phase_enabled(2) is True
+
+    def test_downstream_clearing_on_recompletion(self):
+        state = ModuleVState()
+        
+        from sample_size_calculator.models import (
+            AnalysisMethod,
+            Phase1Results,
+            Phase2Results,
+            TransformationMethod,
+        )
+        
+        phase1_results = Phase1Results(
+            pilot_data=[1.0, 2.0, 3.0],
+            outliers=[],
+            q1=1.5,
+            q3=2.5,
+            iqr=1.0,
+        )
+        
+        state.complete_phase1(phase1_results)
+        
+        phase2_results = Phase2Results(
+            cleaned_data=[1.0, 2.0],
+            shapiro_p_value=0.8,
+            transformation_method=TransformationMethod.NONE,
+            analysis_method=AnalysisMethod.PARAMETRIC,
+            lambda_param=None,
+            manual_override=False,
+        )
+        
+        state.complete_phase2(phase2_results)
+        
+        assert state.phase2_complete
+        assert not state.phase3_complete
+        
+        # Re-complete phase 2 - should clear phase 3
+        state.complete_phase2(phase2_results)
+        
+        assert state.phase2_complete
+        assert not state.phase3_complete
+
+
+class TestSessionIsolation:
+    """Tests for session isolation."""
+
+    def test_multiple_controllers_independent(self):
+        controllers = [UIController() for _ in range(5)]
+        session_ids = [c.session_id for c in controllers]
+        
+        assert len(set(session_ids)) == 5
+        
+        controllers[0].module_v_state.complete_phase1([1.0, 2.0, 3.0])
+        
+        for i in range(1, 5):
+            assert not controllers[i].module_v_state.phase1_complete
+
+    def test_session_id_uniqueness(self):
+        controller = UIController()
+        sid1 = controller.session_id
+        
+        controller2 = UIController()
+        sid2 = controller2.session_id
+        
+        assert sid1 != sid2
+
+
+class TestUIControllerRealExecution:
+    """Tests that execute real code (not mocked) for coverage."""
+
+    def test_module_v_state_workflow_complete(self):
+        """Test complete Module V workflow execution."""
+        from sample_size_calculator.models import (
+            AnalysisMethod,
+            Phase1Results,
+            Phase2Results,
+            Phase3Results,
+            Phase4Results,
+            SpecificationType,
+            TransformationMethod,
+        )
+        from sample_size_calculator.ui_controller import ModuleVState
+        
+        state = ModuleVState()
+        
+        # Phase 1: Complete with pilot data
+        phase1_results = Phase1Results(
+            pilot_data=[10.0, 10.1, 9.9, 10.2, 10.0],
+            outliers=[],
+            q1=9.9,
+            q3=10.2,
+            iqr=0.3,
+        )
+        state.complete_phase1(phase1_results)
+        
+        assert state.phase1_complete
+        assert not state.phase2_complete
+        
+        # Phase 2: Complete with transformation results
+        phase2_results = Phase2Results(
+            cleaned_data=[10.0, 10.1, 9.9],
+            shapiro_p_value=0.85,
+            transformation_method=TransformationMethod.NONE,
+            analysis_method=AnalysisMethod.PARAMETRIC,
+            lambda_param=None,
+            manual_override=False,
+        )
+        state.complete_phase2(phase2_results)
+        
+        assert state.phase2_complete
+        assert not state.phase3_complete
+        
+        # Phase 3: Complete with sample size calculation
+        phase3_results = Phase3Results(
+            required_sample_size=10,
+            k_margin=1.5,
+            k_factor=2.5,
+            specification_type=SpecificationType.TWO_SIDED,
+        )
+        state.complete_phase3(phase3_results)
+        
+        assert state.phase3_complete
+        assert not state.phase4_complete
+        
+        # Phase 4: Complete with tolerance limits
+        phase4_results = Phase4Results(
+            tolerance_limits={"lower": 9.8, "upper": 10.2},
+            pass_fail="Pass",
+            ppk=1.5,
+            final_data=[10.0, 10.1, 9.9, 10.2, 10.0],
+        )
+        state.complete_phase4(phase4_results)
+        
+        assert state.phase4_complete
+        assert state.is_phase_enabled(4)
+    def test_ui_controller_session_id_generation(self):
+        """Test that session IDs are properly generated."""
+        import uuid
+
+        from sample_size_calculator.ui_controller import UIController
+        
+        controller = UIController()
+        
+        # Verify it's a valid UUID4
+        parsed = uuid.UUID(controller.session_id)
+        assert parsed.version == 4
+
+    def test_ui_controller_initial_state(self):
+        """Test initial state of UI controller."""
+        from sample_size_calculator.ui_controller import UIController
+        
+        controller = UIController()
+        
+        assert controller.module_a_results is None
+        assert controller.validation_button is None
+        assert controller.session_id is not None

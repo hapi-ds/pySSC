@@ -219,6 +219,53 @@ class TestFullReportGenerator:
             # Should get the most recent file
             assert "validation_certificate" in info["filename"]
 
+    def test_extract_validation_cert_info_no_file(self):
+        """Test extracting cert info when file doesn't exist."""
+        info = FullReportGenerator._extract_validation_certificate_info(
+            Path("/nonexistent/path/validation_certificate.pdf")
+        )
+
+        assert info is not None
+        assert info["total_tests"] == 0
+        assert info["passed_tests"] == 0
+        assert info["failed_tests"] == 0
+        assert info["validation_status"] == "N/A"
+
+    def test_extract_validation_cert_info_with_test_results(self):
+        """Test extracting cert info with test results JSON files."""
+        import json
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+
+            # Create a mock certificate file
+            cert_file = validation_dir / "validation_certificate_20240315_143022.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            # Create test results files
+            iq_results = {
+                "tests": [
+                    {"nodeid": "test_iq.py::test_1", "outcome": "passed"},
+                    {"nodeid": "test_iq.py::test_2", "outcome": "passed"},
+                ]
+            }
+            oq_results = {
+                "tests": [
+                    {"nodeid": "test_oq.py::test_1", "outcome": "failed"},
+                ]
+            }
+
+            (validation_dir / "test_results_iq.json").write_text(json.dumps(iq_results))
+            (validation_dir / "test_results_oq.json").write_text(json.dumps(oq_results))
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            assert info["total_tests"] == 3
+            assert info["passed_tests"] == 2
+            assert info["failed_tests"] == 1
+            assert info["validation_status"] == "FAILED"
+
     def test_generate_full_report_with_sampled_data(self):
         """Test full report generation with sampled data and outliers."""
         report_data = CalculationReport(
@@ -321,3 +368,162 @@ class TestFullReportGenerator:
         assert pdf_bytes is not None
         assert len(pdf_bytes) > 0
         assert pdf_bytes[:4] == b"%PDF"
+
+    def test_extract_validation_cert_info_all_passed(self):
+        """Test extracting cert info when all tests passed."""
+        import json
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+            cert_file = validation_dir / "validation_certificate_20240315_143022.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            iq_results = {
+                "tests": [
+                    {"nodeid": "test_iq.py::test_1", "outcome": "passed"},
+                    {"nodeid": "test_iq.py::test_2", "outcome": "passed"},
+                ]
+            }
+            oq_results = {
+                "tests": [
+                    {"nodeid": "test_oq.py::test_1", "outcome": "passed"},
+                ]
+            }
+
+            (validation_dir / "test_results_iq.json").write_text(json.dumps(iq_results))
+            (validation_dir / "test_results_oq.json").write_text(json.dumps(oq_results))
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            assert info["total_tests"] == 3
+            assert info["passed_tests"] == 3
+            assert info["failed_tests"] == 0
+            assert info["validation_status"] == "PASSED"
+
+    def test_extract_validation_cert_info_mixed_outcomes(self):
+        """Test extracting cert info with mixed pass/fail outcomes."""
+        import json
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+            cert_file = validation_dir / "validation_certificate_20240315_143022.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            iq_results = {
+                "tests": [
+                    {"nodeid": "test_iq.py::test_1", "outcome": "passed"},
+                    {"nodeid": "test_iq.py::test_2", "outcome": "failed"},
+                    {"nodeid": "test_iq.py::test_3", "outcome": "unknown"},
+                ]
+            }
+
+            (validation_dir / "test_results_iq.json").write_text(json.dumps(iq_results))
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            assert info["total_tests"] == 3
+            assert info["passed_tests"] == 1
+            assert info["failed_tests"] == 2
+            assert info["validation_status"] == "FAILED"
+
+    def test_extract_validation_cert_info_with_coverage_metrics(self):
+        """Test extracting cert info with coverage metrics file."""
+        import json
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+            cert_file = validation_dir / "validation_certificate_20240315_143022.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            coverage_metrics = {
+                "coverage_percentage": 87.5,
+                "total_requirements": 40,
+                "covered_requirements": 35,
+            }
+            (validation_dir / "coverage_metrics.json").write_text(
+                json.dumps(coverage_metrics)
+            )
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            assert info["coverage_percentage"] == 87.5
+
+    def test_extract_validation_cert_info_with_vtm_file(self):
+        """Test extracting tester name from VTM file."""
+        import json
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+            cert_file = validation_dir / "validation_certificate_20240315_143022.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            vtm_content = """# Validation Traceability Matrix
+# Tester: John Doe
+# Date: 2024-03-15
+URS_ID,Test_ID,Status
+URS-001,test_iq.py::test_1,PASSED
+"""
+            (validation_dir / "validation_traceability_matrix.csv").write_text(
+                vtm_content
+            )
+
+            iq_results = {
+                "tests": [
+                    {"nodeid": "test_iq.py::test_1", "outcome": "passed"},
+                ]
+            }
+            (validation_dir / "test_results_iq.json").write_text(json.dumps(iq_results))
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            assert info["tester_name"] == "John Doe"
+
+    def test_extract_validation_cert_info_empty_json(self):
+        """Test extracting cert info with empty test results."""
+        import json
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+            cert_file = validation_dir / "validation_certificate_20240315_143022.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            empty_results = {"tests": []}
+            (validation_dir / "test_results_iq.json").write_text(json.dumps(empty_results))
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            assert info["total_tests"] == 0
+            assert info["passed_tests"] == 0
+            assert info["failed_tests"] == 0
+
+    def test_extract_validation_cert_info_corrupt_json(self):
+        """Test extracting cert info with corrupt JSON file."""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+            cert_file = validation_dir / "validation_certificate_20240315_143022.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            (validation_dir / "test_results_iq.json").write_text("this is not json {")
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            assert info["total_tests"] == 0
+
+    def test_extract_validation_cert_info_missing_json_files(self):
+        """Test extracting cert info when no JSON files exist."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+            cert_file = validation_dir / "validation_certificate_20240315_143022.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            assert info["total_tests"] == 0

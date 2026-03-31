@@ -9,6 +9,7 @@ import io
 import math
 import uuid
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import anyio
@@ -161,6 +162,12 @@ class UIController:
         # Validation button reference (will be set in create_app)
         self.validation_button: ui.button | None = None
 
+        # Store the latest validation certificate path for download
+        self.latest_validation_cert_path: str | None = None
+
+        # Validation certificate footer button reference (will be set in create_app)
+        self.cert_download_footer_btn = None
+
     def _generate_session_id(self) -> str:
         """Generate unique session identifier using uuid4."""
         return str(uuid.uuid4())
@@ -220,6 +227,40 @@ class UIController:
 
             with ui.tab_panel(help_tab):
                 self.create_help_tab()
+
+        # Footer section with validation certificate download button
+        with ui.footer().classes("bg-secondary text-white"):
+            with ui.row().classes("w-full items-center justify-between px-4"):
+                ui.label(f"v{__version__}").classes(
+                    "text-caption bg-background text-background-contrast px-2 rounded"
+                )
+
+                # Validation certificate download button (only visible when cert exists)
+                self.cert_download_footer_btn = (
+                    ui.button(
+                        "📄 Download Validation Certificate",
+                        on_click=self._download_validation_certificate,
+                        icon="download",
+                        color="white",
+                    )
+                    .props("outline text-color=black")
+                    .classes("bg-white text-black hover:bg-gray-100")
+                )
+
+                # Check if any validation certificate exists in reports folder
+                from pathlib import Path
+                cert_dir = Path("reports/validation")
+                if cert_dir.exists():
+                    pdf_files = list(cert_dir.glob("*.pdf"))
+                    if pdf_files:
+                        # Find most recent certificate
+                        latest_cert = max(pdf_files, key=lambda p: p.stat().st_mtime)
+                        self.latest_validation_cert_path = str(latest_cert)
+                        self.cert_download_footer_btn.set_visibility(True)
+                    else:
+                        self.cert_download_footer_btn.set_visibility(False)
+                else:
+                    self.cert_download_footer_btn.set_visibility(False)
 
     def create_module_a_tab(self) -> None:
         """Create Module A UI tab for attribute data analysis."""
@@ -3324,6 +3365,19 @@ For additional assistance:
 
             result_label = ui.label("").classes("text-subtitle1")
 
+            # Download button for latest certificate (hidden if no cert)
+            self.cert_download_btn = (
+                ui.button(
+                    "📄 Download Latest Validation Certificate",
+                    on_click=lambda: self._download_validation_certificate(),
+                    icon="download",
+                    color="secondary",
+                )
+                .props("flat")
+                .classes("mt-2 w-full")
+            )
+            self.cert_download_btn.set_visibility(False)
+
             with ui.row().classes("w-full justify-end"):
                 ui.button("Cancel", on_click=dialog.close).props("flat")
                 run_button = ui.button(
@@ -3334,6 +3388,29 @@ For additional assistance:
                 ).props("color=primary")
 
         dialog.open()
+
+    def _download_validation_certificate(self) -> None:
+        """Download the latest validation certificate."""
+        if not self.latest_validation_cert_path:
+            ui.notify(
+                "No validation certificate available for download", type="warning"
+            )
+            return
+
+        cert_path = Path(self.latest_validation_cert_path)
+
+        if not cert_path.exists():
+            ui.notify(f"Validation certificate not found: {cert_path}", type="negative")
+            return
+
+        try:
+            with open(cert_path, "rb") as f:
+                cert_bytes = f.read()
+
+            ui.download(cert_bytes, cert_path.name)
+            ui.notify("Validation certificate download started", type="positive")
+        except Exception as e:
+            ui.notify(f"Error downloading validation certificate: {e}", type="negative")
 
     async def _run_validation(
         self,
@@ -3387,13 +3464,26 @@ For additional assistance:
             if success:
                 result_label.text = f"✅ {message}"
                 result_label.classes("text-green-600")
+
+                # Show/hide footer download button
+                if self.cert_download_footer_btn and self.latest_validation_cert_path:
+                    cert_path_obj = Path(self.latest_validation_cert_path)
+                    if cert_path_obj.exists():
+                        self.cert_download_footer_btn.set_visibility(True)
+
                 ui.notify("Validation completed successfully!", type="positive")
             else:
                 result_label.text = f"⚠️ {message}"
                 result_label.classes("text-orange-600")
+
+                # Hide footer download button on failure
+                if self.cert_download_footer_btn:
+                    self.cert_download_footer_btn.set_visibility(False)
+
                 ui.notify(
                     "Validation completed with warnings", type="warning", timeout=0
                 )
+
             # Always update button color regardless of success/failure
             self._update_validation_button_color()
 
@@ -3402,6 +3492,10 @@ For additional assistance:
             result_label.text = f"❌ {error_msg}"
             result_label.classes("text-red-600")
             ui.notify(error_msg, type="negative", timeout=0)
+
+            # Hide footer download button on exception
+            if self.cert_download_footer_btn:
+                self.cert_download_footer_btn.set_visibility(False)
 
             # Update button color on exception
             self._update_validation_button_color()
