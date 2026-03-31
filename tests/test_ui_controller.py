@@ -422,21 +422,18 @@ class TestModuleAHandler:
 
     def test_handle_calculate_single_failure(self):
         with patch("sample_size_calculator.ui_controller.CalculationEngine") as mock_engine:
-            controller = UIController()
             mock_engine.success_run_theorem.return_value = 100
             n = mock_engine.success_run_theorem(95.0, 95.0)
             assert n == 100
 
     def test_handle_calculate_multiple_failures(self):
         with patch("sample_size_calculator.ui_controller.CalculationEngine") as mock_engine:
-            controller = UIController()
             mock_engine.cumulative_binomial.return_value = 250
             n = mock_engine.cumulative_binomial(95.0, 95.0, 2)
             assert n == 250
 
     def test_handle_calculate_sensitivity_analysis(self):
         with patch("sample_size_calculator.ui_controller.CalculationEngine") as mock_engine:
-            controller = UIController()
             mock_engine.sensitivity_analysis_with_correction.return_value = [
                 (0, 100, None),
                 (1, 150, None),
@@ -447,7 +444,6 @@ class TestModuleAHandler:
 
     def test_handle_calculate_population_correction(self):
         with patch("sample_size_calculator.ui_controller.CalculationEngine") as mock_engine:
-            controller = UIController()
             mock_engine.success_run_theorem.return_value = 100
             mock_engine.finite_population_correction.return_value = 95.24
             n_original = mock_engine.success_run_theorem(95.0, 95.0)
@@ -462,7 +458,6 @@ class TestModuleVPhaseHandlers:
     def test_handle_analyze_phase1_pilot_data(self):
         from sample_size_calculator.models import Phase1Results
         
-        controller = UIController()
         pilot_data_str = "10.0, 10.1, 9.9, 10.2, 10.0"
         pilot_data = [float(x.strip()) for x in pilot_data_str.split(",") if x.strip()]
         
@@ -479,7 +474,6 @@ class TestModuleVPhaseHandlers:
         assert results.pilot_data == pilot_data
 
     def test_handle_analyze_phase1_estimated_statistics(self):
-        controller = UIController()
         estimated_mean = 10.0
         estimated_std = 0.1
         
@@ -497,7 +491,6 @@ class TestEnforcementAndWorkflow:
         assert state.is_phase_enabled(1) is True
         assert state.is_phase_enabled(2) is False
         
-        from sample_size_calculator.models import Phase1Results
         state.complete_phase1([1.0, 2.0, 3.0])
         
         assert state.is_phase_enabled(2) is True
@@ -506,10 +499,10 @@ class TestEnforcementAndWorkflow:
         state = ModuleVState()
         
         from sample_size_calculator.models import (
+            AnalysisMethod,
             Phase1Results,
             Phase2Results,
             TransformationMethod,
-            AnalysisMethod,
         )
         
         phase1_results = Phase1Results(
@@ -552,7 +545,6 @@ class TestSessionIsolation:
         
         assert len(set(session_ids)) == 5
         
-        from sample_size_calculator.models import Phase1Results
         controllers[0].module_v_state.complete_phase1([1.0, 2.0, 3.0])
         
         for i in range(1, 5):
@@ -573,17 +565,16 @@ class TestUIControllerRealExecution:
 
     def test_module_v_state_workflow_complete(self):
         """Test complete Module V workflow execution."""
-        from sample_size_calculator.ui_controller import ModuleVState
         from sample_size_calculator.models import (
+            AnalysisMethod,
             Phase1Results,
             Phase2Results,
             Phase3Results,
             Phase4Results,
-            SpecificationLimits,
             SpecificationType,
             TransformationMethod,
-            AnalysisMethod,
         )
+        from sample_size_calculator.ui_controller import ModuleVState
         
         state = ModuleVState()
         
@@ -639,8 +630,9 @@ class TestUIControllerRealExecution:
         assert state.is_phase_enabled(4)
     def test_ui_controller_session_id_generation(self):
         """Test that session IDs are properly generated."""
-        from sample_size_calculator.ui_controller import UIController
         import uuid
+
+        from sample_size_calculator.ui_controller import UIController
         
         controller = UIController()
         

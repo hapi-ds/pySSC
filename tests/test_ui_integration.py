@@ -1,20 +1,19 @@
 """Integration tests for UI controller."""
 
-import pytest
 
 
 class TestModuleVStateWorkflow:
     def test_complete_workflow_state_transitions(self):
-        from sample_size_calculator.ui_controller import ModuleVState
         from sample_size_calculator.models import (
+            AnalysisMethod,
             Phase1Results,
             Phase2Results,
             Phase3Results,
             Phase4Results,
             SpecificationType,
             TransformationMethod,
-            AnalysisMethod,
         )
+        from sample_size_calculator.ui_controller import ModuleVState
 
         state = ModuleVState()
 
@@ -65,15 +64,15 @@ class TestModuleVStateWorkflow:
         assert state.phase4_complete
 
     def test_workflow_reset_after_recompletion(self):
-        from sample_size_calculator.ui_controller import ModuleVState
         from sample_size_calculator.models import (
+            AnalysisMethod,
             Phase1Results,
             Phase2Results,
             Phase3Results,
             SpecificationType,
             TransformationMethod,
-            AnalysisMethod,
         )
+        from sample_size_calculator.ui_controller import ModuleVState
 
         state = ModuleVState()
         
@@ -114,8 +113,9 @@ class TestModuleVStateWorkflow:
 
 class TestUIControllerSessionManagement:
     def test_session_id_is_unique_uuid(self):
-        from sample_size_calculator.ui_controller import UIController
         import uuid
+
+        from sample_size_calculator.ui_controller import UIController
 
         controllers = [UIController() for _ in range(10)]
         
@@ -168,8 +168,12 @@ class TestModuleVPhase2Logic:
 
 class TestModuleVPhase3Logic:
     def test_capability_margin_calculation(self):
+        from sample_size_calculator.models import (
+            SpecificationLimits,
+            SpecificationType,
+            TransformationMethod,
+        )
         from sample_size_calculator.tolerance import calculate_capability_margin
-        from sample_size_calculator.models import SpecificationLimits, SpecificationType, TransformationMethod
 
         data = [10.0, 10.1, 9.9, 10.2, 10.0]
         spec_limits = SpecificationLimits(
@@ -185,15 +189,15 @@ class TestModuleVPhase3Logic:
 
 class TestModuleVPhase4Logic:
     def test_tolerance_limit_calculation(self):
-        from sample_size_calculator.tolerance import calculate_tolerance_limits
         from sample_size_calculator.models import (
+            AnalysisMethod,
             Phase2Results,
             Phase3Results,
             SpecificationLimits,
             SpecificationType,
             TransformationMethod,
-            AnalysisMethod,
         )
+        from sample_size_calculator.tolerance import calculate_tolerance_limits
 
         phase2_results = Phase2Results(
             cleaned_data=[10.0, 10.1, 9.9, 10.2, 10.0],

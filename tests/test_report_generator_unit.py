@@ -7,7 +7,6 @@ Achieves >90% coverage with comprehensive edge case testing.
 from datetime import datetime
 from pathlib import Path
 
-import pytest
 from sample_size_calculator.models import CalculationReport, ValidationCertificate
 from sample_size_calculator.report_generator import ReportGenerator
 
@@ -109,7 +108,7 @@ class TestReportGeneratorUserReport:
 
     def test_generate_user_report_large_sampled_data(self):
         """Generate user report with large sampled data (truncation test)."""
-        large_data = list(range(1, 200))
+        large_data = [float(i) for i in range(1, 200)]
         report_data = CalculationReport(
             timestamp=datetime.now().isoformat(),
             module="Module V",

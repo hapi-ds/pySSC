@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import pytest
 from sample_size_calculator.pdf_report import NumberedCanvas, PDFReportTemplate
 
 
@@ -17,7 +16,7 @@ class TestNumberedCanvas:
         assert hasattr(canvas, "_codes")
         assert isinstance(canvas._codes, list)
 
-    def test_showPage_adds_to_codes(self, tmp_path):
+    def test_showpage_adds_to_codes(self, tmp_path):
         output_path = tmp_path / "test.pdf"
         canvas = NumberedCanvas(str(output_path))
         initial_codes_count = len(canvas._codes)
@@ -35,8 +34,8 @@ class TestNumberedCanvas:
         doc = SimpleDocTemplate(str(output_path), pagesize=A4)
         
         story = []
-        from reportlab.platypus import Paragraph
         from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.platypus import Paragraph
         
         styles = getSampleStyleSheet()
         story.append(Paragraph("Test Page 1", styles["Normal"]))
@@ -53,13 +52,13 @@ class TestNumberedCanvas:
         output_path = tmp_path / "test_multi_page.pdf"
         
         from reportlab.lib.pagesizes import A4
-        from reportlab.platypus import SimpleDocTemplate, PageBreak
+        from reportlab.platypus import PageBreak, SimpleDocTemplate
         
         doc = SimpleDocTemplate(str(output_path), pagesize=A4)
         
         story = []
-        from reportlab.platypus import Paragraph
         from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.platypus import Paragraph
         
         styles = getSampleStyleSheet()
         story.append(Paragraph("Page 1", styles["Normal"]))
@@ -124,8 +123,8 @@ class TestPDFReportTemplate:
         
         template = PDFReportTemplate(title="Basic Report")
         
-        from reportlab.platypus import Paragraph
         from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.platypus import Paragraph
         
         styles = getSampleStyleSheet()
         elements = [Paragraph("Test Content", styles["Normal"])]
@@ -143,8 +142,8 @@ class TestPDFReportTemplate:
         
         template = PDFReportTemplate(title="Multi-Element Report")
         
-        from reportlab.platypus import Paragraph, Spacer
         from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.platypus import Paragraph, Spacer
         
         styles = getSampleStyleSheet()
         elements = [
@@ -181,8 +180,8 @@ class TestPDFReportTemplate:
         
         template = PDFReportTemplate(title="Large Report")
         
-        from reportlab.platypus import Paragraph
         from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.platypus import Paragraph
         
         styles = getSampleStyleSheet()
         elements = [Paragraph(f"Content Line {i}", styles["Normal"]) for i in range(100)]
@@ -199,8 +198,8 @@ class TestPDFReportTemplate:
         
         template = PDFReportTemplate(title="Path Test")
         
-        from reportlab.platypus import Paragraph
         from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.platypus import Paragraph
         
         styles = getSampleStyleSheet()
         elements = [Paragraph("Test", styles["Normal"])]
