@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.0.5 (2026-03-31)
+
+### Bug Fixes
+
+- Add id
+  ([`f0ebdb5`](https://github.com/hapi-ds/pySSC/commit/f0ebdb58f30efcc7fed2bcfecde8555a12a33e27))
+
+
 ## v1.0.4 (2026-03-30)
 
 ### Bug Fixes
