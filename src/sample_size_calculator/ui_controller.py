@@ -195,8 +195,6 @@ class UIController:
                 ui.label(
                     "Medical Device Design Verification & Process Validation"
                 ).classes("text-subtitle2")
-
-            # Validation button in header - solid background with white text
             self.validation_button = ui.button(
                 "Run Full Validation (IQ/OQ/PQ)",
                 on_click=self._handle_validation_button_click,
@@ -235,6 +233,12 @@ class UIController:
                     "text-caption bg-background text-background-contrast px-2 rounded"
                 )
 
+                ui.link(
+                    "My Digital Business Card",
+                    "https://swft.id/office202",
+                    new_tab=True,
+                ).classes("text-caption text-white underline")
+
                 # Validation certificate download button (only visible when cert exists)
                 self.cert_download_footer_btn = (
                     ui.button(
@@ -249,6 +253,7 @@ class UIController:
 
                 # Check if any validation certificate exists in reports folder
                 from pathlib import Path
+
                 cert_dir = Path("reports/validation")
                 if cert_dir.exists():
                     pdf_files = list(cert_dir.glob("*.pdf"))
