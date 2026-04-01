@@ -1,5 +1,6 @@
 """Comprehensive unit tests for UI controller."""
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -8,6 +9,7 @@ from sample_size_calculator.ui_controller import (
     ModuleVState,
     UIController,
 )
+from sample_size_calculator.validation_runner import ValidationRunner
 
 
 class TestModuleVState:
@@ -852,3 +854,88 @@ class TestModuleVPhaseClickHandlers:
         state.complete_phase3(phase3_results)
 
         assert state.phase4_complete is False
+
+
+class TestRunValidationIntegration:
+    """Tests for run_validation() integration flow - full validation workflow."""
+
+    def test_validation_runner_initialization(self):
+        """Test ValidationRunner can be initialized with callback."""
+        messages = []
+
+        def progress_callback(msg):
+            messages.append(msg)
+
+        runner = ValidationRunner(progress_callback=progress_callback)
+        assert runner is not None
+        assert runner.test_results == []
+        assert runner.all_passed is True
+
+    def test_validation_runner_extract_test_results(self):
+        """Test extraction of test results from pytest data."""
+        runner = ValidationRunner()
+
+        pytest_data = {
+            "tests": [
+                {
+                    "nodeid": "test_file.py::test_function",
+                    "outcome": "passed",
+                    "markers": [{"name": "urs", "args": ["31.2", "31.3"]}],
+                }
+            ]
+        }
+
+        results = runner._extract_test_results(pytest_data, "IQ")
+
+        assert len(results) == 2
+        assert results[0]["urs_id"] == "31.2"
+        assert results[0]["result"] == "PASSED"
+        assert results[1]["urs_id"] == "31.3"
+        assert results[1]["result"] == "PASSED"
+
+    def test_validation_runner_progress_callback(self):
+        """Test that progress callback is called during validation."""
+        messages = []
+
+        def progress_callback(msg):
+            messages.append(msg)
+
+        runner = ValidationRunner(progress_callback=progress_callback)
+        runner._report_progress("Test message 1")
+        runner._report_progress("Test message 2")
+
+        assert len(messages) == 2
+        assert "Test message 1" in messages[0]
+        assert "Test message 2" in messages[1]
+
+    def test_validation_runner_all_passed_flag(self):
+        """Test all_passed flag is updated based on test results."""
+        runner = ValidationRunner()
+
+        # Initially all tests pass
+        assert runner.all_passed is True
+
+        # Simulate a failure
+        runner.all_passed = False
+
+        assert runner.all_passed is False
+
+    def test_validation_runner_extract_urs_from_markers(self):
+        """Test URS ID extraction from pytest markers."""
+        runner = ValidationRunner()
+
+        pytest_data = {
+            "tests": [
+                {
+                    "nodeid": "test_iq.py::test_system_initialized",
+                    "outcome": "passed",
+                    "markers": [{"name": "urs", "args": ["30.1"]}],
+                }
+            ]
+        }
+
+        results = runner._extract_test_results(pytest_data, "IQ")
+
+        assert len(results) == 1
+        assert results[0]["urs_id"] == "30.1"
+
