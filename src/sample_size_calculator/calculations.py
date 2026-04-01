@@ -96,7 +96,7 @@ class CalculationEngine:
 
         # Iterate until constraint is satisfied
         # The cumulative probability of c or fewer failures should be <= 1-C
-        max_iterations = 100000  # Safety limit
+        max_iterations = 150000  # Safety limit
         for _ in range(max_iterations):
             # Calculate cumulative binomial probability
             # P(X <= c) where X ~ Binomial(n, 1-R)
