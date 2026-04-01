@@ -356,6 +356,7 @@ def test_property_20_final_dataset_size_validation(sample_size: int):
     final_data = [10.0] * (sample_size - 1)  # Intentionally wrong size
     phase2 = Phase2Results(
         cleaned_data=final_data,
+        original_cleaned_data=final_data,
         shapiro_p_value=0.8,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.PARAMETRIC,
@@ -470,6 +471,7 @@ def test_property_22_parametric_tolerance_limit_formula_correctness(
     # Use no transformation for simplicity
     phase2 = Phase2Results(
         cleaned_data=data,
+        original_cleaned_data=data,
         shapiro_p_value=0.8,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.PARAMETRIC,
@@ -523,6 +525,7 @@ def test_property_23_non_parametric_tolerance_limits_as_extreme_order_statistics
     # Use non-parametric method
     phase2 = Phase2Results(
         cleaned_data=data,
+        original_cleaned_data=data,
         shapiro_p_value=0.01,  # Failed normality test
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.NON_PARAMETRIC,
@@ -609,6 +612,7 @@ def test_property_25_pass_fail_determination_correctness(
     # Use no transformation for simplicity
     phase2 = Phase2Results(
         cleaned_data=data,
+        original_cleaned_data=data,
         shapiro_p_value=0.8,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.PARAMETRIC,
@@ -777,6 +781,7 @@ def test_property_25_non_parametric_no_ppk(data: list[float], lsl: float, usl: f
     # Use non-parametric method
     phase2 = Phase2Results(
         cleaned_data=data,
+        original_cleaned_data=data,
         shapiro_p_value=0.01,  # Failed normality test
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.NON_PARAMETRIC,
@@ -1151,6 +1156,7 @@ def test_property_20_final_dataset_too_small():
     final_data = [10.0] * 5
     phase2 = Phase2Results(
         cleaned_data=final_data,
+        original_cleaned_data=final_data,
         shapiro_p_value=0.8,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.PARAMETRIC,
@@ -1230,6 +1236,7 @@ def test_property_27_parametric_tolerance_limit_one_sided_lsl():
     data = [10.0, 12.0, 11.0, 13.0, 12.5]
     phase2 = Phase2Results(
         cleaned_data=data,
+        original_cleaned_data=data,
         shapiro_p_value=0.8,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.PARAMETRIC,
@@ -1265,6 +1272,7 @@ def test_property_27_parametric_tolerance_limit_one_sided_usl():
     data = [10.0, 12.0, 11.0, 13.0, 12.5]
     phase2 = Phase2Results(
         cleaned_data=data,
+        original_cleaned_data=data,
         shapiro_p_value=0.8,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.PARAMETRIC,
@@ -1387,6 +1395,7 @@ def test_property_25_pass_fail_with_tolerance_exceeding_spec():
     data = [10.0, 10.5, 10.2, 10.8, 10.3]
     phase2 = Phase2Results(
         cleaned_data=data,
+        original_cleaned_data=data,
         shapiro_p_value=0.8,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.PARAMETRIC,
@@ -1420,6 +1429,7 @@ def test_property_25_pass_fail_with_strict_spec():
     data = [10.0, 12.0, 11.0, 13.0, 12.5]
     phase2 = Phase2Results(
         cleaned_data=data,
+        original_cleaned_data=data,
         shapiro_p_value=0.8,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.PARAMETRIC,
@@ -1572,6 +1582,7 @@ def test_property_27_tolerance_limit_pass_fail_comparison():
     data = [10.0, 12.0, 11.0, 13.0, 12.5]
     phase2 = Phase2Results(
         cleaned_data=data,
+        original_cleaned_data=data,
         shapiro_p_value=0.8,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.PARAMETRIC,
@@ -1626,6 +1637,7 @@ def test_property_27_tolerance_limit_pass_fail_fail():
     data = [10.0, 12.0, 11.0, 13.0, 12.5]
     phase2 = Phase2Results(
         cleaned_data=data,
+        original_cleaned_data=data,
         shapiro_p_value=0.8,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.PARAMETRIC,

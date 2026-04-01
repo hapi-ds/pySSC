@@ -44,6 +44,7 @@ class TestBug1Phase4Validation:
         # Phase 2 results: No transformation, parametric analysis
         phase2_results = Phase2Results(
             cleaned_data=final_data,
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -92,6 +93,7 @@ class TestBug1Phase4Validation:
         # Phase 2 results: No transformation, parametric analysis
         phase2_results = Phase2Results(
             cleaned_data=final_data[:n],  # Phase 2 used first N samples
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -162,6 +164,7 @@ class TestBug1Phase4Validation:
         # Phase 2 results: No transformation, parametric analysis
         phase2_results = Phase2Results(
             cleaned_data=final_data[:n],  # Phase 2 used first N samples
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -212,6 +215,7 @@ class TestBug1Phase4Validation:
         # Phase 2 results: No transformation, parametric analysis
         phase2_results = Phase2Results(
             cleaned_data=final_data,
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -690,6 +694,7 @@ class TestBug3Phase3StateManagement:
         # Complete Phase 2
         phase2_results = Phase2Results(
             cleaned_data=[10.0, 12.0, 11.0, 13.0, 12.5],
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -742,6 +747,7 @@ class TestBug3Phase3StateManagement:
         # Complete Phase 2
         phase2_results = Phase2Results(
             cleaned_data=[10.0, 12.0, 11.0, 13.0, 12.5],
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -835,6 +841,7 @@ class TestBug3Phase3StateManagement:
         # Complete Phase 2
         phase2_results = Phase2Results(
             cleaned_data=[10.0, 12.0, 11.0, 13.0, 12.5],
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -877,6 +884,7 @@ class TestBug3Phase3StateManagement:
         # Complete Phase 2
         phase2_results = Phase2Results(
             cleaned_data=[10.0, 12.0, 11.0, 13.0, 12.5],
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -954,6 +962,7 @@ class TestBug3Phase3StateManagement:
         # Complete Phase 2
         phase2_results = Phase2Results(
             cleaned_data=[10.0, 12.0, 11.0, 13.0, 12.5],
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,

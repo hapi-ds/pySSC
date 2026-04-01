@@ -79,6 +79,7 @@ class TestModuleVState:
 
         phase2_results = Phase2Results(
             cleaned_data=[1.0, 2.0],
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -126,6 +127,7 @@ class TestModuleVState:
 
         phase2_results = Phase2Results(
             cleaned_data=[1.0, 2.0],
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -249,6 +251,7 @@ class TestModuleVStateEdgeCases:
 
         phase2_results = Phase2Results(
             cleaned_data=[1.0, 2.0],
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -559,6 +562,7 @@ class TestEnforcementAndWorkflow:
 
         phase2_results = Phase2Results(
             cleaned_data=[1.0, 2.0],
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -636,6 +640,7 @@ class TestUIControllerRealExecution:
         # Phase 2: Complete with transformation results
         phase2_results = Phase2Results(
             cleaned_data=[10.0, 10.1, 9.9],
+            original_cleaned_data=[],
             shapiro_p_value=0.85,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -735,7 +740,7 @@ class TestModuleAClickHandlers:
                 (2, 200, None),
             ]
 
-            controller = UIController()
+            _controller = UIController()
 
             results = mock_instance.sensitivity_analysis_with_correction(
                 95.0, 95.0, None
@@ -751,7 +756,7 @@ class TestModuleAClickHandlers:
             mock_instance.success_run_theorem.return_value = 100
             mock_instance.finite_population_correction.return_value = 95.24
 
-            controller = UIController()
+            _controller = UIController()
 
             n_original = mock_instance.success_run_theorem(95.0, 95.0)
             n_corrected = mock_instance.finite_population_correction(n_original, 1000)
@@ -801,6 +806,7 @@ class TestModuleVPhaseClickHandlers:
 
         phase2_results = Phase2Results(
             cleaned_data=[10.0, 10.1, 9.9],
+            original_cleaned_data=[],
             shapiro_p_value=0.85,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -832,6 +838,7 @@ class TestModuleVPhaseClickHandlers:
 
         phase2_results = Phase2Results(
             cleaned_data=[10.0, 10.1, 9.9],
+            original_cleaned_data=[],
             shapiro_p_value=0.85,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
