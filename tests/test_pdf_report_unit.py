@@ -144,7 +144,7 @@ class TestNumberedCanvas:
 
         story = []
         from reportlab.lib.styles import getSampleStyleSheet
-        from reportlab.platypus import Paragraph, PageBreak
+        from reportlab.platypus import PageBreak, Paragraph
 
         styles = getSampleStyleSheet()
         story.append(Paragraph("First Page", styles["Normal"]))

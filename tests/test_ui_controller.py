@@ -1,6 +1,5 @@
 """Comprehensive unit tests for UI controller."""
 
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -793,7 +792,6 @@ class TestModuleVPhaseClickHandlers:
         from sample_size_calculator.models import (
             AnalysisMethod,
             Phase2Results,
-            Phase3Results,
             SpecificationLimits,
             SpecificationType,
             TransformationMethod,
@@ -826,8 +824,6 @@ class TestModuleVPhaseClickHandlers:
             AnalysisMethod,
             Phase2Results,
             Phase3Results,
-            Phase4Results,
-            SpecificationLimits,
             SpecificationType,
             TransformationMethod,
         )

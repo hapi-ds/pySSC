@@ -304,7 +304,6 @@ class TestFullReportGenerator:
 
     def test_extract_validation_cert_info_with_vtm_missing_colon(self):
         """Test extracting tester name from VTM file with malformed content."""
-        import json
 
         with tempfile.TemporaryDirectory() as temp_dir:
             validation_dir = Path(temp_dir)
@@ -328,7 +327,6 @@ class TestFullReportGenerator:
 
     def test_extract_validation_cert_info_vtm_empty(self):
         """Test extracting cert info with empty VTM file."""
-        import json
 
         with tempfile.TemporaryDirectory() as temp_dir:
             validation_dir = Path(temp_dir)
@@ -344,7 +342,6 @@ class TestFullReportGenerator:
 
     def test_extract_validation_cert_info_coverage_error_handling(self):
         """Test extracting cert info when coverage metrics file has errors."""
-        import json
 
         with tempfile.TemporaryDirectory() as temp_dir:
             validation_dir = Path(temp_dir)
