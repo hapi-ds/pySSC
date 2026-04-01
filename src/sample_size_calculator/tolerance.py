@@ -24,9 +24,7 @@ from sample_size_calculator.models import (
     TransformationMethod,
 )
 from sample_size_calculator.transformations import (
-    box_cox_transform,
     inverse_yeo_johnson_transform,
-    log_transform,
 )
 
 
@@ -376,7 +374,7 @@ def calculate_tolerance_limits(
         original_data = phase2_results.original_cleaned_data
     else:
         original_data = phase2_results.cleaned_data if phase2_results.transformation_method == TransformationMethod.NONE else final_data
-    
+
     # Use cleaned_data from Phase 2 which is already transformed and outlier-excluded
     transformed_data = phase2_results.cleaned_data
 

@@ -581,11 +581,10 @@ def transformation_cascade(
         )
 
     # All transformations failed - fallback to Non-Parametric
-        original_cleaned_data=data,
-    # Use the p-value from the last transformation attempt (Yeo-Johnson)
     return Phase2Results(
         cleaned_data=data,  # Use original data for non-parametric
         shapiro_p_value=p_value,
+        original_cleaned_data=data,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.NON_PARAMETRIC,
         lambda_param=None,
