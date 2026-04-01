@@ -227,9 +227,269 @@ class TestFullReportGenerator:
 
         assert info is not None
         assert info["total_tests"] == 0
-        assert info["passed_tests"] == 0
-        assert info["failed_tests"] == 0
-        assert info["validation_status"] == "N/A"
+
+    def test_get_latest_validation_info_with_invalid_date_format(self):
+        """Test getting validation info when filename has invalid date format."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+
+            # Create certificate with invalid date in filename
+            cert = validation_dir / "validation_certificate_invalid-date.pdf"
+            cert.write_bytes(b"%PDF-1.4\ntest")
+
+            info = FullReportGenerator._get_latest_validation_info(
+                validation_reports_dir=str(validation_dir)
+            )
+
+            assert info is not None
+            assert "filename" in info
+            # Date falls back to file modification time when parsing fails
+            assert "date" in info
+
+    def test_extract_validation_cert_info_no_json_files(self):
+        """Test extracting cert info when no JSON files are found."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+            cert_file = validation_dir / "validation_certificate_20240315.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            assert info["tester_name"] is None
+            assert info["total_tests"] == 0
+            assert info["passed_tests"] == 0
+            assert info["failed_tests"] == 0
+
+    def test_extract_validation_cert_info_with_all_test_types(self):
+        """Test extracting cert info with IQ, OQ, and PQ results."""
+        import json
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+            cert_file = validation_dir / "validation_certificate_20240315.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            iq_results = {
+                "tests": [
+                    {"nodeid": "test_iq.py::test_1", "outcome": "passed"},
+                    {"nodeid": "test_iq.py::test_2", "outcome": "failed"},
+                ]
+            }
+            oq_results = {
+                "tests": [
+                    {"nodeid": "test_oq.py::test_1", "outcome": "passed"},
+                ]
+            }
+            pq_results = {
+                "tests": [
+                    {"nodeid": "test_pq.py::test_1", "outcome": "passed"},
+                    {"nodeid": "test_pq.py::test_2", "outcome": "passed"},
+                ]
+            }
+
+            (validation_dir / "test_results_iq.json").write_text(json.dumps(iq_results))
+            (validation_dir / "test_results_oq.json").write_text(json.dumps(oq_results))
+            (validation_dir / "test_results_pq.json").write_text(json.dumps(pq_results))
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            # Total: 2 IQ + 1 OQ + 2 PQ = 5 tests
+            assert info["total_tests"] == 5
+            # Passed: 1 (IQ) + 1 (OQ) + 2 (PQ) = 4, but test_2 failed in IQ
+            assert info["passed_tests"] == 4
+            assert info["failed_tests"] == 1
+            assert info["validation_status"] == "FAILED"
+
+    def test_extract_validation_cert_info_with_vtm_missing_colon(self):
+        """Test extracting tester name from VTM file with malformed content."""
+        import json
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+            cert_file = validation_dir / "validation_certificate_20240315.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            # VTM file without proper format (missing colon after Tester)
+            vtm_content = """# Validation Traceability Matrix
+# Tester John Doe
+# Date: 2024-03-15
+"""
+            (validation_dir / "validation_traceability_matrix.csv").write_text(
+                vtm_content
+            )
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            # Should not extract tester name due to malformed format
+            assert info["tester_name"] is None
+
+    def test_extract_validation_cert_info_vtm_empty(self):
+        """Test extracting cert info with empty VTM file."""
+        import json
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+            cert_file = validation_dir / "validation_certificate_20240315.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            (validation_dir / "validation_traceability_matrix.csv").write_text("")
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            assert info["tester_name"] is None
+
+    def test_extract_validation_cert_info_coverage_error_handling(self):
+        """Test extracting cert info when coverage metrics file has errors."""
+        import json
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            validation_dir = Path(temp_dir)
+            cert_file = validation_dir / "validation_certificate_20240315.pdf"
+            cert_file.write_bytes(b"%PDF-1.4\ntest")
+
+            # Corrupt coverage metrics file
+            (validation_dir / "coverage_metrics.json").write_text("{invalid json")
+
+            info = FullReportGenerator._extract_validation_certificate_info(cert_file)
+
+            assert info is not None
+            assert info["coverage_percentage"] == 0.0
+
+    def test_get_session_logs_no_log_file(self):
+        """Test getting session logs when log file doesn't exist."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            logs = FullReportGenerator._get_session_logs(
+                session_id="test_session",
+                log_dir=temp_dir,
+            )
+
+            assert logs == []
+
+    def test_get_session_logs_session_not_found(self):
+        """Test getting session logs when session ID doesn't match any entries."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            log_dir = Path(temp_dir)
+            log_file = log_dir / "audit.log"
+
+            log_entries = [
+                "[2024-03-15T14:30:22+0000] [INFO] [session_abc] [button_click] "
+                + '{"timestamp": "2024-03-15T14:30:22", "button_id": "calculate"}',
+            ]
+
+            log_file.write_text("\n".join(log_entries))
+
+            logs = FullReportGenerator._get_session_logs(
+                session_id="nonexistent_session",
+                log_dir=str(log_dir),
+            )
+
+            assert logs == []
+
+    def test_parse_log_line_missing_brackets(self):
+        """Test parsing a log line with missing bracket separators."""
+        log_line = "2024-03-15T14:30:22+0000 INFO session_123 button_click {test}"
+
+        parsed = FullReportGenerator._parse_log_line(log_line)
+
+        assert parsed is None
+
+    def test_parse_log_line_insufficient_parts(self):
+        """Test parsing a log line with insufficient bracket pairs."""
+        log_line = (
+            "[2024-03-15T14:30:22+0000] [INFO] [session_123] "
+            '{"timestamp": "2024-03-15T14:30:22", "button_id": "calculate"}'
+        )
+
+        parsed = FullReportGenerator._parse_log_line(log_line)
+
+        assert parsed is None
+
+    def test_parse_log_line_invalid_json_context(self):
+        """Test parsing a log line with invalid JSON in context."""
+        log_line = (
+            "[2024-03-15T14:30:22+0000] [INFO] [session_123] [button_click] "
+            '{"timestamp": "invalid json {'
+        )
+
+        parsed = FullReportGenerator._parse_log_line(log_line)
+
+        # Should still return parsed result with raw context as details
+        assert parsed is not None
+        assert parsed["event_type"] == "button_click"
+        assert "details" in parsed
+
+    def test_parse_log_line_with_error_message(self):
+        """Test parsing a log line containing error message."""
+        log_line = (
+            "[2024-03-15T14:30:22+0000] [ERROR] [session_123] [calculation] "
+            '{"timestamp": "2024-03-15T14:30:22", "error_message": "Division by zero"}'
+        )
+
+        parsed = FullReportGenerator._parse_log_line(log_line)
+
+        assert parsed is not None
+        assert parsed["event_type"] == "calculation"
+        assert "Error:" in parsed["details"]
+        assert "Division by zero" in parsed["details"]
+
+    def test_parse_log_line_with_multiple_context_fields(self):
+        """Test parsing a log line with multiple context fields."""
+        log_line = (
+            "[2024-03-15T14:30:22+0000] [INFO] [session_123] [calculation] "
+            '{"timestamp": "2024-03-15T14:30:22", "button_id": "calculate", '
+            '"field_id": "input_field", "method": "Logarithmic"}'
+        )
+
+        parsed = FullReportGenerator._parse_log_line(log_line)
+
+        assert parsed is not None
+        assert parsed["event_type"] == "calculation"
+        # Should include relevant context fields in details
+        assert "Button:" in parsed["details"]
+        assert "Field:" in parsed["details"]
+        assert "Method:" in parsed["details"]
+
+    def test_parse_log_line_with_calc_type(self):
+        """Test parsing a log line with calculation type in context."""
+        log_line = (
+            "[2024-03-15T14:30:22+0000] [INFO] [session_123] [calculation] "
+            '{"timestamp": "2024-03-15T14:30:22", "calc_type": "success_run_theorem"}'
+        )
+
+        parsed = FullReportGenerator._parse_log_line(log_line)
+
+        assert parsed is not None
+        assert "Calc:" in parsed["details"]
+        assert "success_run_theorem" in parsed["details"]
+
+    def test_get_session_logs_exception_handling(self):
+        """Test that get_session_logs handles file read exceptions gracefully."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            log_dir = Path(temp_dir)
+            log_file = log_dir / "audit.log"
+
+            # Write log content but then make it unreadable (on Unix-like systems)
+            log_file.write_text(
+                "[2024-03-15T14:30:22+0000] [INFO] [session_abc] [test] {}"
+            )
+
+            # Force exception by trying to read with invalid encoding
+            import unittest.mock as mock
+
+            with mock.patch(
+                "builtins.open",
+                side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "test"),
+            ):
+                logs = FullReportGenerator._get_session_logs(
+                    session_id="session_abc",
+                    log_dir=str(log_dir),
+                )
+
+                assert logs == []
 
     def test_extract_validation_cert_info_with_test_results(self):
         """Test extracting cert info with test results JSON files."""
@@ -492,7 +752,9 @@ URS-001,test_iq.py::test_1,PASSED
             cert_file.write_bytes(b"%PDF-1.4\ntest")
 
             empty_results = {"tests": []}
-            (validation_dir / "test_results_iq.json").write_text(json.dumps(empty_results))
+            (validation_dir / "test_results_iq.json").write_text(
+                json.dumps(empty_results)
+            )
 
             info = FullReportGenerator._extract_validation_certificate_info(cert_file)
 

@@ -287,3 +287,39 @@ class TestTransformationCascade:
             TransformationMethod.BOX_COX,
         ]:
             assert result.analysis_method == AnalysisMethod.PARAMETRIC
+
+    def test_all_transformations_fail_fallback_to_non_parametric(self):
+        """Test edge case when all transformations fail to achieve normality.
+
+        Validates Requirement 13.2: Fallback to Non-Parametric method when
+        all transformation attempts (Log, Box-Cox, Yeo-Johnson) fail to
+        achieve Shapiro-Wilk p-value > 0.05.
+        """
+        # Create data that is extremely non-normal and resistant to all transformations
+        # Bimodal distribution with strong separation between modes
+        np.random.seed(999)
+        bimodal_data = np.concatenate(
+            [
+                np.random.normal(-10, 0.5, 25),  # First mode centered at -10
+                np.random.normal(10, 0.5, 25),  # Second mode centered at +10
+            ]
+        ).tolist()
+
+        result = transformation_cascade(bimodal_data)
+
+        # When all transformations fail, should fallback to Non-Parametric
+        assert result.transformation_method == TransformationMethod.NONE
+        assert result.analysis_method == AnalysisMethod.NON_PARAMETRIC
+        assert result.lambda_param is None
+        assert result.manual_override is False
+
+        # The p-value should still be <= 0.05 since transformations failed
+        assert result.shapiro_p_value <= 0.05
+
+        # Data length should be preserved (original data used for non-parametric)
+        assert len(result.cleaned_data) == len(bimodal_data)
+
+        # Verify it's using the original data (since no transformation succeeded)
+        np.testing.assert_array_almost_equal(
+            result.cleaned_data, bimodal_data, decimal=10
+        )
