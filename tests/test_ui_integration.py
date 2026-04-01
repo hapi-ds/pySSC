@@ -31,6 +31,7 @@ class TestModuleVStateWorkflow:
         
         phase2_results = Phase2Results(
             cleaned_data=[10.0, 10.1, 9.9],
+            original_cleaned_data=[],
             shapiro_p_value=0.85,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -87,6 +88,7 @@ class TestModuleVStateWorkflow:
         
         phase2_results = Phase2Results(
             cleaned_data=[1.0, 2.0],
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -201,6 +203,7 @@ class TestModuleVPhase4Logic:
 
         phase2_results = Phase2Results(
             cleaned_data=[10.0, 10.1, 9.9, 10.2, 10.0],
+            original_cleaned_data=[],
             shapiro_p_value=0.85,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,

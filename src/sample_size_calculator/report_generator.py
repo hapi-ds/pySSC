@@ -1,5 +1,6 @@
 """PDF report generation using ReportLab with page numbering."""
 
+import json
 from io import BytesIO
 from pathlib import Path
 
@@ -779,11 +780,26 @@ class ReportGenerator:
                     )
                     story.append(category_table)
 
+        # Get the path before building to ensure stats are saved in correct directory
+        report_path = get_validation_report_path()
+
         doc.build(story, canvasmaker=NumberedCanvas)
         pdf_bytes = buffer.getvalue()
         buffer.close()
 
-        report_path = get_validation_report_path()
-        save_report(pdf_bytes, report_path)
+        saved_path = save_report(pdf_bytes, report_path)
 
-        return pdf_bytes, report_path
+        # Save test statistics to JSON file alongside certificate for full reports
+        stats_data = {
+            "total_tests": total_tests,
+            "passed_tests": total_passed,
+            "failed_tests": total_failed,
+            "validation_status": validation_status,
+            "tester_name": cert_data.tester_name,
+            "test_date": cert_data.test_date,
+        }
+        stats_file = saved_path.parent / "validation_stats.json"
+        with open(stats_file, "w") as f:
+            json.dump(stats_data, f, indent=2)
+
+        return pdf_bytes, saved_path

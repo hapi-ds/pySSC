@@ -21,41 +21,18 @@
 
 Medical device design verification and process validation sample size calculator compliant with ISO/TR 80002-2 standards.
 
-## Motivation
-
-Test project for:
-
-- Spec-Driven Development (SDD) with coding-agents (I used Kiro, Antigravity, Opencode with different local llms)
-- The feasibility of self-validating software (complient with ISO/TR 80002-2)
-
-## Result and Current Status
-
-- Main functionality provided
-- Software validation still far from complete
-- Example applications are explained in a Jupyter Notebook (see ./testdata), including the generation of corresponding test data.
-
-SDD development with coding agents is incredibly fast and virtually a must for any commercial software development. In some simple things, however, it's almost unbearable because of sheer stupidity. The problem here is that you often get “stuck” in the workflow (=lazy) and spend too much time looking for ways to solve it with the coding agent. But coding agents are improving so rapidly that this problem will quickly resolve itself.
-
-The three encoding agents are in a neck-and-neck race. Especially with the latest update of the qwen3-coder-next LLM, my local assistant feels like it's on par with the “big ones”—I would even say that it works better in some ways.
-But this is constantly changing—at times, the same version worked better on Windows, then again on Linux. This shows how rapidly this technology is developing.
-
-BUT
-
-Without human support, even such a small, simple project is not possible. And SW validation and E2E testing with meaningful data are definitely not the strong points of current agents. In principle, however, the approach of self-validating software is feasible and, in my view, also more secure than other approaches - I'll stay on it.
-
-
 ## Overview
 
-The Sample Size Calculator is a Python-based web application for determining statistically valid sample sizes for medical device design verification and process validation. This is critical QMS (Quality Management System) software that ensures compliance with ISO/TR 80002-2 standards through comprehensive validation, hash-based integrity verification, and complete audit trail logging.
+The Sample Size Calculator is a Python/niceGUI-based web application for determining statistically valid sample sizes for medical device design verification and process validation. As this is critical QMS (Quality Management System) software we have to ensures compliance with ISO/TR 80002-2 standards through comprehensive validation - and this is done via one click.
 
 ### Key Features
 
-- **Module A (Attribute Data Analysis)**: Binary Pass/Fail data analysis using Success Run Theorem and Cumulative Binomial Distribution
-- **Module V (Variable Data Analysis)**: Continuous measurement analysis with strict 4-phase sequential workflow
-  - Phase 1: Specification definition and pilot data input with IQR-based outlier detection
+- **Module Attribute**: Binary Pass/Fail data analysis using Success Run Theorem and Cumulative Binomial Distribution
+- **Module Variable**: Continuous measurement analysis with strict 4-phase sequential workflow
+  - Phase 1: Specification definition and (pilot) data input with IQR-based outlier detection
   - Phase 2: Outlier exclusion and automatic transformation cascade (Log → Box-Cox → Yeo-Johnson)
   - Phase 3: Sample size calculation using parametric or non-parametric methods
-  - Phase 4: Final validation data analysis with tolerance interval calculation
+  - Phase 4: Final validation data analysis with tolerance interval calculation (if enough data are provided in step 1)
 - **SHA-256 Hash Verification**: Ensures calculation engine integrity and validated state tracking
 - **Comprehensive Audit Trail**: All user interactions and system events logged with timestamps
 - **Automated Validation Suite**: IQ/OQ/PQ testing with Verification Traceability Matrix (VTM) generation
@@ -66,25 +43,18 @@ The Sample Size Calculator is a Python-based web application for determining sta
 
 ### Recommended
 
-Docker Compose (no need to install playwright)
+Docker Compose
 
 ```bash
 # build it
 docker compose build
 # start it
 docker compose up -d
-# optional validate it - need some time
-docker compose exec sample-size-calculator uv run python scripts/run_validation.py --tester "Your Name"
 # connect to it / use it
 http://localhost:8080
 # shut down
 docker compose down
 ```
-
-### Prerequisites
-
-- Python 3.11 or higher
-- [uv](https://github.com/astral-sh/uv) package manager
 
 ### Local Installation
 
@@ -98,6 +68,10 @@ uv sync
 
 # Install with development dependencies (for testing and validation)
 uv sync --all-groups
+
+# Configure playwright for e2e tests
+uv run playwright install --with-deps chromium
+
 ```
 
 ### Verify Installation
@@ -122,88 +96,7 @@ uv run python src/sample_size_calculator/main.py
 
 The web interface will be available at **http://localhost:8080**
 
-### Module A: Attribute Data Analysis
-
-Module A is designed for binary (Pass/Fail) test scenarios.
-
-**Workflow:**
-
-1. Navigate to the **Module A** tab
-2. Enter **Confidence Level** (e.g., 95%)
-3. Enter **Reliability Level** (e.g., 95%)
-4. Enter **Allowable Failures** (c):
-   - Enter a specific value (e.g., 0, 1, 2) for single calculation
-   - Leave empty for sensitivity analysis (calculates for c=0, 1, 2, 3)
-5. Click **Calculate Sample Size**
-6. Review results showing required sample size
-7. Click **Generate PDF Report** to create documentation
-
-**Example Use Case:**
-- Confidence: 95%
-- Reliability: 95%
-- Allowable Failures: 0
-- Result: n = 59 samples (Success Run Theorem)
-
-### Module V: Variable Data Analysis
-
-Module V provides a comprehensive 4-phase workflow for continuous measurement data.
-
-#### Phase 1: Specification Definition and Pilot Data
-
-1. Select **Specification Type**:
-   - **One-Sided**: Define either Lower Specification Limit (LSL) or Upper Specification Limit (USL)
-   - **Two-Sided**: Define both LSL and USL
-2. Enter specification limits
-3. Enter **Confidence** and **Reliability** levels
-4. Input pilot data:
-   - **Dataset Method**: Enter comma-separated measurements
-   - **Statistics Method**: Enter estimated mean and standard deviation
-5. Click **Analyze Pilot Data**
-6. Review outlier detection results (Q1, Q3, IQR, flagged outliers)
-
-**Note**: Pilot datasets with fewer than 30 points will trigger a validation warning.
-
-#### Phase 2: Normality Testing and Transformation
-
-1. Review detected outliers
-2. Optionally exclude outliers (requires engineering rationale)
-3. Choose transformation approach:
-   - **Automatic Cascade**: System tries Log → Box-Cox → Yeo-Johnson transformations
-   - **Manual Override**: Select specific transformation method
-4. Click **Process Normality Testing**
-5. Review results:
-   - Shapiro-Wilk p-values for each transformation
-   - Locked transformation method
-   - Analysis method (Parametric or Non-Parametric)
-
-**Transformation Cascade Logic:**
-- If original data is normal (p > 0.05): Lock as Parametric
-- If not normal: Try Log transformation (requires all positive values)
-- If Log fails: Try Box-Cox transformation (requires all positive values)
-- If Box-Cox fails: Try Yeo-Johnson transformation (handles zero/negative values)
-- If all fail: Lock as Non-Parametric (Wilks method)
-
-#### Phase 3: Sample Size Calculation
-
-1. Review locked method and specification type
-2. Click **Calculate Required Sample Size**
-3. Review results:
-   - Capability margin (k_margin)
-   - Tolerance factor (k_factor)
-   - Required sample size (N)
-   - Formula used (e.g., Howe-Guenther Approximation)
-
-#### Phase 4: Final Validation and Tolerance Limits
-
-1. Collect final validation dataset of size N
-2. Enter final data (comma-separated)
-3. Click **Calculate Tolerance Limits**
-4. Review results:
-   - Tolerance limits in transformed and original space
-   - Comparison to specification limits
-   - **Pass/Fail** determination
-   - Process capability index (Ppk) for parametric methods
-5. Click **Generate PDF Report** to document results
+Help and examples are accessable also via web interface
 
 ### Running Validation (IQ/OQ/PQ)
 
@@ -217,60 +110,8 @@ The application includes a built-in validation runner accessible from the UI:
    - **OQ (Operational Qualification)**: Tests all calculation formulas against known values
    - **PQ (Performance Qualification)**: Runs end-to-end UI tests (skipped when app is running)
 5. Review validation results
-6. Download the validation certificate using `docker compose cp sample-size-calculator:/app/reports/validation ./validation`
+6. Download the validation certificate if needed - validation is valid as long as button is green (checked via hash of code) (maybe you have to reload page for the green button)
 
-**Note**: PQ tests are automatically skipped when running validation from the UI since they require the application to be stopped. For complete validation including PQ tests, use the command-line approach below.
-
-### Command-Line Validation
-
-For complete validation including PQ tests:
-
-```bash
-# The application must run!
-docker compose up -d
-
-# Then run the validation script
-# Recommended: Launch it via the UI, but be patient—the PQ tests in particular take a while.
-# or
-uv run python scripts/run_validation.py --tester "Your Name"
-```
-
-This generates:
-- Validation certificate PDF in `./reports/validation/` (copy from container after completion)
-- Verification Traceability Matrix (VTM) CSV
-- Updates validated hash in `config/validated_hash.json`
-
-## Docker Deployment
-
-### Quick Start
-
-```bash
-# Build and start the container
-docker compose up -d
-
-# View logs
-docker compose logs -f
-
-# Stop the container
-docker compose down
-```
-
-The application will be available at **http://localhost:8080** (or custom port via PORT environment variable).
-
-### Accessing Logs and Reports
-
-Since the default configuration uses internal storage, you can copy logs and reports from the container:
-
-```bash
-# Copy all logs
-docker compose cp sample-size-calculator:/app/logs ./logs
-
-# Copy all reports
-docker compose cp sample-size-calculator:/app/reports ./reports
-
-# Copy config files
-docker compose cp sample-size-calculator:/app/config ./config
-```
 
 ### Configuration
 
@@ -350,43 +191,6 @@ reports/
 └── full/          # Comprehensive full reports
 ```
 
-### Report Types
-
-#### Calculation Reports (`./reports/calculations/`)
-
-Generated when you click "Generate PDF Report" after completing a calculation. Includes:
-- Timestamp and session information
-- All input parameters
-- Calculated results
-- Statistical method used
-- Engine hash and validation state
-
-**Naming**: `calculation_report_YYYYMMDD_HHMMSS.pdf`
-
-#### Validation Certificates (`./reports/validation/`)
-
-Generated by the IQ/OQ/PQ validation suite. Includes:
-- Test execution date and tester name
-- System information (OS, Python version)
-- Complete test results with URS traceability
-- Verification Traceability Matrix (VTM)
-- Validated engine hash
-
-**Naming**: `validation_certificate_YYYYMMDD_HHMMSS.pdf`
-
-#### Full Reports (`./reports/full/`)
-
-Comprehensive reports combining:
-- Current calculation report
-- Latest validation certificates
-- Audit trail logs (filtered for session)
-- Calculator signature (engine hash and validation state)
-
-**Naming**: `full_report_YYYYMMDD_HHMMSS.pdf`
-
-### Generating Full Reports
-
-Click the **Generate Full Report** button in the UI after completing a calculation to create a comprehensive report with complete traceability.
 
 ## Development
 
@@ -421,18 +225,6 @@ uv run ruff format src/
 uv run ty check src/
 ```
 
-### Adding Dependencies
-
-```bash
-# Add a runtime dependency
-uv add <package-name>
-
-# Add a development dependency
-uv add --group dev <package-name>
-
-# Sync dependencies after changes
-uv sync
-```
 
 ## Architecture Overview
 
@@ -504,23 +296,6 @@ lsof -i :8080  # On Unix/Linux/Mac
 netstat -ano | findstr :8080  # On Windows
 ```
 
-### Validation Tests Failing
-
-**Issue**: IQ/OQ/PQ tests fail during validation
-
-**Solution**:
-```bash
-# Check dependency versions
-uv run pip list
-
-# Ensure scipy version is 1.x.x
-uv run python -c "import scipy; print(scipy.__version__)"
-
-# Run tests individually to identify failures
-uv run pytest tests/validation/test_iq.py -v
-uv run pytest tests/validation/test_oq.py -v
-```
-
 ### Docker Container Issues
 
 **Issue**: Container fails health checks or won't start
@@ -534,38 +309,6 @@ docker compose logs
 docker compose down
 docker compose build --no-cache
 docker compose up -d
-```
-
-### Validation State Shows "NO"
-
-**Issue**: Reports show "VALIDATED STATE: NO - UNVERIFIED CHANGE"
-
-**Solution**:
-This indicates the calculation engine has been modified since the last validation. To restore validated state:
-
-1. Review changes to `src/sample_size_calculator/calculations.py`
-2. If changes are intentional, run full validation:
-   ```bash
-   uv run python scripts/run_validation.py --tester "Your Name"
-   ```
-3. This will update the validated hash in `config/validated_hash.json`
-
-### Reports Not Generating
-
-**Issue**: PDF reports fail to generate or save
-
-**Solution**:
-In the default configuration (internal storage), report directories are created with correct permissions during build. If you switch to host volume mounts:
-
-```bash
-# Check reports directory permissions
-ls -la ./reports
-
-# Ensure subdirectories exist
-mkdir -p ./reports/validation ./reports/calculations ./reports/full
-
-# On Linux, ensure proper ownership (replace 1000:1000 with your UID/GID)
-sudo chown -R 1000:1000 ./reports
 ```
 
 ### Transformation Cascade Issues
@@ -697,7 +440,3 @@ See LICENSE file for details.
 For issues, questions, or contributions, please refer to the project repository.
 
 ---
-
-**Version**: 0.1.0  
-**Last Updated**: 2026.02.26  
-**Compliance**: ISO/TR 80002-2

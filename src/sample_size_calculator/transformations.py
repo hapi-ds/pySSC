@@ -435,6 +435,7 @@ def transformation_cascade(
             _, p_value = shapiro_wilk_test(data)
             return Phase2Results(
                 cleaned_data=data,
+                original_cleaned_data=data,
                 shapiro_p_value=p_value,
                 transformation_method=TransformationMethod.NONE,
                 analysis_method=AnalysisMethod.PARAMETRIC,
@@ -454,6 +455,7 @@ def transformation_cascade(
             _, p_value = shapiro_wilk_test(log_data)
             return Phase2Results(
                 cleaned_data=log_data,
+                original_cleaned_data=data,
                 shapiro_p_value=p_value,
                 transformation_method=TransformationMethod.LOGARITHMIC,
                 analysis_method=AnalysisMethod.PARAMETRIC,
@@ -482,6 +484,7 @@ def transformation_cascade(
             _, p_value = shapiro_wilk_test(boxcox_data)
             return Phase2Results(
                 cleaned_data=boxcox_data,
+                original_cleaned_data=data,
                 shapiro_p_value=p_value,
                 transformation_method=TransformationMethod.BOX_COX,
                 analysis_method=AnalysisMethod.PARAMETRIC,
@@ -496,6 +499,7 @@ def transformation_cascade(
             return Phase2Results(
                 cleaned_data=yeojohnson_data,
                 shapiro_p_value=p_value,
+                original_cleaned_data=data,
                 transformation_method=TransformationMethod.YEO_JOHNSON,
                 analysis_method=AnalysisMethod.PARAMETRIC,
                 lambda_param=lambda_param,
@@ -507,6 +511,7 @@ def transformation_cascade(
             _, p_value = shapiro_wilk_test(data)
             return Phase2Results(
                 cleaned_data=data,
+                original_cleaned_data=data,
                 shapiro_p_value=p_value,
                 transformation_method=TransformationMethod.NONE,
                 analysis_method=AnalysisMethod.NON_PARAMETRIC,
@@ -520,6 +525,7 @@ def transformation_cascade(
         # Original data is normal
         return Phase2Results(
             cleaned_data=data,
+            original_cleaned_data=data,
             shapiro_p_value=p_value,
             transformation_method=TransformationMethod.NONE,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -535,6 +541,7 @@ def transformation_cascade(
             if p_value > 0.05:
                 return Phase2Results(
                     cleaned_data=log_data,
+                    original_cleaned_data=data,
                     shapiro_p_value=p_value,
                     transformation_method=TransformationMethod.LOGARITHMIC,
                     analysis_method=AnalysisMethod.PARAMETRIC,
@@ -552,6 +559,7 @@ def transformation_cascade(
                 return Phase2Results(
                     cleaned_data=boxcox_data,
                     shapiro_p_value=p_value,
+                    original_cleaned_data=data,
                     transformation_method=TransformationMethod.BOX_COX,
                     analysis_method=AnalysisMethod.PARAMETRIC,
                     lambda_param=lambda_param,
@@ -564,6 +572,7 @@ def transformation_cascade(
     if p_value > 0.05:
         return Phase2Results(
             cleaned_data=yeojohnson_data,
+            original_cleaned_data=data,
             shapiro_p_value=p_value,
             transformation_method=TransformationMethod.YEO_JOHNSON,
             analysis_method=AnalysisMethod.PARAMETRIC,
@@ -572,10 +581,10 @@ def transformation_cascade(
         )
 
     # All transformations failed - fallback to Non-Parametric
-    # Use the p-value from the last transformation attempt (Yeo-Johnson)
     return Phase2Results(
         cleaned_data=data,  # Use original data for non-parametric
         shapiro_p_value=p_value,
+        original_cleaned_data=data,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.NON_PARAMETRIC,
         lambda_param=None,

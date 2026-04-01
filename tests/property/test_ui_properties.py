@@ -121,6 +121,7 @@ def test_property_7_workflow_state_invalidation(
 
     phase2_results = Phase2Results(
         cleaned_data=pilot_data,
+        original_cleaned_data=[],
         shapiro_p_value=shapiro_p,
         transformation_method=TransformationMethod.NONE,
         analysis_method=AnalysisMethod.PARAMETRIC,
@@ -257,6 +258,7 @@ def test_property_33_session_isolation(num_sessions: int) -> None:
     if num_sessions > 1:
         phase2_results = Phase2Results(
             cleaned_data=pilot_data,
+            original_cleaned_data=[],
             shapiro_p_value=0.8,
             transformation_method=TransformationMethod.LOGARITHMIC,
             analysis_method=AnalysisMethod.PARAMETRIC,

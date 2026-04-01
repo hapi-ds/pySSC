@@ -1425,6 +1425,7 @@ class UIController:
                     # Create Phase2Results with user-selected method
                     phase2_results = Phase2Results(
                         cleaned_data=[],  # Empty list for estimated statistics
+                        original_cleaned_data=[],  # Empty list for estimated statistics
                         shapiro_p_value=0.0,  # Not applicable
                         transformation_method=transformation_method,
                         analysis_method=analysis_method,
@@ -1484,6 +1485,7 @@ class UIController:
                         _, p_value = shapiro_wilk_test(cleaned_data)
                         phase2_results = Phase2Results(
                             cleaned_data=cleaned_data,
+                            original_cleaned_data=cleaned_data,
                             shapiro_p_value=p_value,
                             transformation_method=TransformationMethod.NONE,
                             analysis_method=AnalysisMethod.NON_PARAMETRIC,
@@ -3358,7 +3360,8 @@ For additional assistance:
             ui.label("Run Full Validation Suite").classes("text-h6")
             ui.label(
                 "This will run IQ/OQ/PQ tests and generate a validation certificate."
-            ).classes("text-subtitle2")
+            ).classes("text-subtitle2 mb-2")
+
             ui.separator()
 
             tester_input = ui.input(
@@ -3386,7 +3389,7 @@ For additional assistance:
             with ui.row().classes("w-full justify-end"):
                 ui.button("Cancel", on_click=dialog.close).props("flat")
                 run_button = ui.button(
-                    "Run Validation",
+                    "Run Validation (includes PQ)",
                     on_click=lambda: self._run_validation(
                         tester_input.value, progress_log, result_label, run_button
                     ),
@@ -3423,6 +3426,7 @@ For additional assistance:
         progress_log: ui.log,
         result_label: ui.label,
         run_button: ui.button,
+
     ) -> None:
         """Run validation suite asynchronously.
 
