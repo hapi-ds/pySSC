@@ -1425,6 +1425,7 @@ class UIController:
                     # Create Phase2Results with user-selected method
                     phase2_results = Phase2Results(
                         cleaned_data=[],  # Empty list for estimated statistics
+                        original_cleaned_data=[],  # Empty list for estimated statistics
                         shapiro_p_value=0.0,  # Not applicable
                         transformation_method=transformation_method,
                         analysis_method=analysis_method,
@@ -1484,6 +1485,7 @@ class UIController:
                         _, p_value = shapiro_wilk_test(cleaned_data)
                         phase2_results = Phase2Results(
                             cleaned_data=cleaned_data,
+                            original_cleaned_data=cleaned_data,
                             shapiro_p_value=p_value,
                             transformation_method=TransformationMethod.NONE,
                             analysis_method=AnalysisMethod.NON_PARAMETRIC,

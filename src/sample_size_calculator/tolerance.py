@@ -289,24 +289,29 @@ def calculate_tolerance_limits(
 ) -> Phase4Results:
     """Calculate final tolerance limits and Pass/Fail determination.
 
-    This function applies the locked transformation to the final dataset,
-    calculates tolerance limits using either parametric or non-parametric
-    methods, back-transforms parametric limits to original space, and
-    determines Pass/Fail by comparing to specification limits.
+    This function uses data from Phase 2 which has already undergone outlier
+    exclusions. For parametric methods, it also uses the transformed version.
+    It calculates tolerance limits using either parametric or non-parametric
+    methods, back-transforms parametric limits to original space,
+    and determines Pass/Fail by comparing to specification limits.
 
     Steps:
     1. Validate final dataset size is at least the required sample size
-    2. Apply locked transformation to final data
+    2. Retrieve original_cleaned_data from Phase 2 (outlier-excluded but untransformed)
+       or use cleaned_data if no transformation was applied
     3. Calculate tolerance limits:
-       - Parametric: mean_t ± k*std_t
-       - Non-parametric: min/max order statistics
-    4. Back-transform parametric limits to original space
-    5. Compare to specification limits for Pass/Fail
-    6. Calculate Ppk for parametric methods
+       - Parametric: mean_t ± k*std_t (using transformed data), then back-transform
+       - Non-parametric: min/max order statistics on original data
+    4. Compare to specification limits for Pass/Fail
+    5. Calculate Ppk using original cleaned data
 
     Args:
-        final_data: Final validation dataset in original units
-        phase2_results: Results from Phase 2 (transformation method locked)
+        final_data: Final validation dataset in original units (unused, kept for API compatibility)
+        phase2_results: Results from Phase 2 (transformation method locked, includes cleaned_data and original_cleaned_data)
+
+    Args:
+        final_data: Final validation dataset in original units (unused, kept for API compatibility)
+        phase2_results: Results from Phase 2 (transformation method locked, cleaned_data already transformed)
         phase3_results: Results from Phase 3 (required sample size and k_factor)
         spec_limits: Specification limits in original units
 
@@ -333,6 +338,7 @@ def calculate_tolerance_limits(
         >>> final_data = [10.0, 12.0, 11.0, 13.0, 12.5, 11.5, 12.2, 11.8, 12.3, 11.9]
         >>> phase2 = Phase2Results(
         ...     cleaned_data=final_data,
+    ...     original_cleaned_data=final_data,
         ...     shapiro_p_value=0.8,
         ...     transformation_method=TransformationMethod.NONE,
         ...     analysis_method=AnalysisMethod.PARAMETRIC,
@@ -364,58 +370,15 @@ def calculate_tolerance_limits(
             f"Received {len(final_data)} data points."
         )
 
-    # Apply locked transformation to final data
-    if phase2_results.transformation_method == TransformationMethod.LOGARITHMIC:
-        transformed_data = log_transform(final_data)
-        if transformed_data is None:
-            raise ValueError(
-                "Final data contains non-positive values, "
-                "cannot apply logarithmic transformation"
-            )
-    elif phase2_results.transformation_method == TransformationMethod.BOX_COX:
-        result = box_cox_transform(final_data)
-        if result is None:
-            raise ValueError(
-                "Final data contains non-positive values, "
-                "cannot apply Box-Cox transformation"
-            )
-
-        if phase2_results.lambda_param is None:
-            raise ValueError("Lambda parameter required for Box-Cox transformation")
-
-        # Use the locked lambda from Phase 2, not the optimized one
-        # We need to manually apply the transformation with the locked lambda
-        if abs(phase2_results.lambda_param) < 1e-10:  # lambda ≈ 0
-            transformed_data = [math.log(x) for x in final_data]
-        else:
-            transformed_data = [
-                (x**phase2_results.lambda_param - 1) / phase2_results.lambda_param
-                for x in final_data
-            ]
-    elif phase2_results.transformation_method == TransformationMethod.YEO_JOHNSON:
-        # Use the locked lambda from Phase 2
-        # Manually apply Yeo-Johnson with locked lambda
-        def yeo_johnson_forward_single(x: float, lmbda: float) -> float:
-            """Apply Yeo-Johnson transformation to a single value."""
-            if x >= 0:
-                if abs(lmbda) < 1e-10:  # lambda ≈ 0
-                    return math.log(x + 1)
-                else:
-                    return ((x + 1) ** lmbda - 1) / lmbda
-            else:  # x < 0
-                if abs(lmbda - 2) < 1e-10:  # lambda ≈ 2
-                    return -math.log(-x + 1)
-                else:
-                    return -((-x + 1) ** (2 - lmbda) - 1) / (2 - lmbda)
-
-        if phase2_results.lambda_param is None:
-            raise ValueError("Lambda parameter required for Yeo-Johnson transformation")
-        transformed_data = [
-            yeo_johnson_forward_single(x, phase2_results.lambda_param)
-            for x in final_data
-        ]
-    else:  # TransformationMethod.NONE
-        transformed_data = final_data
+    # Use original_cleaned_data from Phase 2 if available (outlier-excluded but untransformed)
+    # Otherwise use cleaned_data (which may be transformed) or final_data as fallback
+    if phase2_results.original_cleaned_data is not None:
+        original_data = phase2_results.original_cleaned_data
+    else:
+        original_data = phase2_results.cleaned_data if phase2_results.transformation_method == TransformationMethod.NONE else final_data
+    
+    # Use cleaned_data from Phase 2 which is already transformed and outlier-excluded
+    transformed_data = phase2_results.cleaned_data
 
     # Calculate tolerance limits
     tolerance_limits = {}
@@ -425,14 +388,14 @@ def calculate_tolerance_limits(
         if phase3_results.specification_type == SpecificationType.ONE_SIDED:
             if spec_limits.lsl is not None:
                 # Lower spec limit only - use minimum
-                tolerance_limits["lower"] = min(final_data)
+                tolerance_limits["lower"] = min(original_data)
             else:
                 # Upper spec limit only - use maximum
-                tolerance_limits["upper"] = max(final_data)
+                tolerance_limits["upper"] = max(original_data)
         else:  # TWO_SIDED
             # Use both minimum and maximum
-            tolerance_limits["lower"] = min(final_data)
-            tolerance_limits["upper"] = max(final_data)
+            tolerance_limits["lower"] = min(original_data)
+            tolerance_limits["upper"] = max(original_data)
 
     else:  # Parametric method
         # Calculate mean and std of transformed data
@@ -500,7 +463,7 @@ def calculate_tolerance_limits(
     # Calculate Ppk (only for parametric methods)
     ppk = None
     if phase2_results.analysis_method == AnalysisMethod.PARAMETRIC:
-        ppk = calculate_ppk(final_data, spec_limits)
+        ppk = calculate_ppk(original_data, spec_limits)
 
     return Phase4Results(
         final_data=final_data,

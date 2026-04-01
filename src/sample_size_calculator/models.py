@@ -178,6 +178,7 @@ class Phase2Results(BaseModel):
     """Results from Module V Phase 2 (normality testing and transformation)."""
 
     cleaned_data: list[float]
+    original_cleaned_data: list[float] | None = None
     shapiro_p_value: float
     transformation_method: TransformationMethod
     analysis_method: AnalysisMethod
