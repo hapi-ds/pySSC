@@ -3360,7 +3360,8 @@ For additional assistance:
             ui.label("Run Full Validation Suite").classes("text-h6")
             ui.label(
                 "This will run IQ/OQ/PQ tests and generate a validation certificate."
-            ).classes("text-subtitle2")
+            ).classes("text-subtitle2 mb-2")
+
             ui.separator()
 
             tester_input = ui.input(
@@ -3388,7 +3389,7 @@ For additional assistance:
             with ui.row().classes("w-full justify-end"):
                 ui.button("Cancel", on_click=dialog.close).props("flat")
                 run_button = ui.button(
-                    "Run Validation",
+                    "Run Validation (includes PQ)",
                     on_click=lambda: self._run_validation(
                         tester_input.value, progress_log, result_label, run_button
                     ),
@@ -3425,6 +3426,7 @@ For additional assistance:
         progress_log: ui.log,
         result_label: ui.label,
         run_button: ui.button,
+
     ) -> None:
         """Run validation suite asynchronously.
 

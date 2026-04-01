@@ -2,6 +2,7 @@
 This module provides functionality to run the IQ/OQ/PQ validation suite
 from within the UI and report progress and results.
 """
+
 import json
 import platform
 import re
@@ -26,6 +27,7 @@ from scripts.calculate_coverage import calculate_coverage  # noqa: E402
 
 class ValidationRunner:
     """Runs validation test suite and generates validation certificate."""
+
     def __init__(self, progress_callback: Callable[[str], None] | None = None):
         """Initialize validation runner.
         Args:
@@ -35,6 +37,7 @@ class ValidationRunner:
         self.test_results: list[dict] = []
         self.pdf_test_results: list[dict] = []  # PDF validation test results
         self.all_passed = True
+
     def _report_progress(self, message: str) -> None:
         """Report progress to callback if available.
         Args:
@@ -42,6 +45,7 @@ class ValidationRunner:
         """
         if self.progress_callback:
             self.progress_callback(message)
+
     def _run_test_suite(self, test_path: str, marker: str) -> dict:
         """Run a specific test suite and return results.
         Args:
@@ -51,6 +55,7 @@ class ValidationRunner:
             Dictionary with test results
         """
         self._report_progress(f"Running {marker.upper()} tests...")
+        self._report_progress(f"Command: uv run pytest -m {marker} {test_path}")
         # Run pytest with JSON report
         result = subprocess.run(
             [
@@ -69,6 +74,12 @@ class ValidationRunner:
             text=True,
             timeout=300,  # 5 minute timeout per suite
         )
+        # Log stdout/stderr for debugging (especially important for Docker)
+        if result.stdout:
+            self._report_progress(f"STDOUT:\n{result.stdout[-500:]}")  # Last 500 chars
+        if result.stderr:
+            self._report_progress(f"STDERR:\n{result.stderr[-500:]}")  # Last 500 chars
+        self._report_progress(f"Exit code: {result.returncode}")
         # Load JSON report
         json_path = Path(f"test_results_{marker}.json")
         if json_path.exists():
@@ -81,6 +92,7 @@ class ValidationRunner:
                 "summary": {"passed": 0, "failed": 0, "total": 0},
                 "exitcode": result.returncode,
             }
+
     def _extract_test_results(self, pytest_data: dict, suite_name: str) -> list[dict]:
         """Extract test results from pytest JSON data.
         Args:
@@ -175,13 +187,14 @@ class ValidationRunner:
                     }
                 )
         return test_results
+
     def run_validation(
         self, tester_name: str, skip_pq: bool = True
     ) -> tuple[bool, str, Path | None]:
         """Run complete validation suite.
         Args:
             tester_name: Name of the validation tester
-            skip_pq: Whether to skip PQ tests (default True since app is running)
+            skip_pq: Whether to skip PQ tests (default True; False when called from UI)
         Returns:
             Tuple of (success, message, certificate_path)
         """
@@ -215,21 +228,16 @@ class ValidationRunner:
             if oq_data.get("exitcode", 1) != 0:
                 self.all_passed = False
                 self._report_progress("❌ OQ Tests FAILED")
+            # Run PQ tests since the app is running (user started validation from within app)
+            # Always run PQ tests when started from within the app
+            pq_data = self._run_test_suite("tests/validation/test_pq.py", "pq")
+            pq_results = self._extract_test_results(pq_data, "PQ")
+            self.test_results.extend(pq_results)
+            if pq_data.get("exitcode", 1) != 0:
+                self.all_passed = False
+                self._report_progress("❌ PQ Tests FAILED")
             else:
-                self._report_progress("✅ OQ Tests PASSED")
-            # Skip PQ tests since the app is running
-            if not skip_pq:
-                self._report_progress("Running PQ (Performance Qualification) tests...")
-                pq_data = self._run_test_suite("tests/validation/test_pq.py", "pq")
-                pq_results = self._extract_test_results(pq_data, "PQ")
-                self.test_results.extend(pq_results)
-                if pq_data.get("exitcode", 1) != 0:
-                    self.all_passed = False
-                    self._report_progress("❌ PQ Tests FAILED")
-                else:
-                    self._report_progress("✅ PQ Tests PASSED")
-            else:
-                self._report_progress("⚠️  Skipping PQ tests (app is running)")
+                self._report_progress("✅ PQ Tests PASSED")
             # Run PDF validation tests
             self._report_progress("")
             self._report_progress("=" * 60)
@@ -299,7 +307,9 @@ class ValidationRunner:
                         "tests/validation/test_pq.py",
                     ],
                 )
-                self._report_progress(f"✅ Coverage calculated: {coverage_metrics['coverage_percentage']:.1f}%")
+                self._report_progress(
+                    f"✅ Coverage calculated: {coverage_metrics['coverage_percentage']:.1f}%"
+                )
             except Exception as e:
                 self._report_progress(f"⚠️  Could not calculate coverage: {e}")
                 coverage_metrics = None

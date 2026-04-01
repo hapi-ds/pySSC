@@ -750,45 +750,62 @@ class FullReportGenerator:
         # Try to find associated JSON metadata files
         cert_dir = cert_path.parent
 
-        # Look for validation results in common locations
-        json_files = [
-            cert_dir / "test_results_iq.json",
-            cert_dir / "test_results_oq.json",
-            cert_dir / "test_results_pq.json",
-        ]
+        # First, try to load validation_stats.json (contains pre-calculated test statistics)
+        stats_file = cert_dir / "validation_stats.json"
+        if stats_file.exists():
+            try:
+                with open(stats_file) as f:
+                    stats_data = json.load(f)
+                    info["total_tests"] = stats_data.get("total_tests", 0)
+                    info["passed_tests"] = stats_data.get("passed_tests", 0)
+                    info["failed_tests"] = stats_data.get("failed_tests", 0)
+                    info["validation_status"] = stats_data.get(
+                        "validation_status", "N/A"
+                    )
+                    info["tester_name"] = stats_data.get("tester_name")
+            except Exception:
+                pass
 
-        all_test_results = []
+        # Fallback: look for pytest JSON reports in parent directories
+        if info["total_tests"] == 0:
+            json_files = [
+                cert_dir / "test_results_iq.json",
+                cert_dir / "test_results_oq.json",
+                cert_dir / "test_results_pq.json",
+            ]
 
-        for json_file in json_files:
-            if json_file.exists():
-                try:
-                    with open(json_file) as f:
-                        data = json.load(f)
-                        # Extract tests from the JSON report
-                        if isinstance(data, dict) and "tests" in data:
-                            all_test_results.extend(data.get("tests", []))
-                except Exception:
-                    pass
+            all_test_results = []
 
-        # Calculate test statistics
-        for test in all_test_results:
-            info["total_tests"] += 1
-            outcome = test.get("outcome", "unknown")
-            if outcome == "passed":
-                info["passed_tests"] += 1
-            else:
-                info["failed_tests"] += 1
+            for json_file in json_files:
+                if json_file.exists():
+                    try:
+                        with open(json_file) as f:
+                            data = json.load(f)
+                            # Extract tests from the JSON report
+                            if isinstance(data, dict) and "tests" in data:
+                                all_test_results.extend(data.get("tests", []))
+                    except Exception:
+                        pass
 
-        # Determine validation status
-        if info["total_tests"] > 0 and info["failed_tests"] == 0:
-            info["validation_status"] = "PASSED"
-        elif info["total_tests"] > 0:
-            info["validation_status"] = "FAILED"
+            # Calculate test statistics from pytest reports
+            for test in all_test_results:
+                info["total_tests"] += 1
+                outcome = test.get("outcome", "unknown")
+                if outcome == "passed":
+                    info["passed_tests"] += 1
+                else:
+                    info["failed_tests"] += 1
+
+            # Determine validation status
+            if info["total_tests"] > 0 and info["failed_tests"] == 0:
+                info["validation_status"] = "PASSED"
+            elif info["total_tests"] > 0:
+                info["validation_status"] = "FAILED"
 
         # Try to extract tester name from the certificate PDF metadata or adjacent files
         # Look for validation_traceability_matrix.csv which might have tester info
         vtm_file = cert_dir / "validation_traceability_matrix.csv"
-        if vtm_file.exists():
+        if vtm_file.exists() and info["tester_name"] is None:
             try:
                 with open(vtm_file) as f:
                     lines = f.readlines()
