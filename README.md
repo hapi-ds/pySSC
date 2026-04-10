@@ -24,6 +24,7 @@ Medical device design verification and process validation sample size calculator
 ## Overview
 
 The Sample Size Calculator is a Python/niceGUI-based web application for determining statistically valid sample sizes for medical device design verification and process validation. As this is critical QMS (Quality Management System) software we have to ensures compliance with ISO/TR 80002-2 standards through comprehensive validation - and this is done via one click.
+You can find some tutorials/videos on my homepage https://www.koehler.eu.com/en/home/.
 
 ### Key Features
 
